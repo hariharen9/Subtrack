@@ -112,18 +112,18 @@ export function TerminateDialog({
                   <ul className="mt-2 space-y-2">
                     {(isPurge
                       ? [
-                          'The process record is deleted permanently from this device.',
+                          'The subscription record is deleted permanently from this device.',
                           'Its entire payment history is erased from the ledger.',
                           'Monthly burn and every chart update immediately.',
                           'This cannot be undone, and there is no cloud copy.',
                         ]
                       : [
-                          'All future charges are cancelled. The process shows as TERMINATED.',
+                          'All future charges are cancelled. The subscription shows as TERMINATED.',
                           `${formatMoney(
                             monthlyCost(sub.price, sub.billingCycle, sub.customIntervalDays),
                             sub.currency,
                           )}/month leaves your burn immediately.`,
-                          'Payment history is kept, and the process stays in the archive.',
+                          'Payment history is kept, and the subscription stays in the archive.',
                           'You can resume it at any time — the cycle anchor is preserved.',
                         ]
                     ).map((line) => (

@@ -190,7 +190,7 @@ export const ProcessCard = memo(function ProcessCard({ view, index = 0 }: Proces
             <CycleRegister sub={sub} />
           </div>
           <div className="flex items-center justify-between gap-2 border-t border-line px-3 py-1.5">
-            <span className="pid">PROCESS ID // {pidOf(sub.id)}</span>
+            <span className="pid">SUB ID // {pidOf(sub.id)}</span>
             <span className="micro flex items-center gap-1.5 text-faint transition-colors group-hover:text-acidink">
               <span className="hidden opacity-0 transition-opacity group-hover:opacity-100 sm:inline">
                 {traceOf(sub.id)}

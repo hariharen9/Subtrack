@@ -34,7 +34,7 @@ export async function exportJson(): Promise<void> {
   })
   const stamp = new Date().toISOString().slice(0, 10)
   downloadFile(`subtrack-snapshot-${stamp}.json`, JSON.stringify(snapshot, null, 2), 'application/json')
-  useUI.getState().pushToast(TOAST_VERBS.info('EXPORT COMPLETE', `${snapshot.subscriptions.length} processes written to file`))
+  useUI.getState().pushToast(TOAST_VERBS.info('EXPORT COMPLETE', `${snapshot.subscriptions.length} subscriptions written to file`))
 }
 
 function escapeCsv(value: string | number): string {
@@ -46,7 +46,7 @@ export function toCsv(payments: Payment[], subscriptionsById: Map<string, string
   const header = [
     'date',
     'service',
-    'process_id',
+    'subscription_id',
     'amount',
     'currency',
     'category',
@@ -96,7 +96,7 @@ export function openImportDialog(): void {
         .pushToast(
           TOAST_VERBS.info(
             'SNAPSHOT RESTORED',
-            `${report.subscriptions} processes · ${report.payments} recorded charges`,
+            `${report.subscriptions} subscriptions · ${report.payments} recorded charges`,
           ),
         )
     } catch (error) {
@@ -146,7 +146,7 @@ export function burnReadout(
     'SUBTRACK // MONTHLY BURN READOUT',
     `MONTHLY BURN   ${formatMoney(monthly, base)}`,
     `PROJECTED LOAD ${formatMoney(annual, base)}`,
-    `ACTIVE         ${count} PROCESSES`,
+    `ACTIVE         ${count} SUBSCRIPTIONS`,
   ].join('\n')
 }
 

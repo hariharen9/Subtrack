@@ -485,7 +485,7 @@ function DayPanel({
       <HashRule label={`${events.length} EVENTS`} className="px-4 py-2" />
       <div className="px-3 pb-3 md:px-4">
         <CyberButton variant="ghost" full to="/flow">
-          OPEN ALL PROCESSES
+          OPEN ALL SUBSCRIPTIONS
         </CyberButton>
       </div>
     </div>

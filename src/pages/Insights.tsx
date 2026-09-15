@@ -181,14 +181,14 @@ export default function Insights() {
           signal="blue"
         />
         <StatBlock
-          code="PRC"
-          label="ACTIVE PROCESSES"
+          code="SUB"
+          label="ACTIVE SUBSCRIPTIONS"
           value={String(summary.activeCount).padStart(2, '0')}
           meta={`${summary.suspended.length} SUSPENDED · ${summary.terminated.length} TERMINATED`}
         />
         <StatBlock
           code="AVG"
-          label="AVERAGE PROCESS"
+          label="AVERAGE SUBSCRIPTION"
           value={formatMoney(summary.avgCost, base)}
           meta="NORMALISED PER MONTH"
           signal="magenta"
@@ -246,7 +246,7 @@ export default function Insights() {
               <RadialGauge
                 value={derived.top3}
                 label="TOP 3 SHARE"
-                caption={`${summary.concentration.count} processes`}
+                caption={`${summary.concentration.count} subscriptions`}
                 signal="magenta"
                 size={140}
               />
@@ -274,11 +274,11 @@ export default function Insights() {
               </div>
               <p className="meta mt-2 text-dim">
                 {derived.dormantCount
-                  ? `${derived.dormantCount} processes have not been marked as used in 30+ days. That is ${formatMoney(
+                  ? `${derived.dormantCount} subscriptions have not been marked as used in 30+ days. That is ${formatMoney(
                       derived.dormantMonthly * 12,
                       base,
                     )} a year if nothing changes.`
-                  : 'Every tracked process has been marked as used recently. Nothing is idling.'}
+                  : 'Every tracked subscription has been marked as used recently. Nothing is idling.'}
               </p>
             </div>
           </CutPanel>
@@ -326,15 +326,15 @@ export default function Insights() {
                 { label: 'Monthly burn', value: formatMoney(summary.monthlyBurn, base) },
                 { label: 'Projected annual load', value: formatMoney(summary.annualLoad, base) },
                 { label: 'Daily burn rate', value: formatMoney(summary.dailyBurn, base) },
-                { label: 'Average process cost', value: formatMoney(summary.avgCost, base) },
+                { label: 'Average subscription cost', value: formatMoney(summary.avgCost, base) },
                 {
-                  label: 'Highest process',
+                  label: 'Highest subscription',
                   value: highest
                     ? `${highest.sub.name} · ${formatMoney(highest.monthly, base)}`
                     : '—',
                 },
                 {
-                  label: 'Lowest process',
+                  label: 'Lowest subscription',
                   value: lowest ? `${lowest.sub.name} · ${formatMoney(lowest.monthly, base)}` : '—',
                 },
                 {
@@ -355,13 +355,13 @@ export default function Insights() {
                   ),
                 },
                 {
-                  label: 'Longest running process',
+                  label: 'Longest running subscription',
                   value: summary.longestRunning
                     ? `${summary.longestRunning.sub.name} · ${summary.longestRunning.sub.cyclesExecuted} cycles`
                     : '—',
                 },
                 {
-                  label: 'Newest process',
+                  label: 'Newest subscription',
                   value: derived.newest
                     ? `${derived.newest.sub.name} · ${formatMoney(derived.newest.monthly, base)}/MO`
                     : '—',
@@ -410,7 +410,7 @@ export default function Insights() {
                     <span className="text-right">
                       <span className="meta block text-fg">{formatMoney(bucket.monthly, base)}/MO</span>
                       <span className="micro block text-faint">
-                        {bucket.count} PROCESS{bucket.count === 1 ? '' : 'ES'} ·{' '}
+                        {bucket.count} SUB{bucket.count === 1 ? '' : 'S'} ·{' '}
                         {((bucket.monthly / (summary.monthlyBurn || 1)) * 100).toFixed(0)}%
                       </span>
                     </span>
@@ -440,7 +440,7 @@ export default function Insights() {
               <DataStrip
                 size="sm"
                 items={[
-                  { label: 'Processes tracked', value: String(subscriptions.length) },
+                  { label: 'Subs tracked', value: String(subscriptions.length) },
                   { label: 'Charges recorded', value: String(payments.length) },
                   {
                     label: 'Coverage',
@@ -454,7 +454,7 @@ export default function Insights() {
               />
             </CutPanel>
 
-            <HashRule label="PROCESS LEVEL DETAIL" />
+            <HashRule label="SUBSCRIPTION LEVEL DETAIL" />
             <div className="flex flex-wrap gap-2">
               {summary.views.slice(0, 8).map((view) => (
                 <Link

@@ -33,7 +33,7 @@ export function SystemFooter({
         <DataStrip
           size="sm"
           items={[
-            { label: 'Processes', value: String(summary.active.length).padStart(2, '0'), signal: 'acid' },
+            { label: 'Subscriptions', value: String(summary.active.length).padStart(2, '0'), signal: 'acid' },
             { label: 'Suspended', value: String(summary.suspended.length).padStart(2, '0') },
             { label: 'Terminated', value: String(summary.terminated.length).padStart(2, '0') },
             { label: 'Recorded charges', value: String(payments) },

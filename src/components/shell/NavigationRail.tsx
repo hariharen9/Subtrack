@@ -136,7 +136,7 @@ export function NavigationRail({
 
         <dl className="space-y-1.5 px-0.5 pt-1">
           <StatusRow label="SYS" value="OK" signal="acid" />
-          <StatusRow label="PRC" value={String(processCount).padStart(2, '0')} signal="acid" />
+          <StatusRow label="SUB" value={String(processCount).padStart(2, '0')} signal="acid" />
           <StatusRow label="DB" value="LOCAL" signal="blue" />
           <StatusRow label="NET" value={online ? 'LINK' : 'OFF'} signal={online ? 'acid' : 'orange'} />
         </dl>

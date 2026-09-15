@@ -422,7 +422,7 @@ function buildNotes(
       id: 'concentration',
       label: 'SYSTEM NOTE',
       signal: 'magenta',
-      text: `${summary.concentration.count} processes account for ${Math.round(
+      text: `${summary.concentration.count} subscriptions account for ${Math.round(
         summary.concentration.share * 100,
       )}% of your monthly burn — ${views
         .slice(0, summary.concentration.count)
@@ -464,10 +464,10 @@ function buildNotes(
       .join(', ')
     notes.push({
       id: 'dormant',
-      label: 'DORMANT PROCESS',
+      label: 'DORMANT SUBSCRIPTION',
       signal: 'red',
       text: `${summary.dormant.length} tracked ${
-        summary.dormant.length === 1 ? 'process has' : 'processes have'
+        summary.dormant.length === 1 ? 'subscription has' : 'subscriptions have'
       } not been marked as used in ${DORMANT_DAYS}+ days (${names}) — ${formatInBase(
         summary.dormant.reduce((sum, d) => sum + d.view.monthly, 0),
         summary.base,
@@ -491,11 +491,11 @@ function buildNotes(
   if (newThisCycle.length) {
     notes.push({
       id: 'new',
-      label: 'PROCESS INIT',
+      label: 'NEW SUBSCRIPTION',
       signal: 'acid',
-      text: `${newThisCycle.length} process${
-        newThisCycle.length === 1 ? ' was' : 'es were'
-      } initialized in the last 30 days, adding ${formatInBase(
+      text: `${newThisCycle.length} subscription${
+        newThisCycle.length === 1 ? ' was' : 's were'
+      } added in the last 30 days, adding ${formatInBase(
         newThisCycle.reduce((sum, v) => sum + v.monthly, 0),
         summary.base,
       )} to monthly burn.`,
@@ -508,7 +508,7 @@ function buildNotes(
       id: 'longest',
       label: 'UPTIME RECORD',
       signal: 'acid',
-      text: `${v.sub.name} is your longest-running process: ${v.sub.cyclesExecuted} cycles since ${v.sub.createdAt}. It has moved ${formatInBase(
+      text: `${v.sub.name} is your longest-running subscription: ${v.sub.cyclesExecuted} cycles since ${v.sub.createdAt}. It has moved ${formatInBase(
         v.sub.cyclesExecuted * v.monthly,
         summary.base,
       )} in total.`,

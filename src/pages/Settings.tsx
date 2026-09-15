@@ -25,7 +25,7 @@ import { cx } from '@/lib/cx'
 
 const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['⌘', 'K'], label: 'Open the command palette' },
-  { keys: ['/'], label: 'Query processes from anywhere' },
+  { keys: ['/'], label: 'Query subscriptions from anywhere' },
   { keys: ['N'], label: 'Initialize a subscription' },
   { keys: ['1'], label: 'Overview' },
   { keys: ['2'], label: 'Subscriptions' },
@@ -258,7 +258,7 @@ export default function Settings() {
             <DataStrip
               size="sm"
               items={[
-                { label: 'Processes', value: String(subscriptions.length) },
+                { label: 'Subscriptions', value: String(subscriptions.length) },
                 { label: 'Archived', value: String(summary.suspended.length + summary.terminated.length) },
                 { label: 'Charges', value: String(payments.length) },
                 { label: 'Oldest record', value: oldest ?? '—' },
@@ -294,7 +294,7 @@ export default function Settings() {
             </div>
             <div className="border-t border-line px-3 py-3 md:px-4">
               <p className="meta text-faint">
-                A snapshot contains every process, every recorded charge and your display settings.
+                A snapshot contains every subscription, every recorded charge and your display settings.
                 Import replaces the local volume after a confirmation — export first if you are unsure.
               </p>
             </div>
@@ -349,7 +349,7 @@ export default function Settings() {
                       setBusy(true)
                       await resetToSeed()
                       setBusy(false)
-                      pushToast(TOAST_VERBS.info('DATASET RESET', 'Seventeen demo processes restored'))
+                      pushToast(TOAST_VERBS.info('DATASET RESET', 'Seventeen demo subscriptions restored'))
                     }}
                   />
                 </div>
@@ -366,11 +366,11 @@ export default function Settings() {
                     setBusy(true)
                     await wipeAll()
                     setBusy(false)
-                    pushToast(TOAST_VERBS.error('VOLUME EMPTY', 'All processes and charges were erased'))
+                    pushToast(TOAST_VERBS.error('VOLUME EMPTY', 'All subscriptions and charges were erased'))
                   }}
                 />
                 <p className="micro mt-1.5 text-faint">
-                  LEAVES AN EMPTY SYSTEM. THE CONSOLE WILL ASK YOU TO INITIALIZE A PROCESS.
+                  LEAVES AN EMPTY SYSTEM. THE CONSOLE WILL ASK YOU TO INITIALIZE A SUBSCRIPTION.
                 </p>
               </div>
             </div>

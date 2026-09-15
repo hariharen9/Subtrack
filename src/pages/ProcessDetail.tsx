@@ -70,9 +70,9 @@ export default function ProcessDetail() {
     return (
       <div className="px-3 py-6 md:px-5">
         <EmptyState
-          code="PROCESS NOT FOUND"
+          code="SUBSCRIPTION NOT FOUND"
           title="NO RECORD ON THIS VOLUME."
-          description="This process does not exist in the local store. It may have been purged, or the identifier is from another device."
+          description="This subscription does not exist in the local store. It may have been purged, or the identifier is from another device."
           action={{ label: 'BACK TO FLOW', onClick: () => history.back() }}
         />
       </div>
@@ -121,10 +121,10 @@ export default function ProcessDetail() {
           className="micro flex items-center gap-1.5 text-dim transition-colors hover:text-acidink"
         >
           <IconChevronLeft size={12} />
-          FLOW // ALL PROCESSES
+          FLOW // ALL SUBSCRIPTIONS
         </Link>
         <span className="micro text-faint">
-          PROCESS ID // <span className="text-dim">{pidOf(sub.id)}</span>
+          SUB ID // <span className="text-dim">{pidOf(sub.id)}</span>
           <span className="text-linehard"> · </span>
           TRACE {traceOf(sub.id)}
           <span className="text-linehard"> · </span>
@@ -150,7 +150,7 @@ export default function ProcessDetail() {
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="micro text-acidink">PROCESS //</span>
+                    <span className="micro text-acidink">SUBSCRIPTION //</span>
                     <h1 className="text-[clamp(1.5rem,4vw,2.1rem)] font-semibold tracking-[-0.03em] text-fg">
                       {sub.name}
                     </h1>
@@ -273,7 +273,7 @@ export default function ProcessDetail() {
         {/* metadata */}
         <div className="lg:col-span-4">
           <CutPanel cut="br" cutSize={14} innerClassName="p-0" className="h-full">
-            <SectionHeader code="META" title="Process metadata" signal={signal} />
+            <SectionHeader code="META" title="Subscription metadata" signal={signal} />
             <dl className="divide-y divide-line">
               {[
                 { label: 'Cycles executed', value: String(sub.cyclesExecuted).padStart(3, '0') },
@@ -309,7 +309,7 @@ export default function ProcessDetail() {
             <HashRule label="NOTES" className="px-4 py-2" />
             <div className="px-3 pb-4 md:px-4">
               <p className="text-[12.5px] leading-relaxed text-dim">
-                {sub.notes || 'No annotation recorded for this process.'}
+                {sub.notes || 'No annotation recorded for this subscription.'}
               </p>
               <button
                 type="button"

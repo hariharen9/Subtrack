@@ -46,7 +46,7 @@ export function BurnSegments({
       className={cx('flex w-full items-stretch', height, className)}
       style={{ gap }}
       role="list"
-      aria-label="Monthly burn by process"
+      aria-label="Monthly burn by subscription"
     >
       {segments.map(({ view, share }) => {
         const signal = CATEGORY_SIGNAL[view.sub.category]
@@ -110,7 +110,7 @@ export function BurnRail({
       <div className="flex items-center justify-between gap-3">
         <span className="micro flex items-center gap-2 text-faint">
           <Led signal="acid" size="sm" pulse />
-          LOAD DISTRIBUTION // {segments.length} PROCESSES
+          LOAD DISTRIBUTION // {segments.length} SUBSCRIPTIONS
         </span>
         {active && (
           <Link

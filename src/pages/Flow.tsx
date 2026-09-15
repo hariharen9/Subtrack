@@ -162,8 +162,8 @@ export default function Flow() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="QUERY ACTIVE PROCESSES...  (name · category · >500 · monthly · sep)"
-            aria-label="Query processes"
+            placeholder="QUERY ACTIVE SUBSCRIPTIONS...  (name · category · >500 · monthly · sep)"
+            aria-label="Query subscriptions"
             autoComplete="off"
             spellCheck={false}
             className="min-w-0 flex-1 bg-transparent py-2.5 font-mono text-[12px] outline-none placeholder:text-faint"
@@ -299,7 +299,7 @@ export default function Flow() {
       {filtered.length === 0 ? (
         <div className="mt-4">
           <EmptyState
-            code={query || status !== 'all' || category !== 'all' ? 'NO RECORDS MATCH' : 'NO ACTIVE PROCESSES'}
+            code={query || status !== 'all' || category !== 'all' ? 'NO RECORDS MATCH' : 'NO ACTIVE SUBSCRIPTIONS'}
             title={
               query || status !== 'all' || category !== 'all'
                 ? 'QUERY RETURNED NOTHING.'
@@ -308,7 +308,7 @@ export default function Flow() {
             description={
               query || status !== 'all' || category !== 'all'
                 ? 'Widen the filters or clear the query. The index itself is intact.'
-                : 'No processes are being tracked yet. Initialize one to start monitoring the burn.'
+                : 'No subscriptions are being tracked yet. Initialize one to start monitoring the burn.'
             }
             action={
               query || status !== 'all' || category !== 'all'
@@ -320,7 +320,7 @@ export default function Flow() {
                       setCategory('all')
                     },
                   }
-                : { label: '+ INITIALIZE FIRST PROCESS', onClick: () => openComposer() }
+                : { label: '+ INITIALIZE FIRST SUBSCRIPTION', onClick: () => openComposer() }
             }
           />
         </div>
@@ -336,7 +336,7 @@ export default function Flow() {
       ) : (
         <CutPanel cut="br" cutSize={12} innerClassName="p-0" className="mt-4">
           <div className="flex items-center justify-between gap-3 border-b-2 border-linehard px-3 py-2 md:px-4">
-            <span className="tech-label">PROCESS // SERVICE</span>
+            <span className="tech-label">SUBSCRIPTION // SERVICE</span>
             <span className="tech-label hidden md:inline">DISTRIBUTION</span>
             <span className="tech-label">PRICE · NORMALISED</span>
           </div>

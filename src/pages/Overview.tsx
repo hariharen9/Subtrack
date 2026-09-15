@@ -71,10 +71,10 @@ export default function Overview() {
     return (
       <div className="px-3 py-6 md:px-5">
         <EmptyState
-          code="NO ACTIVE PROCESSES"
+          code="NO ACTIVE SUBSCRIPTIONS"
           title="SYSTEM IS CURRENTLY CLEAN."
-          description="Nothing is draining this month. Initialize your first process to start monitoring where the money goes."
-          action={{ label: '+ INITIALIZE FIRST PROCESS', onClick: () => openComposer() }}
+          description="Nothing is draining this month. Initialize your first subscription to start monitoring where the money goes."
+          action={{ label: '+ INITIALIZE FIRST SUBSCRIPTION', onClick: () => openComposer() }}
         />
       </div>
     )
@@ -97,7 +97,7 @@ export default function Overview() {
           </span>
           <span className="micro flex items-center gap-2 text-faint">
             <Led signal="acid" size="sm" pulse />
-            MONITORING {summary.activeCount} PROCESSES ACROSS {summary.categories.length} CATEGORIES
+            MONITORING {summary.activeCount} SUBSCRIPTIONS ACROSS {summary.categories.length} CATEGORIES
           </span>
         </div>
       </motion.div>
@@ -201,11 +201,11 @@ export default function Overview() {
                       signal: 'blue',
                     },
                     {
-                      label: 'Active processes',
+                      label: 'Active subscriptions',
                       value: String(summary.activeCount).padStart(2, '0'),
                       signal: 'acid',
                     },
-                    { label: 'Average process', value: formatMoney(summary.avgCost, base) },
+                    { label: 'Average subscription', value: formatMoney(summary.avgCost, base) },
                     {
                       label: 'Highest cost',
                       value: summary.highest
@@ -294,7 +294,7 @@ export default function Overview() {
                 <span className="text-right">
                   <span className="meta block text-fg">{CATEGORY_LABEL[topCategory.category]}</span>
                   <span className="micro block text-faint">
-                    {formatMoney(topCategory.monthly, base)}/MO · {topCategory.count} PROCESSES
+                    {formatMoney(topCategory.monthly, base)}/MO · {topCategory.count} SUBSCRIPTIONS
                   </span>
                 </span>
               </div>
@@ -361,12 +361,12 @@ export default function Overview() {
           </CutPanel>
         </motion.div>
 
-        {/* ---------------- active processes ---------------- */}
+        {/* ---------------- active subscriptions ---------------- */}
         <motion.div variants={RISE} className="lg:col-span-12">
           <div className="flex items-end justify-between gap-3 border-b-2 border-linehard pb-1.5">
             <div className="flex items-end gap-2.5">
-              <span className="micro border border-line2 px-1.5 py-0.5 text-dim">PRC</span>
-              <h2 className="text-[13px] font-semibold md:text-[15px]">ACTIVE PROCESSES</h2>
+              <span className="micro border border-line2 px-1.5 py-0.5 text-dim">SUB</span>
+              <h2 className="text-[13px] font-semibold md:text-[15px]">ACTIVE SUBSCRIPTIONS</h2>
               <span className="micro hidden text-faint md:inline">
                 SORTED BY NORMALISED MONTHLY COST
               </span>
@@ -389,7 +389,7 @@ export default function Overview() {
           {summary.views.length > 8 && (
             <div className="mt-3 flex justify-center">
               <CyberButton variant="ghost" to="/flow" trailing={<IconArrowRight size={14} />}>
-                LOAD REMAINING {summary.views.length - 8} PROCESSES
+                LOAD REMAINING {summary.views.length - 8} SUBSCRIPTIONS
               </CyberButton>
             </div>
           )}
@@ -397,10 +397,10 @@ export default function Overview() {
           {summary.views.length === 0 && (
             <div className="mt-3">
               <EmptyState
-                code="NO ACTIVE PROCESSES"
+                code="NO ACTIVE SUBSCRIPTIONS"
                 title="SYSTEM IS CURRENTLY CLEAN."
-                description="Every tracked process is suspended or terminated. Nothing is being charged."
-                action={{ label: '+ INITIALIZE PROCESS', onClick: () => openComposer() }}
+                description="Every tracked subscription is suspended or terminated. Nothing is being charged."
+                action={{ label: '+ INITIALIZE SUBSCRIPTION', onClick: () => openComposer() }}
               />
             </div>
           )}

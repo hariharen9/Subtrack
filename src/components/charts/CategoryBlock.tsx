@@ -41,7 +41,7 @@ export function CategoryBar({
         <span className="flex items-center gap-2">
           <span className="truncate text-[12.5px] font-medium text-fg">{slice.label}</span>
           <span className="micro text-faint">
-            {slice.count} PROC{slice.count === 1 ? '' : 'S'}
+            {slice.count} SUB{slice.count === 1 ? '' : 'S'}
           </span>
         </span>
         <span className="mt-1.5 flex items-center gap-[2px]" aria-hidden="true">
@@ -82,7 +82,7 @@ export function CategoryDistribution({
   if (!slices.length) {
     return (
       <p className={cx('meta px-3 py-6 text-center text-faint', className)}>
-        NO ACTIVE PROCESSES TO DISTRIBUTE
+        NO ACTIVE SUBSCRIPTIONS TO DISTRIBUTE
       </p>
     )
   }

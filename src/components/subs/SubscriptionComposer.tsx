@@ -335,7 +335,7 @@ export function SubscriptionComposer() {
                     <div className="flex min-w-0 items-center gap-2.5">
                       <span className="micro flex items-center gap-1.5 border border-line2 px-1.5 py-0.5 text-acidink">
                         <Led signal="acid" size="sm" pulse />
-                        {editing ? 'PROCESS // EDIT' : 'NEW PROCESS'}
+                        {editing ? 'SUBSCRIPTION // EDIT' : 'NEW SUBSCRIPTION'}
                       </span>
                       <span id="composer-title" className="truncate text-[13px] font-semibold text-fg">
                         {editing ? editing.name : 'Initialize subscription'}
@@ -343,7 +343,7 @@ export function SubscriptionComposer() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="tech-label hidden md:inline">
-                        SYS://PROCESS-AUTHORING · SCHEMA 1
+                        SYS://SUBSCRIPTION-AUTHORING · SCHEMA 1
                       </span>
                       <IconButton label="Close console" size="sm" onClick={closeComposer}>
                         <IconClose size={14} />

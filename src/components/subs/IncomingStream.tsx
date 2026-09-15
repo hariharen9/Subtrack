@@ -71,7 +71,7 @@ export function IncomingStream({
       <div className={cx('px-3 py-8 text-center md:px-5', className)}>
         <span className="micro block text-dim">NO SCHEDULED CHARGES IN THIS WINDOW</span>
         <span className="meta mt-1.5 block text-faint">
-          Nothing is leaving the system. Add a process or widen the horizon in Settings.
+          Nothing is leaving the system. Add a subscription or widen the horizon in Settings.
         </span>
       </div>
     )

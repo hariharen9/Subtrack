@@ -30,7 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Subscriptions',
     path: '/flow',
     key: '2',
-    blurb: 'Every process you are running',
+    blurb: 'Every subscription you are running',
     icon: IconFlow,
   },
   {

@@ -74,7 +74,7 @@ export function CommandPalette() {
       {
         id: 'init',
         label: 'Initialize subscription',
-        hint: 'New process console',
+        hint: 'New subscription console',
         kbd: 'N',
         icon: IconPlus,
         run: () => openComposer(),
@@ -82,7 +82,7 @@ export function CommandPalette() {
       {
         id: 'search',
         label: 'Search subscriptions',
-        hint: 'Query the process index',
+        hint: 'Query the subscription index',
         kbd: '/',
         icon: IconSearch,
         run: () => inputRef.current?.focus(),
@@ -98,7 +98,7 @@ export function CommandPalette() {
       {
         id: 'flow',
         label: 'Open Subscriptions',
-        hint: 'Every running process',
+        hint: 'Every running subscription',
         kbd: '2',
         icon: IconFlow,
         run: () => navigate('/flow'),
@@ -136,7 +136,7 @@ export function CommandPalette() {
       {
         id: 'copy',
         label: 'Copy burn readout',
-        hint: 'Monthly burn, load and process count',
+        hint: 'Monthly burn, load and subscription count',
         icon: IconLink,
         run: () =>
           copyText(
@@ -284,7 +284,7 @@ export function CommandPalette() {
                   COMMAND // SEARCH SYSTEM
                 </span>
                 <span className="micro hidden text-faint sm:inline">
-                  INDEX {String(subs.length).padStart(2, '0')} PROCESSES ·{' '}
+                  INDEX {String(subs.length).padStart(2, '0')} SUBSCRIPTIONS ·{' '}
                   {String(payments.length).padStart(4, '0')} CHARGES
                 </span>
                 <button
@@ -304,7 +304,7 @@ export function CommandPalette() {
                   ref={inputRef}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="QUERY ACTIVE PROCESSES..."
+                  placeholder="QUERY ACTIVE SUBSCRIPTIONS..."
                   aria-label="Query"
                   autoComplete="off"
                   spellCheck={false}
@@ -335,7 +335,7 @@ export function CommandPalette() {
                     ))
                   )}
                   <span className="micro ml-auto text-faint">
-                    {commandHits.length} CMD · {processHits.length} PROC
+                    {commandHits.length} CMD · {processHits.length} SUBS
                   </span>
                 </div>
               )}
@@ -394,7 +394,7 @@ export function CommandPalette() {
 
                 {processHits.length > 0 && (
                   <li className="tech-label px-3 py-1.5" role="presentation">
-                    ACTIVE PROCESSES // {processHits.length}
+                    ACTIVE SUBSCRIPTIONS // {processHits.length}
                   </li>
                 )}
                 {processHits.slice(0, 40).map((hit, offset) => {

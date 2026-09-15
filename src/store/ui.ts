@@ -140,37 +140,37 @@ export function announce(toast: Omit<SystemToast, 'id'>): string {
 export const TOAST_VERBS = {
   initialized: (name: string, detail: string) => ({
     kind: 'ok' as ToastKind,
-    label: 'PROCESS INITIALIZED',
+    label: 'SUBSCRIPTION INITIALIZED',
     text: `${name} · ${detail}`,
   }),
   updated: (name: string) => ({
     kind: 'ok' as ToastKind,
-    label: 'PROCESS UPDATED',
+    label: 'SUBSCRIPTION UPDATED',
     text: `${name} · configuration written`,
   }),
   suspended: (name: string) => ({
     kind: 'warn' as ToastKind,
-    label: 'PROCESS SUSPENDED',
+    label: 'SUBSCRIPTION SUSPENDED',
     text: `${name} · no longer counted in monthly burn`,
   }),
   resumed: (name: string) => ({
     kind: 'ok' as ToastKind,
-    label: 'PROCESS RESUMED',
+    label: 'SUBSCRIPTION RESUMED',
     text: `${name} · back in the burn`,
   }),
   terminating: (name: string) => ({
     kind: 'busy' as ToastKind,
-    label: 'TERMINATING PROCESS...',
+    label: 'TERMINATING SUBSCRIPTION...',
     text: `${name} · flushing scheduled events`,
   }),
   terminated: (name: string) => ({
     kind: 'alert' as ToastKind,
-    label: 'PROCESS TERMINATED',
+    label: 'SUBSCRIPTION TERMINATED',
     text: `${name} · history retained in the archive`,
   }),
   purged: (name: string) => ({
     kind: 'alert' as ToastKind,
-    label: 'PROCESS PURGED',
+    label: 'SUBSCRIPTION PURGED',
     text: `${name} and its payment history were erased`,
   }),
   cycle: (name: string, detail: string) => ({

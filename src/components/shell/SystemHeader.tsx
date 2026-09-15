@@ -91,7 +91,7 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
           >
             <IconSearch size={14} className="shrink-0 text-faint" />
             <span className="micro flex-1 truncate text-faint group-hover:text-dim">
-              QUERY ACTIVE PROCESSES...
+              QUERY ACTIVE SUBSCRIPTIONS...
             </span>
             <KeyCap>⌘K</KeyCap>
           </button>
