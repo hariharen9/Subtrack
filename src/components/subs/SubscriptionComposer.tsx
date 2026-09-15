@@ -344,12 +344,12 @@ export function SubscriptionComposer() {
                         {editing ? 'SUBSCRIPTION // EDIT' : 'NEW SUBSCRIPTION'}
                       </span>
                       <span id="composer-title" className="truncate text-[13px] font-semibold text-fg">
-                        {editing ? editing.name : 'Initialize subscription'}
+                        {editing ? editing.name : 'Add subscription'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="tech-label hidden md:inline">
-                        SYS://SUBSCRIPTION-AUTHORING · SCHEMA 1
+                        100% OFFLINE
                       </span>
                       <IconButton label="Close console" size="sm" onClick={closeComposer}>
                         <IconClose size={14} />
@@ -691,11 +691,11 @@ export function SubscriptionComposer() {
                         <CyberButton
                           variant="solid"
                           busy={busy}
-                          busyLabel="WRITING"
+                          busyLabel="SAVING"
                           onClick={() => void submit()}
                           leading={editing ? undefined : <IconPlus size={14} />}
                         >
-                          {editing ? 'COMMIT CHANGES' : 'INITIALIZE SUBSCRIPTION'}
+                          {editing ? 'SAVE CHANGES' : 'ADD SUBSCRIPTION'}
                         </CyberButton>
                       </div>
                     </div>

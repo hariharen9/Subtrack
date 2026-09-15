@@ -15,8 +15,7 @@ import { motion } from 'motion/react'
 import { useSignalSeries, useSystem } from '@/hooks/useSystem'
 import { useUI } from '@/store/ui'
 import { formatMoney, formatPercent, splitMoney, formatCompact } from '@/lib/money'
-import { formatClock, formatSignalDate, todayISO, relativeDay } from '@/lib/date'
-import { useClock } from '@/hooks/usePlatform'
+import { formatSignalDate, todayISO, relativeDay } from '@/lib/date'
 import { CATEGORY_CODE, CATEGORY_LABEL } from '@/lib/types'
 import { pidOf } from '@/lib/id'
 import { viewOf } from '@/lib/analytics'
@@ -52,7 +51,6 @@ export default function Overview() {
   const openComposer = useUI((s) => s.openComposer)
   const [mode, setMode] = useState<SignalMode>('runrate')
   const series = useSignalSeries(mode, 7, 3)
-  const clock = useClock(1000)
   const today = todayISO()
 
   const hero = useMemo(() => splitMoney(summary.monthlyBurn, base), [summary.monthlyBurn, base])
@@ -73,8 +71,8 @@ export default function Overview() {
         <EmptyState
           code="NO ACTIVE SUBSCRIPTIONS"
           title="SYSTEM IS CURRENTLY CLEAN."
-          description="Nothing is draining this month. Initialize your first subscription to start monitoring where the money goes."
-          action={{ label: '+ INITIALIZE FIRST SUBSCRIPTION', onClick: () => openComposer() }}
+          description="Nothing is draining this month. Add your first subscription to start monitoring where the money goes."
+          action={{ label: '+ ADD FIRST SUBSCRIPTION', onClick: () => openComposer() }}
         />
       </div>
     )
@@ -87,17 +85,16 @@ export default function Overview() {
       animate="show"
       className="px-3 py-4 md:px-5 md:py-5"
     >
-      {/* ---------------- instrument rail ---------------- */}
+      {/* ---------------- header summary bar ---------------- */}
       <motion.div variants={RISE}>
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line pb-2">
-          <span className="micro text-faint">
-            SYSTEM // FINANCIAL OVERVIEW
-            <span className="text-linehard"> · </span>
-            SNAPSHOT {formatClock(clock)}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line pb-2 text-faint">
+          <span className="micro flex items-center gap-2">
+            <span className="text-fg font-medium">FINANCIAL SNAPSHOT</span>
+            <span className="text-linehard">·</span>
+            <span>{summary.activeCount} active subscriptions</span>
           </span>
-          <span className="micro flex items-center gap-2 text-faint">
-            <Led signal="acid" size="sm" pulse />
-            MONITORING {summary.activeCount} SUBSCRIPTIONS ACROSS {summary.categories.length} CATEGORIES
+          <span className="micro hidden sm:inline text-faint">
+            {summary.categories.length} categories monitored
           </span>
         </div>
       </motion.div>
@@ -400,7 +397,7 @@ export default function Overview() {
                 code="NO ACTIVE SUBSCRIPTIONS"
                 title="SYSTEM IS CURRENTLY CLEAN."
                 description="Every tracked subscription is suspended or terminated. Nothing is being charged."
-                action={{ label: '+ INITIALIZE SUBSCRIPTION', onClick: () => openComposer() }}
+                action={{ label: '+ ADD SUBSCRIPTION', onClick: () => openComposer() }}
               />
             </div>
           )}
@@ -458,7 +455,7 @@ export default function Overview() {
           leading={<IconPlus size={15} />}
           onClick={() => openComposer()}
         >
-          INITIALIZE SUBSCRIPTION
+          NEW SUBSCRIPTION
         </CyberButton>
       </div>
     </motion.div>

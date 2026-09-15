@@ -73,8 +73,8 @@ export function CommandPalette() {
     () => [
       {
         id: 'init',
-        label: 'Initialize subscription',
-        hint: 'New subscription console',
+        label: 'New subscription',
+        hint: 'Add a recurring subscription',
         kbd: 'N',
         icon: IconPlus,
         run: () => openComposer(),
@@ -304,7 +304,7 @@ export function CommandPalette() {
                   ref={inputRef}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="QUERY ACTIVE SUBSCRIPTIONS..."
+                  placeholder="Search subscriptions, jump to views, or execute actions..."
                   aria-label="Query"
                   autoComplete="off"
                   spellCheck={false}

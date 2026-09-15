@@ -150,8 +150,8 @@ export default function Flow() {
               onClick={() => openComposer()}
               kbd="N"
             >
-              <span className="hidden sm:inline">INITIALIZE SUBSCRIPTION</span>
-              <span className="sm:hidden">INITIALIZE</span>
+              <span className="hidden sm:inline">NEW SUBSCRIPTION</span>
+              <span className="sm:hidden">+ NEW</span>
             </CyberButton>
           </div>
         </div>
@@ -162,8 +162,8 @@ export default function Flow() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="QUERY ACTIVE SUBSCRIPTIONS...  (name · category · >500 · monthly · sep)"
-            aria-label="Query subscriptions"
+            placeholder="Search subscriptions... (name, category, >500, monthly, sep)"
+            aria-label="Search subscriptions"
             autoComplete="off"
             spellCheck={false}
             className="min-w-0 flex-1 bg-transparent py-2.5 font-mono text-[12px] outline-none placeholder:text-faint"
@@ -184,8 +184,9 @@ export default function Flow() {
         </div>
 
         {/* filters */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <div className="flex flex-wrap gap-1">
+        <div className="flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
+          {/* Status filters (Left) */}
+          <div className="flex shrink-0 flex-wrap items-center gap-1">
             {STATUS_FILTERS.map((filter) => (
               <button
                 key={filter.value}
@@ -193,7 +194,7 @@ export default function Flow() {
                 onClick={() => setStatus(filter.value)}
                 aria-pressed={status === filter.value}
                 className={cx(
-                  'micro flex min-h-9 items-center gap-1.5 border px-2 transition-colors',
+                  'micro flex min-h-9 items-center gap-1.5 border px-2.5 transition-colors',
                   status === filter.value
                     ? 'border-fg bg-fg text-bg'
                     : 'border-line2 text-dim hover:border-linehard hover:text-fg',
@@ -207,15 +208,14 @@ export default function Flow() {
             ))}
           </div>
 
-          <span className="hidden h-6 w-[1px] bg-line md:block" />
-
-          <div className="no-scrollbar flex flex-wrap gap-1">
+          {/* Categories (Center) */}
+          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto xl:justify-center">
             <button
               type="button"
               onClick={() => setCategory('all')}
               aria-pressed={category === 'all'}
               className={cx(
-                'micro min-h-9 border px-2 transition-colors',
+                'micro min-h-9 shrink-0 border px-2.5 transition-colors',
                 category === 'all'
                   ? 'border-acid text-acidink'
                   : 'border-line2 text-faint hover:border-linehard hover:text-dim',
@@ -231,7 +231,7 @@ export default function Flow() {
                 aria-pressed={category === entry.id}
                 title={CATEGORY_LABEL[entry.id]}
                 className={cx(
-                  'micro min-h-9 border px-2 transition-colors',
+                  'micro min-h-9 shrink-0 border px-2 transition-colors',
                   category === entry.id
                     ? 'border-acid text-acidink'
                     : 'border-line2 text-faint hover:border-linehard hover:text-dim',
@@ -243,10 +243,9 @@ export default function Flow() {
             ))}
           </div>
 
-          <span className="hidden h-6 w-[1px] bg-line md:block" />
-
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="tech-label">SORT</span>
+          {/* Sort options (Right) */}
+          <div className="flex shrink-0 flex-wrap items-center gap-1 xl:justify-end">
+            <span className="tech-label mr-1">SORT</span>
             {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
               <button
                 key={key}
@@ -254,7 +253,7 @@ export default function Flow() {
                 onClick={() => setSort(key)}
                 aria-pressed={sort === key}
                 className={cx(
-                  'micro min-h-9 border px-2 transition-colors',
+                  'micro min-h-9 border px-2.5 transition-colors',
                   sort === key
                     ? 'border-fg bg-fg text-bg'
                     : 'border-line2 text-faint hover:border-linehard hover:text-dim',
@@ -320,7 +319,7 @@ export default function Flow() {
                       setCategory('all')
                     },
                   }
-                : { label: '+ INITIALIZE FIRST SUBSCRIPTION', onClick: () => openComposer() }
+                : { label: '+ ADD FIRST SUBSCRIPTION', onClick: () => openComposer() }
             }
           />
         </div>

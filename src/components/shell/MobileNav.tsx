@@ -48,7 +48,7 @@ export function MobileNav({
           transition={{ type: 'spring', stiffness: 620, damping: 34 }}
           className="clip-cut-tl pointer-events-auto grid h-14 w-14 place-items-center border-b-2 border-r-2 border-black bg-acid text-black focus-visible:outline-none"
           style={{ ['--_cut' as string]: '10px' }}
-          aria-label="Initialize a subscription"
+          aria-label="Add a subscription"
         >
           <IconPlus size={22} />
         </motion.button>

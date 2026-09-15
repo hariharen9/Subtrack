@@ -42,10 +42,10 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
 
   const meta = (
     <>
-      <span className="micro whitespace-nowrap text-faint">
-        SYSTEM // <span className="text-fg">{item.code}</span>
-        <span className="text-linehard"> · </span>
-        <span className="hidden text-dim sm:inline">{item.label.toUpperCase()}</span>
+      <span className="micro flex items-center gap-2 whitespace-nowrap">
+        <span className="font-semibold text-fg tracking-wide">{item.label.toUpperCase()}</span>
+        <span className="text-linehard">·</span>
+        <span className="text-faint">{item.code}</span>
       </span>
       <span
         className={cx(
@@ -58,16 +58,16 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
         )}
       >
         <Led signal={status.signal} size="sm" pulse={status.signal !== 'blue'} />
-        STATUS // {status.label}
+        {status.label}
       </span>
-      <span className="micro whitespace-nowrap text-faint">
-        UPDATED // <span className="tnum text-dim">{formatClock(now)}</span>
+      <span className="micro hidden whitespace-nowrap text-faint sm:inline">
+        {formatClock(now)}
       </span>
       <span className="micro hidden whitespace-nowrap text-faint xl:inline">
-        LINK // <span className={online ? 'text-dim' : 'text-orangeink'}>{online ? 'ONLINE' : 'OFFLINE'}</span>
+        <span className={online ? 'text-dim' : 'text-orangeink'}>{online ? 'ONLINE' : 'OFFLINE'}</span>
       </span>
       <span className="micro hidden whitespace-nowrap text-faint 2xl:inline">
-        VOLUME // <span className="text-dim">LOCAL · INDEXEDDB</span>
+        100% OFFLINE READY
       </span>
     </>
   )
@@ -86,12 +86,12 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="group hidden h-11 w-[240px] items-center gap-2 border border-line2 bg-bg2 px-3 text-left transition-colors hover:border-linehard xl:flex 2xl:w-[320px]"
+            className="group hidden h-11 w-[240px] items-center gap-2 border border-line2 bg-bg2 px-3 text-left transition-colors hover:border-linehard xl:flex 2xl:w-[300px]"
             aria-label="Open command palette"
           >
             <IconSearch size={14} className="shrink-0 text-faint" />
             <span className="micro flex-1 truncate text-faint group-hover:text-dim">
-              QUERY ACTIVE SUBSCRIPTIONS...
+              SEARCH SUBSCRIPTIONS...
             </span>
             <KeyCap>⌘K</KeyCap>
           </button>
@@ -131,8 +131,8 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
             onClick={() => openComposer()}
             kbd="N"
           >
-            <span className="hidden xl:inline">INITIALIZE SUBSCRIPTION</span>
-            <span className="xl:hidden">INITIALIZE</span>
+            <span className="hidden xl:inline">NEW SUBSCRIPTION</span>
+            <span className="xl:hidden">+ NEW</span>
           </CyberButton>
         </div>
       </div>
