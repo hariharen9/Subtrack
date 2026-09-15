@@ -1,220 +1,342 @@
 /**
  * SUBTRACK // SERVICE GLYPHS
  *
- * Every service gets a mark drawn as geometry in a 24×24 box, in single-colour
- * ink. No emoji, no pasted raster logos and no rainbow: the container carries
- * the brand accent (see ServiceBadge), so a wall of 15 processes still reads as
- * one designed system rather than a sticker album.
- *
- * Unknown services fall back to their initial, rendered in the same box.
+ * Official real brand icons from react-icons (SimpleIcons, FontAwesome, RemixIcon,
+ * Tabler Icons) with comprehensive brand resolution and sharp vector presentation.
  */
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, FC, ReactNode } from 'react'
+import type { IconType } from 'react-icons'
+import {
+  SiNetflix,
+  SiSpotify,
+  SiYoutube,
+  SiApplemusic,
+  SiIcloud,
+  SiGithub,
+  SiNotion,
+  SiFigma,
+  SiDropbox,
+  SiAudible,
+  SiCoursera,
+  SiDiscord,
+  SiX,
+  SiClaude,
+  SiPerplexity,
+  SiVercel,
+  SiSupabase,
+  SiLinear,
+  SiJira,
+  SiGitlab,
+  SiDocker,
+  SiKubernetes,
+  SiDigitalocean,
+  SiCloudflare,
+  Si1Password,
+  SiBitwarden,
+  SiNordvpn,
+  SiProtonmail,
+  SiProtonvpn,
+  SiStrava,
+  SiDuolingo,
+  SiUber,
+  SiSwiggy,
+  SiZomato,
+  SiAirbnb,
+  SiMedium,
+  SiSubstack,
+  SiPatreon,
+  SiTwitch,
+  SiSteam,
+  SiPlaystation,
+  SiZoom,
+  SiMax,
+  SiHbo,
+  SiParamountplus,
+  SiTidal,
+  SiDeezer,
+  SiSoundcloud,
+  SiFitbit,
+  SiPeloton,
+  SiHeadspace,
+  SiLastpass,
+  SiExpressvpn,
+  SiGoogledrive,
+} from 'react-icons/si'
+import {
+  FaAmazon,
+  FaApple,
+  FaGoogle,
+  FaMicrosoft,
+  FaSlack,
+  FaLinkedin,
+  FaXbox,
+  FaTelegram,
+  FaWhatsapp,
+  FaReddit,
+  FaInstagram,
+  FaTiktok,
+  FaAws,
+} from 'react-icons/fa6'
+import { RiOpenaiFill } from 'react-icons/ri'
+import { TbBrandAdobe, TbBrandDisney, TbBrandGoogleOne, TbDeviceNintendo } from 'react-icons/tb'
 
 export interface GlyphProps {
   size?: number
   className?: string
-  /** Glyph key, or free text whose initial is used as a fallback mark. */
+  /** Glyph key or free-form service name. */
   fallback?: string
   strokeWidth?: number
   style?: CSSProperties
 }
 
-const MARKS: Record<string, (sw: number) => ReactNode> = {
-  netflix: () => <path d="M6 2h4v13.3L16.6 2H21v20h-4V8.7L10.4 22H6z" />,
-  spotify: (sw) => (
-    <>
-      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth={sw * 1.3} />
-      <path
-        d="M6.9 9.4c3.4-1 7-.6 10 1.1M7.6 13.1c2.8-.8 5.8-.5 8.3.9M8.3 16.4c2.2-.6 4.5-.4 6.4.7"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.2}
-        strokeLinecap="round"
-      />
-    </>
-  ),
-  youtube: (sw) => (
-    <>
-      <rect
-        x="1.6"
-        y="4.6"
-        width="20.8"
-        height="14.8"
-        rx="5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.3}
-      />
-      <path d="M10.1 8.6 16.4 12l-6.3 3.4z" />
-    </>
-  ),
-  prime: (sw) => (
-    <>
-      <rect
-        x="3"
-        y="3.6"
-        width="18"
-        height="12.4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.3}
-      />
-      <path d="M3 7.4h18M3 11.2h18M8.4 3.6v12.4M15.6 3.6v12.4" stroke="currentColor" strokeWidth={sw * 0.7} />
-      <path
-        d="M6.4 18.6c3.6 2.1 7.6 2.4 11.4.7"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.4}
-        strokeLinecap="round"
-      />
-    </>
-  ),
-  hotstar: () => <path d="M12 1.8l2.7 6.6 6.6.5-5.1 4.4 1.6 6.7L12 16.6 6.2 20l1.6-6.7L2.7 8.9l6.6-.5z" />,
-  applemusic: (sw) => (
-    <>
-      <circle cx="7.4" cy="18" r="3.1" />
-      <rect x="9.6" y="3.4" width="2.2" height="14.6" />
-      <path d="M11.8 3.4c3.4.2 6.4 1.7 6.4 4.6 0-.9-2.6-2.1-6.4-2.3z" />
-      <path
-        d="M14 12.6c2 .3 3.6 1.2 3.6 3"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.1}
-        strokeLinecap="round"
-      />
-    </>
-  ),
-  icloud: () => (
-    <path d="M6.8 19.4h10.4a4.3 4.3 0 0 0 .4-8.6 6 6 0 0 0-11.4 1.3A3.9 3.9 0 0 0 6.8 19.4z" />
-  ),
-  googleone: (sw) => (
-    <>
-      <circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" strokeWidth={sw * 1.3} />
-      <path d="M10.4 7.6 12.6 6v12M9.6 18h6.2" fill="none" stroke="currentColor" strokeWidth={sw * 1.5} strokeLinecap="square" />
-    </>
-  ),
-  github: () => (
-    <path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.7.4-1.1.6-1.4-2.2-.2-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.2-.4-1.2.1-2.6 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.6.6.7 1 1.6 1 2.7 0 3.9-2.4 4.8-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z" />
-  ),
-  openai: (sw) => (
-    <>
-      <path
-        d="M12 2.4 20.3 7v10L12 21.6 3.7 17V7z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.2}
-      />
-      <path
-        d="M12 2.4v19.2M3.7 7l16.6 10M20.3 7 3.7 17"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 0.8}
-      />
-      <circle cx="12" cy="12" r="3.1" fill="none" stroke="currentColor" strokeWidth={sw * 1.2} />
-    </>
-  ),
-  notion: (sw) => (
-    <>
-      <rect x="3.4" y="2.6" width="17.2" height="18.8" fill="none" stroke="currentColor" strokeWidth={sw * 1.3} />
-      <path d="M8.2 17V7.2l7.6 9.8V7.2" fill="none" stroke="currentColor" strokeWidth={sw * 1.5} />
-    </>
-  ),
-  adobe: () => (
-    <path
-      fillRule="evenodd"
-      d="M11.1 2h1.9l8.6 20h-5.4l-1.7-4.4H9.4L7.7 22H2.4zM12 8.2 10.6 13h2.8z"
-    />
-  ),
-  canva: (sw) => (
-    <>
-      <circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" strokeWidth={sw * 1.3} />
-      <path
-        d="M15.6 8.6a4.6 4.6 0 1 0 0 6.8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.8}
-        strokeLinecap="round"
-      />
-    </>
-  ),
-  figma: () => (
-    <>
-      <path d="M8.6 2h3.4v6.6H8.6a3.3 3.3 0 0 1 0-6.6z" />
-      <path d="M12 2h3.4a3.3 3.3 0 0 1 0 6.6H12z" />
-      <path d="M8.6 8.7H12v6.6H8.6a3.3 3.3 0 0 1 0-6.6z" />
-      <circle cx="15.4" cy="12" r="3.3" />
-      <path d="M8.6 15.4H12v3.3a3.3 3.3 0 1 1-3.4-3.3z" />
-    </>
-  ),
-  dropbox: () => (
-    <>
-      <path d="M6.6 2.6 12 6.5 6.6 10.4 1.2 6.5z" />
-      <path d="M17.4 2.6 22.8 6.5l-5.4 3.9-5.4-3.9z" />
-      <path d="M6.6 11 12 14.9 6.6 18.8 1.2 14.9z" />
-      <path d="M17.4 11l5.4 3.9-5.4 3.9-5.4-3.9z" />
-      <path d="M6.6 19.9 12 16l5.4 3.9L12 23.8z" />
-    </>
-  ),
-  microsoft: () => (
-    <>
-      <rect x="2.2" y="2.2" width="9.1" height="9.1" />
-      <rect x="12.7" y="2.2" width="9.1" height="9.1" />
-      <rect x="2.2" y="12.7" width="9.1" height="9.1" />
-      <rect x="12.7" y="12.7" width="9.1" height="9.1" />
-    </>
-  ),
-  audible: (sw) => (
-    <>
-      <path
-        d="M2.6 10.6a11 11 0 0 1 18.8 0"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.3}
-        strokeLinecap="round"
-      />
-      <path
-        d="M6.4 13.4a7 7 0 0 1 11.2 0"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.2}
-        strokeLinecap="round"
-      />
-      <circle cx="12" cy="17.6" r="3" />
-    </>
-  ),
-  cultfit: (sw) => (
-    <>
-      <path
-        d="M20 7.4A9.2 9.2 0 1 0 20.6 15"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={sw * 1.8}
-        strokeLinecap="butt"
-      />
-      <path d="M13.4 8.2 19 12l-5.6 3.8z" />
-    </>
-  ),
-  coursera: (sw) => (
-    <>
-      <circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" strokeWidth={sw * 1.3} />
-      <path d="M16.4 10.4H9.2v3.2h7.2" fill="none" stroke="currentColor" strokeWidth={sw * 1.6} />
-    </>
-  ),
-  /** Generic process mark for a user-typed service. */
-  process: (sw) => (
-    <>
-      <rect x="2.6" y="2.6" width="18.8" height="18.8" fill="none" stroke="currentColor" strokeWidth={sw * 1.2} />
-      <path d="M2.6 12h18.8M12 2.6v18.8" stroke="currentColor" strokeWidth={sw * 0.7} />
-      <rect x="7.4" y="7.4" width="9.2" height="9.2" />
-    </>
-  ),
+/** Official Canva Script Vector */
+const CanvaIcon: FC<{ size?: number; className?: string; style?: CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    style={style}
+    aria-hidden="true"
+  >
+    <path d="M12.984 10.42c-.22-.387-.514-.712-.876-.967-.363-.255-.783-.385-1.25-.385-.59 0-1.077.202-1.45.602-.371.4-.56.966-.56 1.688 0 .736.19 1.309.566 1.708.377.4.873.604 1.477.604.453 0 .862-.125 1.218-.37.356-.245.644-.564.858-.948l1.452.924c-.397.644-.925 1.154-1.572 1.517-.648.363-1.385.548-2.196.548-1.127 0-2.036-.367-2.712-1.096-.677-.73-1.02-1.706-1.02-2.912 0-1.22.348-2.203 1.036-2.934.688-.73 1.61-1.1 2.753-1.1.79 0 1.513.185 2.155.55.642.365 1.155.877 1.528 1.527l-1.39.988zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z" />
+  </svg>
+)
+
+/** Official cult.fit / curefit Geometric Mark */
+const CultfitIcon: FC<{ size?: number; className?: string; style?: CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    style={style}
+    aria-hidden="true"
+  >
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.8 13.8a6.5 6.5 0 1 1 0-7.6l2.1-2.1a9.5 9.5 0 1 0 0 11.8l-2.1-2.1z" />
+  </svg>
+)
+
+/** Generic process mark for non-catalog custom services. */
+const ProcessIcon: FC<{ size?: number; className?: string; style?: CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    className={className}
+    style={style}
+    aria-hidden="true"
+  >
+    <rect x="2.6" y="2.6" width="18.8" height="18.8" />
+    <path d="M2.6 12h18.8M12 2.6v18.8" strokeWidth={0.8} />
+    <rect x="7.4" y="7.4" width="9.2" height="9.2" fill="currentColor" />
+  </svg>
+)
+
+type IconRenderer = IconType | FC<{ size?: number; className?: string; style?: CSSProperties }>
+
+const OFFICIAL_ICONS: Record<string, IconRenderer> = {
+  netflix: SiNetflix,
+  spotify: SiSpotify,
+  youtube: SiYoutube,
+  prime: FaAmazon,
+  amazon: FaAmazon,
+  hotstar: TbBrandDisney,
+  disney: TbBrandDisney,
+  applemusic: SiApplemusic,
+  apple: FaApple,
+  icloud: SiIcloud,
+  googleone: TbBrandGoogleOne,
+  google: FaGoogle,
+  googledrive: SiGoogledrive,
+  github: SiGithub,
+  openai: RiOpenaiFill,
+  chatgpt: RiOpenaiFill,
+  notion: SiNotion,
+  adobe: TbBrandAdobe,
+  canva: CanvaIcon,
+  figma: SiFigma,
+  dropbox: SiDropbox,
+  microsoft: FaMicrosoft,
+  audible: SiAudible,
+  cultfit: CultfitIcon,
+  coursera: SiCoursera,
+  discord: SiDiscord,
+  slack: FaSlack,
+  x: SiX,
+  twitter: SiX,
+  claude: SiClaude,
+  anthropic: SiClaude,
+  perplexity: SiPerplexity,
+  vercel: SiVercel,
+  supabase: SiSupabase,
+  linear: SiLinear,
+  jira: SiJira,
+  gitlab: SiGitlab,
+  docker: SiDocker,
+  kubernetes: SiKubernetes,
+  aws: FaAws,
+  digitalocean: SiDigitalocean,
+  cloudflare: SiCloudflare,
+  onepassword: Si1Password,
+  bitwarden: SiBitwarden,
+  nordvpn: SiNordvpn,
+  proton: SiProtonmail,
+  protonmail: SiProtonmail,
+  protonvpn: SiProtonvpn,
+  strava: SiStrava,
+  duolingo: SiDuolingo,
+  uber: SiUber,
+  swiggy: SiSwiggy,
+  zomato: SiZomato,
+  airbnb: SiAirbnb,
+  medium: SiMedium,
+  substack: SiSubstack,
+  patreon: SiPatreon,
+  linkedin: FaLinkedin,
+  twitch: SiTwitch,
+  steam: SiSteam,
+  playstation: SiPlaystation,
+  xbox: FaXbox,
+  nintendo: TbDeviceNintendo,
+  zoom: SiZoom,
+  telegram: FaTelegram,
+  whatsapp: FaWhatsapp,
+  reddit: FaReddit,
+  instagram: FaInstagram,
+  tiktok: FaTiktok,
+  max: SiMax,
+  hbo: SiHbo,
+  paramount: SiParamountplus,
+  tidal: SiTidal,
+  deezer: SiDeezer,
+  soundcloud: SiSoundcloud,
+  fitbit: SiFitbit,
+  peloton: SiPeloton,
+  headspace: SiHeadspace,
+  lastpass: SiLastpass,
+  expressvpn: SiExpressvpn,
+  process: ProcessIcon,
 }
 
-export const GLYPH_KEYS = Object.keys(MARKS)
+export const GLYPH_KEYS = Object.keys(OFFICIAL_ICONS)
 
-export function ServiceGlyph({ size = 20, className, fallback, strokeWidth = 1.4, style }: GlyphProps) {
-  const key = fallback && MARKS[fallback] ? fallback : undefined
-  const mark = key ? MARKS[key] : undefined
+/** Resolves any typed name or key into the matching official icon renderer. */
+function resolveIcon(input?: string): IconRenderer | undefined {
+  if (!input) return undefined
+  const raw = input.trim().toLowerCase()
+  if (OFFICIAL_ICONS[raw]) return OFFICIAL_ICONS[raw]
+
+  // Clean common suffixes and separators
+  const clean = raw.replace(/[-_.\s+]/g, '')
+  if (OFFICIAL_ICONS[clean]) return OFFICIAL_ICONS[clean]
+
+  // Fuzzy prefix and keyword resolution
+  if (clean.includes('netflix')) return SiNetflix
+  if (clean.includes('spotify')) return SiSpotify
+  if (clean.includes('youtube') || clean.startsWith('yt')) return SiYoutube
+  if (clean.includes('prime') || clean.includes('amazon')) return FaAmazon
+  if (clean.includes('hotstar') || clean.includes('disney')) return TbBrandDisney
+  if (clean.includes('applemusic')) return SiApplemusic
+  if (clean.includes('icloud')) return SiIcloud
+  if (clean.includes('apple')) return FaApple
+  if (clean.includes('googleone')) return TbBrandGoogleOne
+  if (clean.includes('googledrive') || clean.includes('gdrive')) return SiGoogledrive
+  if (clean.includes('google')) return FaGoogle
+  if (clean.includes('github')) return SiGithub
+  if (clean.includes('chatgpt') || clean.includes('openai') || clean.includes('gpt')) return RiOpenaiFill
+  if (clean.includes('notion')) return SiNotion
+  if (clean.includes('adobe') || clean.includes('photoshop') || clean.includes('illustrator')) return TbBrandAdobe
+  if (clean.includes('canva')) return CanvaIcon
+  if (clean.includes('figma')) return SiFigma
+  if (clean.includes('dropbox')) return SiDropbox
+  if (clean.includes('microsoft') || clean.includes('office') || clean.includes('365') || clean.includes('onedrive')) return FaMicrosoft
+  if (clean.includes('audible')) return SiAudible
+  if (clean.includes('cult') || clean.includes('curefit')) return CultfitIcon
+  if (clean.includes('coursera')) return SiCoursera
+  if (clean.includes('discord')) return SiDiscord
+  if (clean.includes('slack')) return FaSlack
+  if (clean.includes('twitter') || clean === 'x') return SiX
+  if (clean.includes('claude') || clean.includes('anthropic')) return SiClaude
+  if (clean.includes('perplexity')) return SiPerplexity
+  if (clean.includes('vercel')) return SiVercel
+  if (clean.includes('supabase')) return SiSupabase
+  if (clean.includes('linear')) return SiLinear
+  if (clean.includes('jira') || clean.includes('atlassian')) return SiJira
+  if (clean.includes('gitlab')) return SiGitlab
+  if (clean.includes('docker')) return SiDocker
+  if (clean.includes('kubernetes') || clean.includes('k8s')) return SiKubernetes
+  if (clean.includes('aws')) return FaAws
+  if (clean.includes('digitalocean')) return SiDigitalocean
+  if (clean.includes('cloudflare')) return SiCloudflare
+  if (clean.includes('1password') || clean.includes('onepassword')) return Si1Password
+  if (clean.includes('bitwarden')) return SiBitwarden
+  if (clean.includes('nordvpn') || clean.includes('nord')) return SiNordvpn
+  if (clean.includes('proton')) return SiProtonmail
+  if (clean.includes('strava')) return SiStrava
+  if (clean.includes('duolingo')) return SiDuolingo
+  if (clean.includes('uber')) return SiUber
+  if (clean.includes('swiggy')) return SiSwiggy
+  if (clean.includes('zomato')) return SiZomato
+  if (clean.includes('airbnb')) return SiAirbnb
+  if (clean.includes('medium')) return SiMedium
+  if (clean.includes('substack')) return SiSubstack
+  if (clean.includes('patreon')) return SiPatreon
+  if (clean.includes('linkedin')) return FaLinkedin
+  if (clean.includes('twitch')) return SiTwitch
+  if (clean.includes('steam')) return SiSteam
+  if (clean.includes('playstation') || clean.includes('psplus')) return SiPlaystation
+  if (clean.includes('xbox') || clean.includes('gamepass')) return FaXbox
+  if (clean.includes('nintendo')) return TbDeviceNintendo
+  if (clean.includes('zoom')) return SiZoom
+  if (clean.includes('telegram')) return FaTelegram
+  if (clean.includes('whatsapp')) return FaWhatsapp
+  if (clean.includes('reddit')) return FaReddit
+  if (clean.includes('instagram')) return FaInstagram
+  if (clean.includes('tiktok')) return FaTiktok
+  if (clean.includes('hbo') || clean.includes('max')) return SiMax
+  if (clean.includes('paramount')) return SiParamountplus
+  if (clean.includes('tidal')) return SiTidal
+  if (clean.includes('deezer')) return SiDeezer
+  if (clean.includes('soundcloud')) return SiSoundcloud
+  if (clean.includes('fitbit')) return SiFitbit
+  if (clean.includes('peloton')) return SiPeloton
+  if (clean.includes('headspace')) return SiHeadspace
+  if (clean.includes('lastpass')) return SiLastpass
+  if (clean.includes('expressvpn')) return SiExpressvpn
+
+  return undefined
+}
+
+export function ServiceGlyph({
+  size = 20,
+  className,
+  fallback,
+  style,
+}: GlyphProps): ReactNode {
+  const IconComponent = resolveIcon(fallback)
+
+  if (IconComponent) {
+    return <IconComponent size={size} className={className} style={style} />
+  }
+
   const initial = fallback?.trim().charAt(0).toUpperCase()
 
   return (
@@ -228,22 +350,18 @@ export function ServiceGlyph({ size = 20, className, fallback, strokeWidth = 1.4
       className={className}
       style={style}
     >
-      {mark ? (
-        mark(strokeWidth)
-      ) : (
-        <text
-          x="12"
-          y="12"
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize="15"
-          fontWeight="700"
-          fontFamily="var(--font-mono)"
-          fill="currentColor"
-        >
-          {initial ?? '?'}
-        </text>
-      )}
+      <text
+        x="12"
+        y="12"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize="15"
+        fontWeight="700"
+        fontFamily="var(--font-mono)"
+        fill="currentColor"
+      >
+        {initial ?? '?'}
+      </text>
     </svg>
   )
 }
