@@ -172,17 +172,23 @@ export function SubscriptionComposer() {
       ? 'INTERVAL MUST BE AT LEAST 1 DAY'
       : undefined
 
+  const [presetCategory, setPresetCategory] = useState<string>('all')
+
   const filteredCatalog = useMemo(() => {
     const query = draft.name.trim().toLowerCase()
-    if (!query) return SERVICE_CATALOG
-    const matches = SERVICE_CATALOG.filter(
+    let list = SERVICE_CATALOG
+    if (presetCategory !== 'all') {
+      list = list.filter((s) => s.category === presetCategory)
+    }
+    if (!query) return list
+    const matches = list.filter(
       (service) =>
         service.name.toLowerCase().includes(query) ||
         service.category.includes(query) ||
         service.aliases?.some((alias) => alias.includes(query)),
     )
-    return matches.length ? matches : SERVICE_CATALOG
-  }, [draft.name])
+    return matches.length ? matches : list
+  }, [draft.name, presetCategory])
 
   const activeService = draft.serviceId ? CATALOG_BY_ID.get(draft.serviceId) : undefined
   const tiers = activeService?.tiers ?? []
@@ -385,40 +391,79 @@ export function SubscriptionComposer() {
                         />
                       </FieldShell>
 
-                      <div className="rail mt-2.5 md:grid md:grid-cols-4 md:gap-1.5 xl:grid-cols-5">
-                        {filteredCatalog.slice(0, 20).map((service) => {
-                          const selected = draft.serviceId === service.id
+                      {/* Category quick tabs */}
+                      <div className="no-scrollbar mt-2.5 flex items-center gap-1 overflow-x-auto pb-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setPresetCategory('all')}
+                          className={cx(
+                            'micro border px-2 py-1 transition-colors',
+                            presetCategory === 'all'
+                              ? 'border-acid bg-acid text-black font-semibold'
+                              : 'border-line2 text-dim hover:border-linehard hover:text-fg',
+                          )}
+                        >
+                          ALL ({SERVICE_CATALOG.length})
+                        </button>
+                        {CATEGORIES.map((cat) => {
+                          const count = SERVICE_CATALOG.filter((s) => s.category === cat.id).length
+                          if (count === 0) return null
+                          const isCatActive = presetCategory === cat.id
                           return (
                             <button
-                              key={service.id}
+                              key={cat.id}
                               type="button"
-                              onClick={() => applyService(service)}
-                              aria-pressed={selected}
+                              onClick={() => setPresetCategory(cat.id)}
                               className={cx(
-                                'flex w-[104px] flex-col items-start gap-2 border p-2 transition-colors md:w-auto',
-                                selected
-                                  ? 'border-acid bg-acidsoft'
-                                  : 'border-line2 bg-surface2 hover:border-linehard',
+                                'micro whitespace-nowrap border px-2 py-1 transition-colors',
+                                isCatActive
+                                  ? 'border-acid bg-acid text-black font-semibold'
+                                  : 'border-line2 text-dim hover:border-linehard hover:text-fg',
                               )}
                             >
-                              <ServiceBadge
-                                icon={service.glyph}
-                                color={service.color}
-                                size="sm"
-                                tone={selected ? 'brand' : 'ink'}
-                              />
-                              <span className="w-full">
-                                <span className="block truncate text-[11px] font-medium text-fg">
-                                  {service.name}
-                                </span>
-                                <span className="micro block truncate text-faint">
-                                  {formatMoney(service.price, 'INR')}
-                                  {service.cycle === 'yearly' ? '/YR' : '/MO'}
-                                </span>
-                              </span>
+                              {cat.code} ({count})
                             </button>
                           )
                         })}
+                      </div>
+
+                      {/* Preset Grid */}
+                      <div className="no-scrollbar mt-2 max-h-[220px] overflow-y-auto overscroll-contain pr-0.5 md:max-h-[240px]">
+                        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+                          {filteredCatalog.map((service) => {
+                            const selected = draft.serviceId === service.id
+                            return (
+                              <button
+                                key={service.id}
+                                type="button"
+                                onClick={() => applyService(service)}
+                                aria-pressed={selected}
+                                className={cx(
+                                  'flex items-center gap-2.5 border p-2 text-left transition-colors',
+                                  selected
+                                    ? 'border-acid bg-acidsoft'
+                                    : 'border-line2 bg-surface2 hover:border-linehard',
+                                )}
+                              >
+                                <ServiceBadge
+                                  icon={service.glyph}
+                                  color={service.color}
+                                  size="sm"
+                                  tone={selected ? 'brand' : 'ink'}
+                                />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-[11.5px] font-medium text-fg">
+                                    {service.name}
+                                  </span>
+                                  <span className="micro block truncate text-faint">
+                                    {formatMoney(service.price, 'INR')}
+                                    {service.cycle === 'yearly' ? '/YR' : '/MO'}
+                                  </span>
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
                     </Section>
 

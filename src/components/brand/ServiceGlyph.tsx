@@ -61,6 +61,11 @@ import {
   SiLastpass,
   SiExpressvpn,
   SiGoogledrive,
+  SiAppletv,
+  SiCrunchyroll,
+  SiMiro,
+  SiGooglegemini,
+  SiGithubcopilot,
 } from 'react-icons/si'
 import {
   FaAmazon,
@@ -127,6 +132,92 @@ const CultfitIcon: FC<{ size?: number; className?: string; style?: CSSProperties
   </svg>
 )
 
+/** Official Cursor AI Isometric Cube */
+const CursorIcon: FC<{ size?: number; className?: string; style?: CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    className={className}
+    style={style}
+    aria-hidden="true"
+  >
+    <path d="M12 2.5 3.5 7.4v9.8L12 22.1l8.5-4.9V7.4L12 2.5z" />
+    <path d="M12 2.5v19.6M3.5 7.4l17 9.8M20.5 7.4l-17 9.8" strokeWidth={1.2} />
+  </svg>
+)
+
+/** DeepSeek AI Neural Vector */
+const DeepSeekIcon: FC<{ size?: number; className?: string; style?: CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    style={style}
+    aria-hidden="true"
+  >
+    <path d="M12 2c5.52 0 10 4.48 10 10 0 4.28-2.69 7.93-6.5 9.35l-1.5-2.6c2.83-1.04 4.8-3.77 4.8-6.75 0-4.08-3.32-7.4-7.4-7.4-4.08 0-7.4 3.32-7.4 7.4 0 2.98 1.97 5.71 4.8 6.75l-1.5 2.6C3.49 19.93.8 16.28.8 12 .8 6.48 5.28 2 10.8 2h1.2zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" />
+  </svg>
+)
+
+/** OpenRouter Node / Router Vector */
+const OpenRouterIcon: FC<{ size?: number; className?: string; style?: CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    className={className}
+    style={style}
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="3" fill="currentColor" />
+    <circle cx="4" cy="12" r="2" />
+    <circle cx="20" cy="12" r="2" />
+    <circle cx="12" cy="4" r="2" />
+    <circle cx="12" cy="20" r="2" />
+    <path d="M6 12h3M15 12h3M12 6v3M12 15v3" />
+  </svg>
+)
+
+/** Midjourney Sailboat Vector */
+const MidjourneyIcon: FC<{ size?: number; className?: string; style?: CSSProperties }> = ({
+  size = 20,
+  className,
+  style,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    style={style}
+    aria-hidden="true"
+  >
+    <path d="M12.5 3c-.5 0-.9.4-.9.9v10.2L5.8 18.2c-.6.4-.3 1.4.4 1.4h11.6c.7 0 1-.9.4-1.4L13.4 14.1V3.9c0-.5-.4-.9-.9-.9zm-2.2 4.4L6 14.1h4.3V7.4zm4.4 0v6.7h4.3L14.7 7.4z" />
+  </svg>
+)
+
 /** Generic process mark for non-catalog custom services. */
 const ProcessIcon: FC<{ size?: number; className?: string; style?: CSSProperties }> = ({
   size = 20,
@@ -161,14 +252,26 @@ const OFFICIAL_ICONS: Record<string, IconRenderer> = {
   hotstar: TbBrandDisney,
   disney: TbBrandDisney,
   applemusic: SiApplemusic,
+  appletv: SiAppletv,
+  crunchyroll: SiCrunchyroll,
+  miro: SiMiro,
   apple: FaApple,
   icloud: SiIcloud,
   googleone: TbBrandGoogleOne,
+  gemini: SiGooglegemini,
   google: FaGoogle,
   googledrive: SiGoogledrive,
   github: SiGithub,
+  copilot: SiGithubcopilot,
   openai: RiOpenaiFill,
   chatgpt: RiOpenaiFill,
+  claude: SiClaude,
+  anthropic: SiClaude,
+  perplexity: SiPerplexity,
+  cursor: CursorIcon,
+  deepseek: DeepSeekIcon,
+  openrouter: OpenRouterIcon,
+  midjourney: MidjourneyIcon,
   notion: SiNotion,
   adobe: TbBrandAdobe,
   canva: CanvaIcon,
@@ -182,9 +285,6 @@ const OFFICIAL_ICONS: Record<string, IconRenderer> = {
   slack: FaSlack,
   x: SiX,
   twitter: SiX,
-  claude: SiClaude,
-  anthropic: SiClaude,
-  perplexity: SiPerplexity,
   vercel: SiVercel,
   supabase: SiSupabase,
   linear: SiLinear,
@@ -257,11 +357,19 @@ function resolveIcon(input?: string): IconRenderer | undefined {
   if (clean.includes('applemusic')) return SiApplemusic
   if (clean.includes('icloud')) return SiIcloud
   if (clean.includes('apple')) return FaApple
+  if (clean.includes('gemini')) return SiGooglegemini
   if (clean.includes('googleone')) return TbBrandGoogleOne
   if (clean.includes('googledrive') || clean.includes('gdrive')) return SiGoogledrive
   if (clean.includes('google')) return FaGoogle
+  if (clean.includes('copilot')) return SiGithubcopilot
   if (clean.includes('github')) return SiGithub
   if (clean.includes('chatgpt') || clean.includes('openai') || clean.includes('gpt')) return RiOpenaiFill
+  if (clean.includes('claude') || clean.includes('anthropic')) return SiClaude
+  if (clean.includes('perplexity')) return SiPerplexity
+  if (clean.includes('cursor')) return CursorIcon
+  if (clean.includes('deepseek')) return DeepSeekIcon
+  if (clean.includes('openrouter')) return OpenRouterIcon
+  if (clean.includes('midjourney')) return MidjourneyIcon
   if (clean.includes('notion')) return SiNotion
   if (clean.includes('adobe') || clean.includes('photoshop') || clean.includes('illustrator')) return TbBrandAdobe
   if (clean.includes('canva')) return CanvaIcon

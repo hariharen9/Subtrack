@@ -8,6 +8,7 @@
  */
 
 export type Category =
+  | 'ai'
   | 'entertainment'
   | 'productivity'
   | 'cloud'
@@ -86,6 +87,7 @@ export interface AppSettings {
 }
 
 export const CATEGORIES: { id: Category; label: string; code: string }[] = [
+  { id: 'ai', label: 'AI & Intelligence', code: 'AI' },
   { id: 'entertainment', label: 'Entertainment', code: 'ENT' },
   { id: 'productivity', label: 'Productivity', code: 'PRD' },
   { id: 'cloud', label: 'Cloud', code: 'CLD' },
@@ -115,12 +117,13 @@ export const CATEGORY_CODE: Record<Category, string> = CATEGORIES.reduce(
 /** Category → signal colour token name. Used by charts and chips. */
 export const CATEGORY_SIGNAL: Record<Category, 'acid' | 'blue' | 'magenta' | 'orange' | 'red'> =
   {
+    ai: 'acid',
     entertainment: 'magenta',
-    productivity: 'acid',
+    productivity: 'blue',
     cloud: 'blue',
     music: 'orange',
     fitness: 'red',
-    education: 'blue',
+    education: 'magenta',
     shopping: 'orange',
     other: 'acid',
   }
