@@ -1,14 +1,11 @@
 /**
  * SUBTRACK // SYSTEM FOOTER
  *
- * The bottom rail of the machine: what this build is, where the data lives and
- * how much of it there is. Technical annotations only — the kind of thing you
- * read once and then just like having there.
+ * Streamlined system footer: clear local-first status, essential metrics,
+ * and minimalist build reference without visual clutter.
  */
 import { Wordmark } from '@/components/brand/Wordmark'
-import { DataStrip } from '@/components/ui/DataStrip'
-import { traceOf } from '@/lib/id'
-import { todayISO } from '@/lib/date'
+import { Led } from '@/components/ui/Signal'
 import type { SystemSummary } from '@/lib/analytics'
 
 export function SystemFooter({
@@ -21,39 +18,37 @@ export function SystemFooter({
   base: string
 }) {
   return (
-    <footer className="mt-12 border-t-2 border-linehard bg-bg2">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-3 py-2.5 md:px-5">
-        <Wordmark />
-        <span className="micro text-faint">
-          LOCAL-FIRST · NO ACCOUNT · WORKS OFFLINE
-        </span>
-      </div>
+    <footer className="mt-12 border-t border-line bg-bg2/50 px-3 py-3.5 md:px-5">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Wordmark />
+          <span className="hidden h-3 w-[1px] bg-line md:block" />
+          <span className="micro flex items-center gap-1.5 text-faint">
+            <Led signal="acid" size="sm" />
+            LOCAL STORAGE · NO TELEMETRY
+          </span>
+        </div>
 
-      <div className="no-scrollbar overflow-x-auto">
-        <DataStrip
-          size="sm"
-          items={[
-            { label: 'Subscriptions', value: String(summary.active.length).padStart(2, '0'), signal: 'acid' },
-            { label: 'Suspended', value: String(summary.suspended.length).padStart(2, '0') },
-            { label: 'Terminated', value: String(summary.terminated.length).padStart(2, '0') },
-            { label: 'Recorded charges', value: String(payments) },
-            { label: 'Base currency', value: base, signal: 'blue' },
-            { label: 'Store', value: 'INDEXEDDB · DEXIE' },
-            { label: 'Schema', value: 'V1' },
-            { label: 'Build', value: '1.0.0' },
-            { label: 'Trace', value: traceOf(todayISO()) },
-          ]}
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 md:px-5">
-        <span className="micro text-faint">
-          SUBTRACK // FINANCIAL OPERATING SYSTEM
-        </span>
-        <span className="ticks hidden w-40 md:block" aria-hidden="true" />
-        <span className="micro text-faint">
-          CURRENCY AGGREGATION USES A STATIC FX TABLE — EDIT NOTHING, TRUST THE LOCAL VOLUME
-        </span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono text-dim">
+          <span>
+            <span className="text-fg">{summary.active.length}</span> ACTIVE SUBS
+          </span>
+          <span className="text-linehard">·</span>
+          <span>
+            <span className="text-fg">{payments}</span> CHARGES
+          </span>
+          <span className="text-linehard">·</span>
+          <span>{base}</span>
+          <span className="text-linehard">·</span>
+          <a
+            href="https://hariharen.site"
+            target="_blank"
+            rel="noreferrer"
+            className="text-faint transition-colors hover:text-acidink"
+          >
+            BY HARIHAREN
+          </a>
+        </div>
       </div>
     </footer>
   )
