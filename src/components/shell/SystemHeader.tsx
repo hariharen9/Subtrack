@@ -106,6 +106,7 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
 
           <IconButton
             label={theme === 'dark' ? 'Switch to daylight mode' : 'Switch to night mode'}
+            className="lg:hidden"
             onClick={toggleTheme}
           >
             <AnimatePresence mode="wait" initial={false}>

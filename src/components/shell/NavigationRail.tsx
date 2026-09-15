@@ -26,8 +26,6 @@ export function NavigationRail({
   const online = useOnline()
   const theme = useUI((s) => s.theme)
   const toggleTheme = useUI((s) => s.toggleTheme)
-  const field = useUI((s) => s.field)
-  const setField = useUI((s) => s.setField)
 
   const isActive = (path: string) =>
     path === '/' ? activePath === '/' : activePath.startsWith(path)
@@ -122,16 +120,6 @@ export function NavigationRail({
               {theme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
             </motion.span>
           </AnimatePresence>
-        </button>
-        <button
-          type="button"
-          onClick={() => setField(!field)}
-          className="micro flex h-8 w-full items-center justify-center border border-line2 text-faint transition-colors hover:border-linehard hover:text-dim"
-          aria-pressed={field}
-          aria-label="Toggle the background field"
-          title="GRID FIELD"
-        >
-          FIELD
         </button>
 
         <dl className="space-y-1.5 px-0.5 pt-1">

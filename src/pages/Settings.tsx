@@ -105,9 +105,9 @@ export default function Settings() {
             </div>
             <div className="divide-y divide-line">
               <ToggleSwitch
-                label="Background field"
-                code="GRID+GRAIN"
-                description="Instrument grid and film grain behind the content well. Purely decorative."
+                label="Background grid"
+                code="BG GRID"
+                description="Instrument grid, scanlines and CRT dot-matrix overlay behind the content well. Purely decorative."
                 checked={field}
                 onChange={setField}
               />
