@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0"
+    />
+    <title>SUBTRACK // FINANCIAL OPERATING SYSTEM</title>
+    <meta
+      name="description"
+      content="SUBTRACK — every subscription you run, monitored as a financial process. Local-first, offline-capable, no accounts."
+    />
+    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F2F1EC" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SUBTRACK" />
+    <meta name="application-name" content="SUBTRACK" />
+    <meta name="format-detection" content="telephone=no" />
+    <!-- Prevent a light flash before the theme boots. -->
+    <script>
+      ;(() => {
+        try {
+          const stored = localStorage.getItem('subtrack.theme')
+          const mode =
+            stored === 'dark' || stored === 'day'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'day'
+                : 'dark'
+          document.documentElement.dataset.theme = mode
+          document.documentElement.dataset.boot = '1'
+        } catch {
+          /* storage blocked — dark default is already in the markup */
+        }
+      })()
+    </script>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html[data-theme='day'] {
+        color-scheme: light;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #050505;
+      }
+      html[data-theme='day'],
+      html[data-theme='day'] body {
+        background: #f2f1ec;
+      }
+      /* Boot sequence: visible before any JS chunk is parsed. */
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        gap: 14px;
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #6f6f72;
+        background: transparent;
+      }
+      #boot .bar {
+        display: flex;
+        gap: 3px;
+        width: 168px;
+      }
+      #boot .bar i {
+        flex: 1;
+        height: 3px;
+        background: #b7ff00;
+        opacity: 0.12;
+        animation: bootscan 1.05s steps(1, end) infinite;
+      }
+      #boot .bar i:nth-child(2) {
+        animation-delay: 0.09s;
+      }
+      #boot .bar i:nth-child(3) {
+        animation-delay: 0.18s;
+      }
+      #boot .bar i:nth-child(4) {
+        animation-delay: 0.27s;
+      }
+      #boot .bar i:nth-child(5) {
+        animation-delay: 0.36s;
+      }
+      #boot .bar i:nth-child(6) {
+        animation-delay: 0.45s;
+      }
+      #boot .bar i:nth-child(7) {
+        animation-delay: 0.54s;
+      }
+      #boot .bar i:nth-child(8) {
+        animation-delay: 0.63s;
+      }
+      #boot .bar i:nth-child(9) {
+        animation-delay: 0.72s;
+      }
+      #boot .bar i:nth-child(10) {
+        animation-delay: 0.81s;
+      }
+      @keyframes bootscan {
+        0%,
+        100% {
+          opacity: 0.12;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot .bar i {
+          animation: none;
+          opacity: 0.5;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="boot" role="status" aria-live="polite">
+        <span>Initializing system</span>
+        <span class="bar" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </span>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

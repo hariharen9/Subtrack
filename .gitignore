@@ -1,0 +1,11 @@
+node_modules
+.pnpm-store
+dist
+dist-ssr
+dev-dist
+.smoke
+.smoke-report.txt
+*.local
+.DS_Store
+.vite
+*.tsbuildinfo

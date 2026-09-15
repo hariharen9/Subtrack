@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>SUBTRACK</title>
+  <rect width="64" height="64" fill="#050505" />
+  <g stroke="#F4F4F4" stroke-width="1" opacity="0.14">
+    <path d="M16 0V64M32 0V64M48 0V64M0 16H64M0 32H64M0 48H64" />
+  </g>
+  <g fill="#B7FF00">
+    <rect x="16" y="34" width="7" height="13" />
+    <rect x="28" y="27" width="7" height="20" />
+    <rect x="40" y="15" width="7" height="32" />
+  </g>
+  <rect x="53" y="15" width="3" height="3" fill="#F4F4F4" />
+  <rect x="16" y="50" width="29" height="3" fill="#F4F4F4" />
+</svg>

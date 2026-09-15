@@ -1,0 +1,645 @@
+/* ==========================================================================
+   SUBTRACK // COMPONENT LAYER
+   Reusable structural primitives. Nothing here knows about subscriptions —
+   it only encodes the FINANCIAL CYBERCORE material language:
+   hard edges, chamfered crops, hairline grids, offset blocks, signal lights.
+   ========================================================================== */
+
+@layer components {
+  /* ---------------------------------------------------------------------
+     MICRO TYPOGRAPHY — the system's connective tissue
+     --------------------------------------------------------------------- */
+  .micro {
+    font-family: var(--font-mono);
+    font-size: var(--fs-micro);
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .meta {
+    font-family: var(--font-mono);
+    font-size: var(--fs-meta);
+    letter-spacing: 0.06em;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1, 'zero' 1;
+  }
+
+  .numeral {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    line-height: 0.88;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tech-label {
+    font-family: var(--font-mono);
+    font-size: var(--fs-micro);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--c-fg-faint);
+  }
+
+  /* Slashed zero / technical annotation treatment for IDs */
+  .pid {
+    font-family: var(--font-mono);
+    font-size: var(--fs-micro);
+    letter-spacing: 0.14em;
+    color: var(--c-fg-faint);
+  }
+
+  /* ---------------------------------------------------------------------
+     PANELS — square, hard, offset. Cards are never uniformly rounded.
+     --------------------------------------------------------------------- */
+  .panel {
+    background: var(--c-surface);
+    border: var(--bd) solid var(--c-line);
+  }
+
+  .panel-2 {
+    background: var(--c-surface-2);
+    border: var(--bd) solid var(--c-line);
+  }
+
+  .panel-well {
+    background: var(--c-bg-2);
+    border: var(--bd) solid var(--c-line);
+  }
+
+  /* A 2px ink frame: used for the few elements that must dominate. */
+  .frame-hard {
+    border: var(--bd-2) solid var(--c-line-hard);
+  }
+
+  .frame-hairline-hard {
+    border: var(--bd) solid var(--c-line-strong);
+  }
+
+  /* Chamfer crops. clip-path needs the wrapper/child split below because it
+     also clips box-shadow — hence .cp (unclipped) > .cp-shadow + .cp-frame. */
+  .clip-cut {
+    clip-path: polygon(
+      var(--_cut, var(--cut)) 0,
+      100% 0,
+      100% calc(100% - var(--_cut, var(--cut))),
+      calc(100% - var(--_cut, var(--cut))) 100%,
+      0 100%,
+      0 var(--_cut, var(--cut))
+    );
+  }
+
+  .clip-cut-tr {
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--_cut, var(--cut))) 0,
+      100% var(--_cut, var(--cut)),
+      100% 100%,
+      0 100%
+    );
+  }
+
+  .clip-cut-br {
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - var(--_cut, var(--cut))),
+      calc(100% - var(--_cut, var(--cut))) 100%,
+      0 100%
+    );
+  }
+
+  .clip-cut-tl {
+    clip-path: polygon(
+      var(--_cut, var(--cut)) 0,
+      100% 0,
+      100% 100%,
+      0 100%,
+      0 var(--_cut, var(--cut))
+    );
+  }
+
+  .clip-cut-bl {
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% 100%,
+      var(--_cut, var(--cut)) 100%,
+      0 calc(100% - var(--_cut, var(--cut)))
+    );
+  }
+
+  .cp {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* The offset block behind a chamfered panel. */
+  .cp-shadow {
+    position: absolute;
+    inset: 0;
+    background: var(--c-shadow-hard);
+    translate: var(--shadow-x) var(--shadow-x);
+    z-index: -1;
+  }
+
+  .cp-shadow-acid {
+    background: var(--c-acid);
+  }
+
+  .cp-shadow-thin {
+    translate: var(--shadow-x-sm) var(--shadow-x-sm);
+  }
+
+  .cp-frame {
+    position: relative;
+    background: var(--c-line);
+    padding: var(--bd);
+  }
+
+  .cp-in {
+    position: relative;
+    background: var(--c-surface);
+    clip-path: inherit;
+  }
+
+  .cp-hover {
+    transition:
+      translate var(--t-fast) var(--ease-snap),
+      background-color var(--t-fast) linear;
+  }
+
+  .cp-hover:hover {
+    translate: -2px -2px;
+  }
+
+  .cp-hover:hover .cp-frame {
+    background: var(--c-line-strong);
+  }
+
+  .cp-press:active {
+    translate: 1px 1px;
+  }
+
+  /* ---------------------------------------------------------------------
+     SIGNAL HARDWARE — LEDs, status chips, hazard stripes
+     --------------------------------------------------------------------- */
+  .led {
+    inline-size: 7px;
+    block-size: 7px;
+    flex: none;
+    background: currentColor;
+    box-shadow: var(--led-glow, 0 0 9px currentColor);
+  }
+
+  .led-lg {
+    inline-size: 9px;
+    block-size: 9px;
+  }
+
+  .led-hollow {
+    background: transparent;
+    box-shadow: inset 0 0 0 2px currentColor;
+  }
+
+  [data-theme='day']:not([data-skin='dark']) .led {
+    --led-glow: none;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.45rem;
+    border: var(--bd) solid currentColor;
+    font-family: var(--font-mono);
+    font-size: var(--fs-micro);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+
+  .hazard {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      currentColor 0 5px,
+      transparent 5px 11px
+    );
+  }
+
+  /* Tiny tick scale used along chart axes and rails. */
+  .ticks {
+    background-image: linear-gradient(to right, var(--c-line-strong) var(--bd), transparent var(--bd));
+    background-size: 9px 100%;
+    background-repeat: repeat-x;
+    block-size: 5px;
+  }
+
+  .ticks-v {
+    background-image: linear-gradient(to bottom, var(--c-line) var(--bd), transparent var(--bd));
+    background-size: 100% 7px;
+    inline-size: 5px;
+  }
+
+  /* Hard separators. */
+  .rule {
+    block-size: var(--bd);
+    background: var(--c-line);
+    inline-size: 100%;
+  }
+
+  .rule-hard {
+    block-size: var(--bd-2);
+    background: var(--c-line-hard);
+  }
+
+  .rule-dotted {
+    background-image: linear-gradient(
+      to right,
+      var(--c-line-strong) 0 4px,
+      transparent 4px 8px
+    );
+    background-size: 8px var(--bd);
+    block-size: var(--bd);
+  }
+
+  /* ---------------------------------------------------------------------
+     SURFACES & TEXTURES
+     --------------------------------------------------------------------- */
+  .scanlines {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.55) 0 1px,
+      transparent 1px 3px
+    );
+    opacity: calc(var(--scan-opacity) * 0.16);
+  }
+
+  .grid-field {
+    background-image:
+      linear-gradient(to right, var(--c-grid) var(--bd), transparent var(--bd)),
+      linear-gradient(to bottom, var(--c-grid) var(--bd), transparent var(--bd));
+    background-size: var(--pitch) var(--pitch);
+  }
+
+  .dot-field {
+    background-image: radial-gradient(var(--c-line-strong) 1px, transparent 1px);
+    background-size: 12px 12px;
+  }
+
+  /* Days that still hold money in the future read as lightly charged. */
+  .future-flow {
+    background: color-mix(in oklab, var(--c-surface) 94%, var(--c-acid));
+  }
+
+  /* Decorative chromatic split — isolated labels only, never body copy. */
+  .chroma {
+    text-shadow:
+      -0.6px 0 rgb(255 43 214 / 0.55),
+      0.6px 0 rgb(0 200 255 / 0.55);
+  }
+
+  [data-theme='day']:not([data-skin='dark']) .chroma {
+    text-shadow:
+      -0.7px 0 rgb(255 43 214 / 0.5),
+      0.7px 0 rgb(0 200 255 / 0.5);
+  }
+
+  /* ---------------------------------------------------------------------
+     CONTROLS
+     --------------------------------------------------------------------- */
+  .btn-core {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-block-size: 2.75rem;
+    padding: 0.6rem 1rem;
+    border: var(--bd-2) solid var(--c-line-hard);
+    font-family: var(--font-mono);
+    font-size: var(--fs-meta);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition:
+      translate var(--t-micro) var(--ease-snap),
+      background-color var(--t-fast) linear,
+      color var(--t-fast) linear,
+      border-color var(--t-fast) linear;
+  }
+
+  .btn-core:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-core:not(:disabled):active {
+    translate: 2px 2px;
+  }
+
+  .btn-solid {
+    background: var(--c-acid);
+    color: #050505;
+  }
+
+  .btn-solid:not(:disabled):hover {
+    background: var(--c-fg);
+    color: var(--c-bg);
+  }
+
+  .btn-ink {
+    background: var(--c-line-hard);
+    color: var(--c-bg);
+  }
+
+  .btn-ink:not(:disabled):hover {
+    background: var(--c-acid);
+    color: #050505;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--c-fg);
+    border-color: var(--c-line-strong);
+  }
+
+  .btn-ghost:not(:disabled):hover {
+    border-color: var(--c-line-hard);
+    background: var(--c-surface-2);
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--c-red-ink);
+    border-color: var(--c-red-ink);
+  }
+
+  .btn-danger:not(:disabled):hover {
+    background: var(--c-red);
+    color: #050505;
+  }
+
+  .btn-icon {
+    padding: 0;
+    inline-size: 2.75rem;
+    min-block-size: 2.75rem;
+  }
+
+  /* Field shells behave like console input slots. */
+  .field {
+    display: block;
+    inline-size: 100%;
+    background: var(--c-bg-2);
+    border: var(--bd) solid var(--c-line-strong);
+    padding: 0.55rem 0.7rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    transition:
+      border-color var(--t-fast) linear,
+      background-color var(--t-fast) linear,
+      box-shadow var(--t-fast) linear;
+  }
+
+  .field:hover {
+    border-color: var(--c-line-hard);
+  }
+
+  .field:focus,
+  .field:focus-visible {
+    outline: none;
+    border-color: var(--c-acid);
+    background: var(--c-surface);
+    box-shadow: inset 3px 0 0 0 var(--c-acid);
+  }
+
+  .field[aria-invalid='true'] {
+    border-color: var(--c-red);
+    box-shadow: inset 3px 0 0 0 var(--c-red);
+  }
+
+  /* ---------------------------------------------------------------------
+     LAYOUT MECHANICS
+     --------------------------------------------------------------------- */
+  .rail {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1rem;
+    -webkit-overflow-scrolling: touch;
+    padding-block-end: 0.25rem;
+  }
+
+  .rail > * {
+    scroll-snap-align: start;
+    flex: none;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Full-bleed rails on mobile that still respect the page gutter. */
+  .bleed-rail {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .bleed-rail {
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+  }
+
+  .safe-b {
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-t {
+    padding-block-start: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-x {
+    padding-inline-start: env(safe-area-inset-left, 0px);
+    padding-inline-end: env(safe-area-inset-right, 0px);
+  }
+
+  /* ---------------------------------------------------------------------
+     SKELETON
+     --------------------------------------------------------------------- */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--c-surface-2);
+    border: var(--bd) solid var(--c-line);
+  }
+
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    translate: -100% 0;
+    background: linear-gradient(90deg, transparent, var(--c-grid-fine), transparent);
+    animation: shimmer 1.4s linear infinite;
+  }
+
+  /* ---------------------------------------------------------------------
+     ANIMATIONS (all GPU-friendly: transform + opacity only)
+     --------------------------------------------------------------------- */
+  @keyframes shimmer {
+    to {
+      translate: 100% 0;
+    }
+  }
+
+  @keyframes blink {
+    0%,
+    45% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0.14;
+    }
+  }
+
+  @keyframes pulse-led {
+    0%,
+    100% {
+      opacity: 1;
+      scale: 1;
+    }
+    50% {
+      opacity: 0.35;
+      scale: 0.86;
+    }
+  }
+
+  @keyframes scanline {
+    0% {
+      translate: 0 -100%;
+    }
+    100% {
+      translate: 0 100%;
+    }
+  }
+
+  @keyframes marquee {
+    0% {
+      translate: 0 0;
+    }
+    100% {
+      translate: -50% 0;
+    }
+  }
+
+  @keyframes drift {
+    0% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 -6px;
+    }
+    100% {
+      translate: 0 0;
+    }
+  }
+
+  @keyframes dashdraw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .animate-blink {
+    animation: blink 1.05s steps(1, end) infinite;
+  }
+
+  .animate-pulse-led {
+    animation: pulse-led 2.1s var(--ease-in-out) infinite;
+  }
+
+  .animate-scan {
+    animation: scanline 5.5s linear infinite;
+  }
+
+  .animate-marquee {
+    animation: marquee 38s linear infinite;
+  }
+
+  .animate-drift {
+    animation: drift 7s var(--ease-in-out) infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 1.4s linear infinite;
+  }
+
+  /* Page-entry glitch: two frames only, then it is gone. */
+  @keyframes glitch-shift {
+    0% {
+      clip-path: inset(0 0 82% 0);
+      translate: -3px 0;
+    }
+    33% {
+      clip-path: inset(64% 0 12% 0);
+      translate: 3px 0;
+    }
+    66% {
+      clip-path: inset(28% 0 46% 0);
+      translate: -2px 0;
+    }
+    100% {
+      clip-path: inset(100% 0 0 0);
+      translate: 0 0;
+    }
+  }
+
+  .glitch-sweep {
+    animation: glitch-shift 260ms steps(2, end) 1;
+  }
+
+  /* ---------------------------------------------------------------------
+     SCROLL REVEAL — pure CSS, no JS observers required for depth
+     --------------------------------------------------------------------- */
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 8% cover 26%;
+    }
+  }
+
+  @keyframes reveal-in {
+    from {
+      opacity: 0;
+      translate: 0 14px;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      animation: none;
+    }
+  }
+}

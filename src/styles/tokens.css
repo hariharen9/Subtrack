@@ -1,0 +1,197 @@
+/* ==========================================================================
+   SUBTRACK // DESIGN TOKENS
+   "FINANCIAL CYBERCORE" — the visual contract for the whole system.
+   Two skins share one token API: dark (primary) and day (brutalist daylight).
+   Any surface can be forced back to the dark skin with [data-skin="dark"],
+   which is how black chips stay black inside the daylight theme.
+   ========================================================================== */
+
+:root {
+  /* ---- primitive palette. Never referenced directly by components. ---- */
+  --p-void: #050505;
+  --p-carbon: #0b0b0c;
+  --p-panel: #0e0e10;
+  --p-ink: #f4f4f4;
+  --p-acid: #b7ff00;
+  --p-blue: #00c8ff;
+  --p-magenta: #ff2bd6;
+  --p-orange: #ff7a00;
+  --p-red: #ff304f;
+
+  /* ---- geometry: one scale for every corner, edge and offset ---- */
+  --bd: 1px;
+  --bd-2: 2px;
+  --bd-3: 3px;
+  --cut-xs: 4px;
+  --cut-sm: 7px;
+  --cut: 12px;
+  --cut-lg: 20px;
+  --pitch: 28px;
+  --pitch-fine: 7px;
+  --shadow-x: 4px;
+  --shadow-x-sm: 2px;
+
+  /* ---- motion: fast, precise, tactile ---- */
+  --t-micro: 110ms;
+  --t-fast: 140ms;
+  --t: 190ms;
+  --t-slow: 300ms;
+  --t-page: 400ms;
+  --ease-snap: cubic-bezier(0.2, 0.9, 0.1, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ---- typographic scale: deliberately extreme jumps ---- */
+  --fs-hero: clamp(3.6rem, 17vw, 10.5rem);
+  --fs-display: clamp(2rem, 6.2vw, 3.6rem);
+  --fs-numeral: clamp(1.5rem, 4.4vw, 2.35rem);
+  --fs-title: 1.0625rem;
+  --fs-body: 0.875rem;
+  --fs-meta: 0.6875rem;
+  --fs-micro: 0.625rem;
+}
+
+/* ==========================  DARK SKIN (PRIMARY)  ========================= */
+[data-theme='dark'],
+[data-skin='dark'] {
+  color-scheme: dark;
+
+  --c-bg: var(--p-void);
+  --c-bg-2: #0a0a0b;
+  --c-surface: var(--p-panel);
+  --c-surface-2: #151518;
+  --c-surface-3: #1d1d21;
+  --c-line: rgb(244 244 244 / 0.11);
+  --c-line-strong: rgb(244 244 244 / 0.24);
+  --c-line-hard: #f4f4f4;
+  --c-fg: var(--p-ink);
+  --c-fg-dim: rgb(244 244 244 / 0.63);
+  --c-fg-faint: rgb(244 244 244 / 0.38);
+  --c-grid: rgb(244 244 244 / 0.038);
+  --c-grid-fine: rgb(244 244 244 / 0.018);
+  --c-shadow-hard: #f4f4f4;
+
+  --c-acid: var(--p-acid);
+  --c-blue: var(--p-blue);
+  --c-magenta: var(--p-magenta);
+  --c-orange: var(--p-orange);
+  --c-red: var(--p-red);
+
+  --c-acid-ink: var(--p-acid);
+  --c-blue-ink: var(--p-blue);
+  --c-magenta-ink: var(--p-magenta);
+  --c-orange-ink: var(--p-orange);
+  --c-red-ink: var(--p-red);
+  --c-focus: var(--p-acid);
+
+  --c-acid-soft: rgb(183 255 0 / 0.12);
+  --c-blue-soft: rgb(0 200 255 / 0.12);
+  --c-magenta-soft: rgb(255 43 214 / 0.12);
+  --c-orange-soft: rgb(255 122 0 / 0.14);
+  --c-red-soft: rgb(255 48 79 / 0.14);
+
+  --glow-acid: 0 0 0 1px rgb(183 255 0 / 0.35), 0 0 26px -8px rgb(183 255 0 / 0.6);
+  --glow-blue: 0 0 0 1px rgb(0 200 255 / 0.32), 0 0 26px -8px rgb(0 200 255 / 0.55);
+  --glow-soft: 0 0 32px -18px rgb(183 255 0 / 0.5);
+  --scan-opacity: 0.5;
+  --noise-opacity: 0.5;
+}
+
+/* ====================  DAY SKIN (BRUTALIST DAYLIGHT)  ==================== */
+[data-theme='day']:not([data-skin='dark']) {
+  color-scheme: light;
+
+  --c-bg: #f2f1ec;
+  --c-bg-2: #e9e8e1;
+  --c-surface: #ffffff;
+  --c-surface-2: #f8f7f2;
+  --c-surface-3: #ecebe4;
+  --c-line: rgb(10 10 10 / 0.22);
+  --c-line-strong: rgb(10 10 10 / 0.52);
+  --c-line-hard: #0a0a0a;
+  --c-fg: #0a0a0a;
+  --c-fg-dim: rgb(10 10 10 / 0.88);
+  --c-fg-faint: rgb(10 10 10 / 0.74);
+  --c-grid: rgb(10 10 10 / 0.05);
+  --c-grid-fine: rgb(10 10 10 / 0.022);
+  --c-shadow-hard: #0a0a0a;
+
+  --c-acid: var(--p-acid);
+  --c-blue: var(--p-blue);
+  --c-magenta: var(--p-magenta);
+  --c-orange: var(--p-orange);
+  --c-red: var(--p-red);
+
+  /* Text-safe signal variants: the raw neon fails contrast on paper. */
+  --c-acid-ink: #4a6b00;
+  --c-blue-ink: #005e80;
+  --c-magenta-ink: #ad0089;
+  --c-orange-ink: #a04d00;
+  --c-red-ink: #c00020;
+  --c-focus: #0a0a0a;
+
+  --c-acid-soft: rgb(183 255 0 / 0.28);
+  --c-blue-soft: rgb(0 200 255 / 0.16);
+  --c-magenta-soft: rgb(255 43 214 / 0.14);
+  --c-orange-soft: rgb(255 122 0 / 0.16);
+  --c-red-soft: rgb(255 48 79 / 0.14);
+
+  /* Daylight is flat on purpose: no glow, only hard offsets. */
+  --glow-acid: none;
+  --glow-blue: none;
+  --glow-soft: none;
+  --scan-opacity: 0.28;
+  --noise-opacity: 0.35;
+}
+
+/* ============  TAILWIND THEME BRIDGE (utilities follow the skin)  ======== */
+@theme inline {
+  --font-sans:
+    'Space Grotesk Variable', 'Space Grotesk', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+  --font-display:
+    'Space Grotesk Variable', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo,
+    Consolas, monospace;
+
+  --color-bg: var(--c-bg);
+  --color-bg2: var(--c-bg-2);
+  --color-surface: var(--c-surface);
+  --color-surface2: var(--c-surface-2);
+  --color-surface3: var(--c-surface-3);
+  --color-line: var(--c-line);
+  --color-line2: var(--c-line-strong);
+  --color-linehard: var(--c-line-hard);
+  --color-fg: var(--c-fg);
+  --color-dim: var(--c-fg-dim);
+  --color-faint: var(--c-fg-faint);
+
+  --color-acid: var(--c-acid);
+  --color-blue: var(--c-blue);
+  --color-magenta: var(--c-magenta);
+  --color-orange: var(--c-orange);
+  --color-red: var(--c-red);
+
+  --color-acidink: var(--c-acid-ink);
+  --color-blueink: var(--c-blue-ink);
+  --color-magentaink: var(--c-magenta-ink);
+  --color-orangeink: var(--c-orange-ink);
+  --color-redink: var(--c-red-ink);
+
+  --color-acidsoft: var(--c-acid-soft);
+  --color-bluesoft: var(--c-blue-soft);
+  --color-magentasoft: var(--c-magenta-soft);
+  --color-orangesoft: var(--c-orange-soft);
+  --color-redsoft: var(--c-red-soft);
+
+  --text-hero: var(--fs-hero);
+  --text-display: var(--fs-display);
+  --text-numeral: var(--fs-numeral);
+  --text-title: var(--fs-title);
+  --text-meta: var(--fs-meta);
+  --text-micro: var(--fs-micro);
+
+  --ease-snap: var(--ease-snap);
+  --ease-out-quint: var(--ease-out);
+}
