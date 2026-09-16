@@ -1,7 +1,7 @@
 {
   "name": "subtrack",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.1",
   "type": "module",
   "description": "SUBTRACK — a financial operating system for the subscriptions you run. Local-first, offline-capable PWA.",
   "scripts": {
