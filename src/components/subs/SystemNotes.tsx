@@ -33,16 +33,16 @@ export function SystemNotes({
   return (
     <ul className={cx('divide-y divide-line', className)}>
       {notes.slice(0, compact ? 3 : notes.length).map((note) => (
-        <li key={note.id} className="relative">
+        <li key={note.id} className="group relative transition-colors duration-150 hover:bg-surface2">
           <span
             aria-hidden="true"
-            className="absolute inset-y-0 left-0 w-[3px]"
+            className="absolute inset-y-0 left-0 w-[3px] transition-all duration-150 group-hover:w-[4px]"
             style={{ background: SIGNAL_HEX[note.signal as Signal] }}
           />
           <div className="px-3 py-3 pl-4 md:px-4 md:pl-5">
             <div className="flex items-center gap-2">
               <Led signal={note.signal as Signal} size="sm" pulse={note.signal === 'red'} />
-              <span className={cx('micro', SIGNAL_TEXT[note.signal as Signal])}>{note.label}</span>
+              <span className={cx('micro font-medium', SIGNAL_TEXT[note.signal as Signal])}>{note.label}</span>
             </div>
             <p className="mt-1.5 text-[12.5px] leading-relaxed text-fg">{note.text}</p>
           </div>
