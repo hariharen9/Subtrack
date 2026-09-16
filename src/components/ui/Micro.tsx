@@ -54,17 +54,17 @@ export function SectionHeader({
   return (
     <div
       className={cx(
-        'flex items-end justify-between gap-3 border-b-2 border-linehard px-3 pt-4 pb-1.5 md:px-5',
+        'flex items-center justify-between gap-3 border-b-2 border-linehard px-3 py-2.5 md:px-5 md:py-3',
         sticky && 'sticky top-0 z-30 bg-bg/95 backdrop-blur-[2px]',
         className,
       )}
     >
-      <div className="flex min-w-0 items-end gap-2.5">
+      <div className="flex min-w-0 items-center gap-2.5">
         <span className="micro flex items-center gap-1.5 border border-line2 px-1.5 py-0.5 text-dim">
           {signal && <Led signal={signal} size="sm" pulse />}
           {code}
         </span>
-        <h2 className="truncate text-[13px] font-semibold tracking-[0.02em] text-fg md:text-[15px]">
+        <h2 className="truncate text-[13px] font-semibold leading-normal tracking-[0.02em] text-fg md:text-[15px]">
           {title}
         </h2>
       </div>
