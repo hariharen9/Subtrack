@@ -201,16 +201,27 @@ export function canonicalOf(pathname: string): string {
 export function subNavItemFor(domain: Domain, pathname: string): SubNavItem | undefined {
   if (!domain.subnav) return undefined
   if (pathname === '/') return domain.subnav[0]
-  return domain.subnav.find(
-    (item) =>
-      pathname === item.path ||
-      pathname.startsWith(item.path + '/') ||
+
+  const matches = (item: SubNavItem): boolean =>
+    pathname === item.path ||
+    pathname.startsWith(item.path + '/') ||
+    Boolean(
       item.aliases?.some((alias) =>
         alias.endsWith('/')
           ? pathname.startsWith(alias)
           : pathname === alias || pathname.startsWith(alias + '/'),
       ),
-  )
+    )
+
+  const hits = domain.subnav.filter(matches)
+  if (hits.length === 0) return undefined
+  // Exact/canonical hit wins outright; otherwise prefer the longest matching
+  // ancestor so /subs/flow/:id keys FLOW over the shorter CORE (/subs) prefix.
+  return hits.sort(
+    (a, b) =>
+      (pathname === a.path ? 1 : 0) - (pathname === b.path ? 1 : 0) ||
+      b.path.length - a.path.length,
+  )[0]
 }
 
 /** Keyboard shortcuts that jump straight to a canonical domain. */
