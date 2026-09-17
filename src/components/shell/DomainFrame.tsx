@@ -25,16 +25,10 @@ export function DomainFrame() {
 
   return (
     <div className="flex flex-col gap-1">
-      {/* identity bar */}
+      {/* identity bar — carries the status tag + manifest blurb. The domain
+          name/code is established by the SystemHeader directly above, so it is
+          not repeated here. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border border-line2 bg-bg2 px-3 py-1.5 md:px-5">
-        <span className="micro flex items-center gap-2">
-          <span className={cx('font-semibold tracking-wide', isStandby ? 'text-orangeink' : 'text-fg')}>
-            {domain.label.toUpperCase()}
-          </span>
-          <span className="text-linehard">·</span>
-          <span className="text-faint">{domain.code}</span>
-        </span>
-
         <span
           className={cx(
             'micro flex items-center gap-1.5 border px-1.5 py-0.5',
