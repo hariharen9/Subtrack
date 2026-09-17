@@ -1,68 +1,219 @@
 /**
- * SUBTRACK // NAVIGATION MODEL
- * Five systems, one purpose. The codes are printed in the rail and the mobile
- * console; the numbers are the keyboard shortcuts that jump straight there.
+ * SUBTRACK // FINANCIAL OS NAVIGATION MODEL
+ *
+ * The Financial Operating System is a shell around independent domain engines.
+ * The top-level rack holds the domains; each domain optionally declares its own
+ * sub-navigation (the "cockpit" tabs). Everything a domain needs to render its
+ * chrome lives in one place, so adding a future engine (Cards, Loans, Spends)
+ * is a single entry in DOMAINS + one page — the shell stays dumb and agnostic.
  */
 import type { ReactNode } from 'react'
-import { IconCore, IconData, IconFlow, IconSys, IconTime } from '@/components/ui/Icons'
+import {
+  IconCommandCenter,
+  IconCreditCard,
+  IconData,
+  IconDebt,
+  IconFlow,
+  IconSpends,
+  IconSys,
+  IconTime,
+  IconCore,
+} from '@/components/ui/Icons'
 
 export interface NavItem {
   code: string
   label: string
   path: string
-  /** Single-key shortcut, printed in the rail. */
+  /** Single-key shortcut, printed in the rack. */
   key: string
   blurb: string
+  status: 'live' | 'standby'
   icon: (props: { size?: number; className?: string }) => ReactNode
 }
 
-export const NAV_ITEMS: NavItem[] = [
+/** A sub-navigation tab inside a domain (e.g. SUBS → CORE / FLOW / TIME / DATA). */
+export interface SubNavItem {
+  code: string
+  label: string
+  path: string
+  key: string
+  icon: (props: { size?: number; className?: string }) => ReactNode
+  /** Foreign legacy aliases that should highlight this tab. */
+  aliases?: string[]
+}
+
+export interface Domain extends NavItem {
+  /** Optional in-domain tabs; rendered by the shell when the domain is active. */
+  subnav?: SubNavItem[]
+  /** Identity blurb shown in the Master deck's subsystem matrix. */
+  manifest: string
+  /** Version tag, e.g. "ENGINE LIVE" / "v0.2.0". */
+  tag: string
+}
+
+/** Canonical domain rack — the single source of truth for the shell. */
+export const DOMAINS: Domain[] = [
   {
-    code: 'CORE',
-    label: 'Overview',
+    code: 'CMD',
+    label: 'Master Command',
     path: '/',
     key: '1',
-    blurb: 'Burn, load and incoming flow',
-    icon: IconCore,
+    blurb: 'Global runway, aggregate burn and domain matrix',
+    status: 'live',
+    icon: IconCommandCenter,
+    manifest:
+      'The Financial OS cockpit. Rolls every engine up into one net burn, one runway, one next-critical-transaction readout.',
+    tag: 'OS CORE',
   },
   {
-    code: 'FLOW',
+    code: 'SUBS',
     label: 'Subscriptions',
-    path: '/flow',
+    path: '/subs',
     key: '2',
-    blurb: 'Every subscription you are running',
+    blurb: 'Recurring processes, cycles and burn normalisation',
+    status: 'live',
     icon: IconFlow,
+    manifest:
+      'The Subtrack engine. Treats recurring services as deterministic background processes with anchor-based renewal cycles.',
+    tag: 'ENGINE LIVE',
+    subnav: [
+      { code: 'CORE', label: 'Overview', path: '/subs', key: 'O', icon: IconCore },
+      {
+        code: 'FLOW',
+        label: 'Registry',
+        path: '/subs/flow',
+        key: 'F',
+        icon: IconFlow,
+        aliases: ['/flow', '/flow/'],
+      },
+      {
+        code: 'TIME',
+        label: 'Matrix',
+        path: '/subs/time',
+        key: 'M',
+        icon: IconTime,
+        aliases: ['/time'],
+      },
+      {
+        code: 'DATA',
+        label: 'Insights',
+        path: '/subs/data',
+        key: 'I',
+        icon: IconData,
+        aliases: ['/data'],
+      },
+    ],
   },
   {
-    code: 'TIME',
-    label: 'Calendar',
-    path: '/time',
+    code: 'CRD',
+    label: 'Credit Cards',
+    path: '/cards',
     key: '3',
-    blurb: 'Payment matrix for the cycle',
-    icon: IconTime,
+    blurb: 'Statement cut-offs, grace countdown and zero-interest',
+    status: 'standby',
+    icon: IconCreditCard,
+    manifest:
+      'Statement cut-off cycles, 45-day zero-interest grace countdowns and aggregate credit limit utilisation gauges.',
+    tag: 'v0.2.0',
   },
   {
-    code: 'DATA',
-    label: 'Insights',
-    path: '/data',
+    code: 'DEBT',
+    label: 'Loans & EMIs',
+    path: '/loans',
     key: '4',
-    blurb: 'Distribution, concentration, drift',
-    icon: IconData,
+    blurb: 'Amortization curves, principal decay and payoff simulations',
+    status: 'standby',
+    icon: IconDebt,
+    manifest:
+      'Principal vs interest decay amortization schedules, debt runway metrics and prepayment payoff impact simulations.',
+    tag: 'v0.3.0',
+  },
+  {
+    code: 'SPND',
+    label: 'Daily Spends',
+    path: '/spends',
+    key: '5',
+    blurb: 'Ingestion ledger, variable velocity and discretionary limits',
+    status: 'standby',
+    icon: IconSpends,
+    manifest:
+      'Real-time micro-transaction ledger, discretionary burn velocity tracking and weekly spending limiters.',
+    tag: 'v0.4.0',
   },
   {
     code: 'SYS',
-    label: 'Settings',
+    label: 'System Host',
     path: '/sys',
-    key: '5',
-    blurb: 'Currency, theme, data volume',
+    key: '6',
+    blurb: 'Vault, currency, skins, danger zone',
+    status: 'live',
     icon: IconSys,
+    manifest:
+      'Host controls: skin, base currency and static FX, JSON vault backup/import, CSV ledger export and maintenance tools.',
+    tag: 'HOST',
   },
 ]
 
-export function navItemFor(pathname: string): NavItem {
-  if (pathname.startsWith('/flow')) return NAV_ITEMS[1]
-  if (pathname.startsWith('/time')) return NAV_ITEMS[2]
-  if (pathname.startsWith('/data')) return NAV_ITEMS[3]
-  if (pathname.startsWith('/sys')) return NAV_ITEMS[4]
-  return NAV_ITEMS[0]
+/** Legacy top-level entries removed — DOMAINS is the single rack now. */
+export const NAV_ITEMS: Domain[] = DOMAINS
+
+/** Resolve the domain that owns a path (canonical or legacy). */
+export function domainFor(pathname: string): Domain {
+  if (pathname === '/' || pathname === '') return DOMAINS[0]
+  // Subscriptions owns /subs and the legacy /flow, /time, /data aliases.
+  if (
+    pathname.startsWith('/subs') ||
+    pathname === '/flow' ||
+    pathname.startsWith('/flow/') ||
+    pathname === '/time' ||
+    pathname === '/data'
+  ) {
+    return DOMAINS[1]
+  }
+  // Everything else matches by prefix, skipping the root.
+  const match = DOMAINS.find((item) => item.path !== '/' && pathname.startsWith(item.path))
+  return match ?? DOMAINS[0]
+}
+
+/**
+ * The canonical path for a pathname. Legacy subscription routes resolve into
+ * their /subs/* equivalent so there is exactly one source of truth for the
+ * active sub-nav highlight.
+ */
+export function canonicalOf(pathname: string): string {
+  const domain = domainFor(pathname)
+  if (domain.code === 'SUBS') {
+    const sub = domain.subnav?.find((item) =>
+      item.aliases?.some((alias) =>
+        alias.endsWith('/')
+          ? pathname.startsWith(alias)
+          : pathname === alias || pathname.startsWith(alias + '/'),
+      ),
+    )
+    if (sub) return sub.path
+    if (pathname.startsWith('/subs')) return pathname
+    return '/subs'
+  }
+  return pathname === '/' ? '/' : domain.path
+}
+
+/** Resolve the active sub-nav tab for a pathname inside a domain. */
+export function subNavItemFor(domain: Domain, pathname: string): SubNavItem | undefined {
+  if (!domain.subnav) return undefined
+  if (pathname === '/') return domain.subnav[0]
+  return domain.subnav.find(
+    (item) =>
+      pathname === item.path ||
+      pathname.startsWith(item.path + '/') ||
+      item.aliases?.some((alias) =>
+        alias.endsWith('/')
+          ? pathname.startsWith(alias)
+          : pathname === alias || pathname.startsWith(alias + '/'),
+      ),
+  )
+}
+
+/** Keyboard shortcuts that jump straight to a canonical domain. */
+export function domainByKey(key: string): Domain | undefined {
+  return DOMAINS.find((item) => item.key === key)
 }

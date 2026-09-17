@@ -24,11 +24,18 @@ Subtrack treats personal recurring finances not as passive spreadsheets, but as 
 |                                 SUBTRACK HOST                                    |
 |                                                                                   |
 |  +-----------------------------------------------------------------------------+  |
-|  |                             PRESENTATION LAYER                              |  |
-|  |  +---------------+  +---------------+  +---------------+  +---------------+ |  |
-|  |  |   OVERVIEW    |  |     FLOW      |  | PAYMENT MATRIX|  |   INSIGHTS    | |  |
-|  |  |  (/)          |  | (/flow)       |  | (/time)       |  | (/data)       | |  |
-|  |  +---------------+  +---------------+  +---------------+  +---------------+ |  |
+|  |                       FINANCIAL OS SHELL (the dumb shell)                  |  |
+|  |   NavigationRail / MobileNav / SystemHeader / DomainFrame / CommandPalette |  |
+|  +-----------------------------------------------------------------------------+  |
+|                                       |                                           |
+|  +-----------------------------------------------------------------------------+  |
+|  |                          DOMAIN ENGINES (data-driven)                      |  |
+|  |  +------------+  +------------+  +------------+  +------------+            |  |
+|  |  |MASTER CMD  |  | SUBSCRIPT- |  | STANDBY    |  | SYSTEM HOST|            |  |
+|  |  | (/ Master) |  | IONS /subs |  | /cards     |  | /sys       |            |  |
+|  |  |            |  |  /subs/…   |  | /loans     |  |            |            |  |
+|  |  |            |  |  (SUBS tabs)|  | /spends    |  |            |            |  |
+|  |  +------------+  +------------+  +------------+  +------------+            |  |
 |  +-----------------------------------------------------------------------------+  |
 |                                        |                                          |
 |  +-----------------------------------------------------------------------------+  |
@@ -83,7 +90,9 @@ E:/Projects/Subtrack/
 │   └── smoke.mjs                 # Headless runtime smoke test (serves dist/, drives Chrome)
 └── src/
     ├── app/
-    │   └── nav.ts                # NAV_ITEMS (code, label, path, hotkey, blurb, icon), navItemFor()
+    │   └── nav.ts                # DOMAINS (code, label, path, key, blurb, icon, subnav,
+    │                             #   manifest, tag, status live|standby) + domainFor(),
+    │                             #   canonicalOf(), subNavItemFor(), domainByKey()
     ├── components/
     │   ├── brand/
     │   │   ├── ServiceBadge.tsx  # Brand-accented glyph container (sm/md/lg/xl, tone ink|brand)
@@ -94,11 +103,14 @@ E:/Projects/Subtrack/
     │   │   ├── CategoryBlock.tsx # CategoryBar, CategoryDistribution, CompositionStrip, RadialGauge
     │   │   └── SpendingSignal.tsx# SVG signal trace: grid, crosshair, forecast region, a11y table
     │   ├── shell/
-    │   │   ├── CommandPalette.tsx# Ctrl/⌘+K query engine (commands + subscription index)
-    │   │   ├── CyberShell.tsx    # Layout route: rail, header, RouteStage, overlays, hotkeys
+    │   │   ├── CommandPalette.tsx# Ctrl/⌘+K query engine (domain jumps + subscription index)
+    │   │   ├── CyberShell.tsx    # RouteStage: DomainFrame + AnimatePresence content well,
+    │   │   │                     #   rail, header, overlays, per-domain hotkeys
+    │   │   ├── DomainFrame.tsx   # Domain chrome: identity bar (label, code, status chip,
+    │   │   │                     #   manifest, base currency) + in-domain sub-nav strip
     │   │   ├── FieldOverlay.tsx  # Viewfinder brackets, coordinate scale, CRT band (desktop)
-    │   │   ├── MobileNav.tsx     # 5-cell bottom console + burn edge strip + floating add key
-    │   │   ├── NavigationRail.tsx# Desktop rack with sliding active plate + status stack
+    │   │   ├── MobileNav.tsx     # 6-cell bottom console (all DOMAINS) + burn edge strip + FAB
+    │   │   ├── NavigationRail.tsx# Desktop rack over DOMAINS with sliding active plate + status
     │   │   ├── SystemFooter.tsx  # Minimal footer: counts, currency, creator credit
     │   │   ├── SystemHeader.tsx  # Instrument bar: module, status, clock, query trigger, CTA
     │   │   ├── SystemToaster.tsx # Console-log style toast stack (auto-dismiss / sticky)
@@ -140,12 +152,18 @@ E:/Projects/Subtrack/
     │   ├── seed.ts               # 17-subscription demo dataset + reconstructed ledger
     │   └── types.ts              # Domain interfaces, categories, signal maps
     ├── pages/
-    │   ├── Overview.tsx          # "/" — burn hero, burn rail, signal, stream, grid, archive
-    │   ├── Flow.tsx              # "/flow" — registry with query bar, filters, densities
-    │   ├── ProcessDetail.tsx     # "/flow/:id" — diagnostic board for one subscription
-    │   ├── PaymentMatrix.tsx     # "/time" — six-week matrix + 13-month rail + day panel
-    │   ├── Insights.tsx          # "/data" — readouts, distribution, gauges, statistics
-    │   ├── Settings.tsx          # "/sys" — skin, currency, horizon, volume, danger zone
+    │   ├── MasterCommand.tsx     # "/" — OS cockpit: hero burn, subsystem matrix, next outflow
+    │   ├── Overview.tsx          # "/subs" — SUBS overview: burn hero, rail, signal, stream, grid
+    │   ├── Flow.tsx              # "/subs/flow" — registry with query bar, filters, densities
+    │   ├── ProcessDetail.tsx     # "/subs/flow/:id" — diagnostic board for one subscription
+    │   ├── PaymentMatrix.tsx     # "/subs/time" — six-week matrix + 13-month rail + day panel
+    │   ├── Insights.tsx          # "/subs/data" — readouts, distribution, gauges, statistics
+    │   ├── Settings.tsx          # "/sys" — System Host: skin, currency, horizon, volume, danger
+    │   ├── standby/
+    │   │   ├── StandbyDeck.tsx   # Shared standby frame (orange STANDBY deck + arrival roadmap)
+    │   │   ├── CardsDeck.tsx     # "/cards" — Credit Cards standby engine
+    │   │   ├── LoansDeck.tsx     # "/loans" — Loans & EMIs standby engine
+    │   │   └── SpendsDeck.tsx    # "/spends" — Daily Spends standby engine
     │   └── NotFound.tsx          # 404 terminal diagnostic view
     ├── store/
     │   └── ui.ts                 # Zustand store (persisted prefs, overlays, toasts, booted)
@@ -588,8 +606,21 @@ Because `clip-path` also clips `box-shadow`, chamfered panels are a **two-layer 
 
 ## 11. Core Feature Boards & Pages (`src/pages/`)
 
-### 11.1 Overview (`/`)
-The main flight deck:
+The Financial OS renders six in-domain cockpits behind one dumb shell. `DOMAINS` in `src/app/nav.ts` is the single source of truth — the shell (`CyberShell`) is domain-agnostic and renders each domain's chrome through `DomainFrame` from the `DOMAINS` entry (identity bar + `subnav` tabs). Adding a future engine = one entry in `DOMAINS` + one page; the standby decks below demonstrate the pattern.
+
+### 11.0 Master Command (`/`)
+The Financial OS cockpit — rolls every engine up into one net position (only live engines contribute today; standby decks read honest `0`):
+- **Hero CutPanel**: `NET MONTHLY BURN` spring-odometer (`AnimatedNumber`), `+Δ VS PREVIOUS CYCLE`, daily burn, plus per-engine burn tags.
+- **Readout strip** (`DataStrip`): projected annual load, active subscriptions, average, top category, charges inside the horizon.
+- **Subsystem Status matrix**: all six `DOMAINS` with LIVE / STANDBY chips, manifest blurbs and version tags — jump straight into any cockpit.
+- **Next Critical Outflow**: the closest scheduled charge across live engines.
+- **Burn Composition**: `CompositionStrip` broken down by category.
+- **Pending Engines**: arrival-sequence roadmap for the standby decks (`/cards` → `/loans` → `/spends`).
+- **Quick launch strip** into every domain.
+- Empty system → `NO ACTIVE SUBSCRIPTIONS / SYSTEM IS CURRENTLY CLEAN.`
+
+### 11.1 Subscriptions — Overview (`/subs`)
+The main Subscriptions flight deck (`Overview.tsx`):
 - **Hero**: `MONTHLY BURN` with a spring-odometer numeral, `+Δ VS PREVIOUS CYCLE`, daily burn, and the next-transaction card (service, date, countdown).
 - **Readout strip** (`DataStrip`): projected annual load, active subscriptions, average, highest cost, top category, charges inside the horizon.
 - **Load Distribution (`BurnRail`)**: segmented register of the whole burn; segments are coloured by **category signal**, interactive (hover/tap → readout), with a category legend.
@@ -599,15 +630,15 @@ The main flight deck:
 - **Active subscriptions grid**: up to 8 `ProcessCard`s + "load remaining" link; plus an **Archive** rail for suspended/terminated records.
 - Empty system → `NO ACTIVE SUBSCRIPTIONS / SYSTEM IS CURRENTLY CLEAN.` with the add CTA.
 
-### 11.2 Flow (`/flow`)
-The central subscription registry:
+### 11.2 Subscriptions — Registry (`/subs/flow`)
+The central subscription registry (`Flow.tsx`):
 - **Query bar**: full keyword, status, category and numeric filter engine (§8), with a live match count.
 - **Filter rail**: status (ALL/ACTIVE/SUSPENDED/TERMINATED), category codes with counts, sort (monthly cost / next cycle / name / cycles run) — reflows into columns on XL screens.
 - **Selection readout**: records in view, monthly burn in view, annualised, average, active filter summary.
 - **Density switcher**: module **grid** (ProcessCard) or high-density **list** (ProcessRow).
 
-### 11.3 Subscription Diagnostic Detail (`/flow/:id`)
-Hardware-inspired diagnostic station for one subscription:
+### 11.3 Subscription Diagnostic Detail (`/subs/flow/:id`)
+Hardware-inspired diagnostic station for one subscription (`ProcessDetail.tsx`):
 - **Identity & economics header**: shared-layout badge (`layoutId: glyph-{id}`), nominal price odometer, normalised readout, next-cycle block with countdown.
 - **Control rail**: Edit (opens the composer), Confirm Cycle (execute + advance), Suspend/Resume, Terminate Subscription / Purge Record (via the global `TerminationConsole`).
 - **Metadata register**: cycles executed, initialized, age, last marked used, anchor day, interval, status-changed, last write.
@@ -615,16 +646,17 @@ Hardware-inspired diagnostic station for one subscription:
 - **Payment history ledger**: reverse-chronological table with `TXN-…` references and `CONFIRMED`/`SCHEDULED` origin chips.
 - **Spending signal**: per-subscription monthly cash via `paymentSeriesFor()`.
 - Unknown id → `SUBSCRIPTION NOT FOUND` empty state.
+- Legacy alias: `/flow/:id` renders this page directly (the id is preserved).
 
-### 11.4 Payment Matrix (`/time`)
-Forward/backward financial projection:
+### 11.4 Subscriptions — Payment Matrix (`/subs/time`)
+Forward/backward financial projection (`PaymentMatrix.tsx`):
 - **Thirteen-month rail**: 3 past + current + 9 future months, each showing compact total and event count; today is LED-marked.
 - **Month readouts**: scheduled outflow, events, active days, peak day, average per event.
 - **Six-week matrix (42 cells)**: per-day charge markers, desktop named charges, category composition strip, `future-flow` tint for days ahead of today, today stamped in acid.
 - **Day panel**: desktop side panel / mobile bottom sheet listing the day's charges with base-currency conversion and the day total.
 
-### 11.5 Insights (`/data`)
-Deep financial intelligence:
+### 11.5 Subscriptions — Insights (`/subs/data`)
+Deep financial intelligence (`Insights.tsx`):
 - **Headline readouts**: monthly burn (emphasis), annual load, active subscriptions, average, highest cost.
 - **Composition strip + category blocks**: full-width stacked composition, then per-category segmented bars with counts, monthly cost and share.
 - **Radial instruments**: top-3 concentration, activity ratio (active ÷ total tracked), dormant load (30d+), with tick-ring SVG arcs.
@@ -632,8 +664,15 @@ Deep financial intelligence:
 - **Statistics table**: burn, load, daily rate, averages, highest/lowest, lifetime charged, charges in the last 30 days, longest running, newest, currencies in use, static FX reference.
 - **Billing cycle mix**: monthly/quarterly/yearly/custom distribution with shares, plus observations and system notes.
 
-### 11.6 Settings (`/sys`)
-System control and backup room:
+### 11.6 Standby Engines (`/cards`, `/loans`, `/spends`)
+Each future subsystem ships today as a **standby deck** so the OS rack is complete and honest about pending engines:
+- `CardsDeck.tsx` (`/cards`) — Credit Cards: statement cut-offs, 45-day zero-interest grace countdowns, aggregate credit utilisation.
+- `LoansDeck.tsx` (`/loans`) — Loans & EMIs: amortization decay curves, debt runway, prepayment simulations.
+- `SpendsDeck.tsx` (`/spends`) — Daily Spends: micro-transaction ledger, discretionary burn velocity, weekly limiters.
+- All three share one `StandbyDeck` frame: an orange `STANDBY` status strip, manifest hero, a ghosted list of planned instruments, an arrival-sequence roadmap, and a shared-host note that their eventual data unifies under the same local volume. An engine goes `live` by flipping `status: 'standby' → 'live'` in `nav.ts` and pointing its page at real data.
+
+### 11.7 System Host (`/sys`)
+System control and backup room (`Settings.tsx`):
 - **Appearance**: `NIGHT // PRIMARY` vs `DAYLIGHT // BRUTALIST`, background grid toggle, calm motion mode.
 - **Aggregation currency**: 9-currency select + the full static FX reference table (per 1 base, and 1 unit → base).
 - **Incoming horizon**: 7/14/30/60/90 days + RECONCILE SCHEDULES (rolls overdue anchors forward).
@@ -683,16 +722,19 @@ interface UIState {
 
 ## 13. Global Keyboard Shortcut Register
 
+The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-level rack entry maps `key → path`. Currently the six-domain rack occupies `1`–`6`; the SUBS sub-tab single letters (`O/F/M/I`) are printed in the DomainFrame sub-nav for visual reference only and are **not** bound as global hotkeys (only the six rack numbers are). Adding a future engine to `DOMAINS` automatically allocates its next free number via `domainByKey()` / the `DOMAINS.map` in `CyberShell`.
+
 | Shortcut | Scope | Action |
 | :--- | :--- | :--- |
 | `⌘ + K` or `Ctrl + K` | Global | Toggle Command Palette |
 | `/` | Global | Open Command Palette (query field focused) |
 | `N` | Global | Open the New Subscription composer |
-| `1` | Global | Navigate to **Overview** (`/`) |
-| `2` | Global | Navigate to **Subscriptions** (`/flow`) |
-| `3` | Global | Navigate to **Payment Matrix** (`/time`) |
-| `4` | Global | Navigate to **Insights** (`/data`) |
-| `5` | Global | Navigate to **Settings** (`/sys`) |
+| `1` | Global | Navigate to **Master Command** (`/`) |
+| `2` | Global | Navigate to **Subscriptions** (`/subs`) |
+| `3` | Global | Navigate to **Credit Cards** standby deck (`/cards`) |
+| `4` | Global | Navigate to **Loans & EMIs** standby deck (`/loans`) |
+| `5` | Global | Navigate to **Daily Spends** standby deck (`/spends`) |
+| `6` | Global | Navigate to **System Host** (`/sys`) |
 | `T` | Global | Toggle Night / Daylight theme |
 | `ESC` | Global | Close the active modal, sheet, palette or popover |
 | `↑` / `↓` | Palette | Navigate results (commands, then subscriptions) |
@@ -709,7 +751,7 @@ interface UIState {
 - **Manifest**: hand-authored in `public/manifest.webmanifest` and referenced by `<link>` — the plugin runs with `manifest: false` so the file stays readable and diffable. Includes `standalone` display, theme colours `#050505`/`#F2F1EC`, maskable icon, and three app shortcuts (new subscription, payment matrix, insights).
 - **Service worker**: `vite-plugin-pwa` with `registerType: 'prompt'` and `injectRegister: null` — registration is manual via `virtual:pwa-register/react` in `UpdatePrompt.tsx`, which polls `registration.update()` every 30 minutes and offers a deliberate **RELOAD CONSOLE** when a new build is cached (`skipWaiting` is not auto-called).
 - **Precache**: `globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}']`, `navigateFallback: 'index.html'`, `cleanupOutdatedCaches`, `clientsClaim`, and **no runtime caching** — the app is fully self-contained, so precache ≈ 28 entries / ~846 KB covers offline use entirely.
-- **Code splitting**: `Overview`, `Flow`, `ProcessDetail` ship in the entry chunk; `PaymentMatrix`, `Insights`, `Settings` are lazy routes prefetched on idle. `manualChunks` groups `react` (react, react-dom, react-router-dom), `motion`, and `data` (dexie, zustand).
+- **Code splitting**: `MasterCommand` and `Overview` are statically imported and ship in the entry chunk (the OS cockpit is available on first paint); `PaymentMatrix`, `Insights`, `Settings` and the three standby decks (`CardsDeck`, `LoansDeck`, `SpendsDeck`) are lazy routes dynamically imported once on idle, so the entry stays lean while every cockpit snap-transitions on demand. `manualChunks` groups `react` (react, react-dom, react-router-dom), `motion`, and `data` (dexie, zustand).
 - **Generated assets**: `pnpm run icons` (or `node scripts/generate-icons.mjs`) draws the icon set and the grain tile with a zero-dependency PNG encoder — no hand-checked-in binaries.
 - **Fonts** are self-hosted (`public/fonts/`), so nothing is fetched from a CDN at runtime.
 

@@ -1,14 +1,17 @@
 /**
- * SUBTRACK // APP
+ * SUBTRACK // FINANCIAL OPERATING SYSTEM APP
  *
- * Router, skin synchronisation and boot sequencing. The calendar, analytics and
- * settings modules are code-split, then prefetched while the console is idle so
- * navigation still feels instant.
+ * Router, skin synchronisation and boot sequencing for the Financial OS Shell.
+ * The domain cockpits (Master, Subscriptions, Cards, Loans, Spends, Host) are
+ * code-split and prefetched during idle cycles for instant transitions.
+ * Legacy subscription routes (/flow, /time, /data) redirect into /subs/* so
+ * there is exactly one canonical path per view.
  */
 import { lazy, useEffect } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { MotionConfig } from 'motion/react'
 import { CyberShell } from '@/components/shell/CyberShell'
+import MasterCommand from '@/pages/MasterCommand'
 import Overview from '@/pages/Overview'
 import Flow from '@/pages/Flow'
 import ProcessDetail from '@/pages/ProcessDetail'
@@ -19,6 +22,9 @@ import { useUI } from '@/store/ui'
 const PaymentMatrix = lazy(() => import('@/pages/PaymentMatrix'))
 const Insights = lazy(() => import('@/pages/Insights'))
 const Settings = lazy(() => import('@/pages/Settings'))
+const CardsDeck = lazy(() => import('@/pages/standby/CardsDeck'))
+const LoansDeck = lazy(() => import('@/pages/standby/LoansDeck'))
+const SpendsDeck = lazy(() => import('@/pages/standby/SpendsDeck'))
 
 /**
  * Applies the active skin to <html>, mirrors it where the pre-paint boot script
@@ -87,6 +93,9 @@ function BootSequence() {
       void import('@/pages/PaymentMatrix')
       void import('@/pages/Insights')
       void import('@/pages/Settings')
+      void import('@/pages/standby/CardsDeck')
+      void import('@/pages/standby/LoansDeck')
+      void import('@/pages/standby/SpendsDeck')
     })
     return () => cancel(handle)
   }, [])
@@ -102,12 +111,32 @@ export default function App() {
         <BootSequence />
         <Routes>
           <Route element={<CyberShell />}>
-            <Route index element={<Overview />} />
-            <Route path="flow" element={<Flow />} />
+            {/* [01] Master Command — the OS cockpit */}
+            <Route index element={<MasterCommand />} />
+
+            {/* [02] Subscriptions subsystem (Subtrack engine) */}
+            <Route path="subs" element={<Overview />} />
+            <Route path="subs/flow" element={<Flow />} />
+            <Route path="subs/flow/:id" element={<ProcessDetail />} />
+            <Route path="subs/time" element={<PaymentMatrix />} />
+            <Route path="subs/data" element={<Insights />} />
+
+            {/* Legacy subscription aliases. flow/:id renders directly so the id
+                is preserved; parameterless routes redirect to canonical /subs/* */}
+            <Route path="flow" element={<Navigate to="/subs/flow" replace />} />
             <Route path="flow/:id" element={<ProcessDetail />} />
-            <Route path="time" element={<PaymentMatrix />} />
-            <Route path="data" element={<Insights />} />
+            <Route path="time" element={<Navigate to="/subs/time" replace />} />
+            <Route path="data" element={<Navigate to="/subs/data" replace />} />
+
+            {/* [03][04][05] Standby engines */}
+            <Route path="cards" element={<CardsDeck />} />
+            <Route path="loans" element={<LoansDeck />} />
+            <Route path="spends" element={<SpendsDeck />} />
+
+            {/* [06] System Host */}
             <Route path="sys" element={<Settings />} />
+
+            {/* 404 catch-all */}
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

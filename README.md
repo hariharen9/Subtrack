@@ -9,13 +9,13 @@
  // LOCAL-FIRST · OFFLINE-READY · FINANCIAL OPERATING SYSTEM
 ```
 
-**Subtrack is a deterministic, local-first Financial Operating System for recurring subscription management.**
+**Subtrack is a deterministic, local-first Financial Operating System — a shell of independent financial engines, the first of which (Subscriptions) is fully live.**
 
-Most financial tools treat recurring subscriptions as passive spreadsheet rows. Subtrack treats them as **active background processes** running on your personal financial volume:
+The shell treats every financial engine as a domain with its own cockpit. Subscriptions — already live — treats each recurring service as an **active background process** running on your personal financial volume:
 - **Subscriptions are Processes**: Each service is an active background process with an identity (`SUB-XXXXX`), status (`active`, `suspended`, `terminated`), and cycle interval.
 - **Money is Resource Consumption**: Charges represent compute/resource cycles. Subtrack normalizes all billing schedules into **Burn Rate** (daily, monthly, annual).
 - **Renewals are Scheduled Events**: Future billing dates are derived deterministically as `anchor + k × interval` — no calendar day drift.
-- **Your Device is the Host Volume**: Zero telemetry, zero cloud databases, zero accounts. 100% offline-first IndexedDB storage via Dexie.js.
+- **Your Device is the Host Volume**: Zero telemetry, zero cloud databases, zero accounts. 100% offline-first IndexedDB storage via Dexie.js. Credit Cards, Loans & EMIs, and Daily Spends are queued behind it.
 
 ---
 
@@ -35,16 +35,24 @@ pnpm icons            # regenerate PWA vector icons and textures
 
 ---
 
-## Application Modules
+## Financial OS Domains & Subsystems
 
-| Module | Route | Purpose & Capabilities |
-| :--- | :--- | :--- |
-| **CORE** Overview | `/` | Command center: Monthly Burn hero, Segmented Burn Rail, Spending Signal with live momentum telemetry, Category Breakdown, Concentration Exposure gauges, and 30-Day Incoming Stream. |
-| **FLOW** Subscriptions | `/flow` | Complete subscription registry with query parsing, category & status filtering, multi-density views (grid/dense list), and lifecycle actions. |
-| **—** Process Detail | `/flow/:id` | Deep diagnostic board for a single subscription: execution history, renewal projection, schedule rollback/forward, and termination console. |
-| **TIME** Payment Matrix | `/time` | Interactive 6-week matrix mapping daily cash requirements, 13-month horizon rail, and day-by-day inspector. |
-| **DATA** System Analytics | `/data` | Category distribution strip, concentration gauges, dormant spend detection, billing cycle mix, and lifetime ledger statistics. |
-| **SYS** Settings | `/sys` | Skin selector (Night / Daylight), base currency, static FX table, JSON snapshot backup/import, CSV ledger export, and maintenance tools. |
+The application is a **Financial Operating System shell** around independent domain engines. Each domain owns a cockpit (sub-navigation) rendered by the shell; the composition is data-driven in `src/app/nav.ts`, so adding an engine means one entry + one page.
+
+| Domain | Route | Status | Purpose & Capabilities |
+| :--- | :--- | :--- | :--- |
+| **`CMD`** Master Command | `/` | **Live** | The OS cockpit: Total System Burn roll-up, per-engine burn tags, subsystem status matrix (LIVE/STANDBY), next critical outflow, and burn composition across live engines. |
+| **`SUBS`** Subscriptions | `/subs` | **Live** | The Subtrack engine — monthly burn hero, segmented load rail, spending signal, category breakdown, concentration gauges, 30-day incoming stream. |
+| — Registry | `/subs/flow` | Live | Searchable subscription index with fuzzy query parsing and multi-density grid/list views. |
+| — Process Diagnostic | `/subs/flow/:id` | Live | Per-process execution history, renewal projection, schedule controls, and termination console. |
+| — Payment Matrix | `/subs/time` | Live | 6-week daily cashflow grid, 13-month calendar horizon rail, and day inspector. |
+| — System Insights | `/subs/data` | Live | Category distribution, concentration gauges, dormant spend scanner, cycle telemetry. |
+| **`CRD`** Credit Cards | `/cards` | Standby *(v0.2.0)* | Statement cut-off mapping, 45-day zero-interest grace tracker, aggregate limit utilisation gauges. |
+| **`DEBT`** Loans & EMIs | `/loans` | Standby *(v0.3.0)* | Principal vs interest decay amortization, debt runway metrics, prepayment payoff simulators. |
+| **`SPND`** Daily Spends | `/spends` | Standby *(v0.4.0)* | Micro-transaction ledger, discretionary burn velocity, weekly spending limiters. |
+| **`SYS`** System Host | `/sys` | **Live** | Skin selector, base currency & static FX, JSON vault backup/import, CSV export, maintenance tools. |
+
+Legacy routes `/flow`, `/time`, `/data` redirect into `/subs/*`; `/flow/:id` renders directly so deep links keep working.
 
 ---
 
@@ -59,9 +67,9 @@ pnpm icons            # regenerate PWA vector icons and textures
 
 ---
 
-## The Future: Beyond Subscriptions
+## The Roadmap: Live Engines → Full Financial OS
 
-Deep UI, hardware-grade aesthetics, and rigorous financial telemetry shouldn't stop at subscriptions. Subtrack's architecture is engineered as a foundational compute layer that will expand into a comprehensive **Personal Financial Operating System**:
+The OS shell is live today with the Subscriptions engine running inside it. The remaining engines are already scaffolded as **standby decks** in the navigation (`/cards`, `/loans`, `/spends`) — visible as honest "core pending" telemetry shells until their arithmetic ships. The same deterministic math, static FX and local IndexedDB volume will power them:
 
 ```
 +-----------------------------------------------------------------------------------+
@@ -89,17 +97,17 @@ Deep UI, hardware-grade aesthetics, and rigorous financial telemetry shouldn't s
 
 ### Roadmap & Planned Modules
 
-1. **Daily Spends & Micro-Transaction Ledger**
-   - Real-time manual/file transaction ingestion with instant category auto-assignment.
-   - Variable expenditure velocity metrics and weekly discretionary burn limits.
-
-2. **Credit Cards & Statement Cycle Matrix**
+1. **Credit Cards & Statement Cycle Matrix** *(standby deck live at `/cards`)*
    - Statement generation dates, due date matrices, and grace period countdown timers.
    - Multi-card utilization tracking and optimal settlement order algorithms to eliminate interest charges.
 
-3. **Loans, EMIs & Debt Amortization Engine**
+2. **Loans, EMIs & Debt Amortization Engine** *(standby deck live at `/loans`)*
    - Principal vs. interest decay curves, fixed/floating rate tracking, and amortization schedules.
-   - Prepayment impact simulators: see exact months shaved off debt per extra dollar paid.
+   - Prepayment impact simulators: see exact months shaved off debt per extra rupee paid.
+
+3. **Daily Spends & Micro-Transaction Ledger** *(standby deck live at `/spends`)*
+   - Real-time manual/file transaction ingestion with instant category auto-assignment.
+   - Variable expenditure velocity metrics and weekly discretionary burn limits.
 
 4. **Recurring Income & Net Capital Velocity**
    - Salary and recurring cash inflow scheduling balanced against system burn rate.
@@ -114,11 +122,11 @@ Deep UI, hardware-grade aesthetics, and rigorous financial telemetry shouldn't s
 
 ```
 src/
-├── app/nav.ts                 # Navigation models, module codes, hotkeys
+├── app/nav.ts                 # DOMAINS model: domain rack, sub-navs, status
 ├── components/
 │   ├── brand/                 # Badges, Glyphs, Wordmarks
 │   ├── charts/                # BurnRail, CategoryBlock, SpendingSignal
-│   ├── shell/                 # CyberShell, Header, NavRail, Palette, Toaster
+│   ├── shell/                 # CyberShell, DomainFrame, NavRail, Palette, Toaster
 │   ├── subs/                  # ProcessCard, Composer, TerminateDialog, Stream
 │   └── ui/                    # CutPanel, CyberButton, Signal, Controls, Micro
 ├── hooks/                     # useSystem (reactive pipeline), usePlatform, useElementWidth
@@ -130,7 +138,12 @@ src/
 │   ├── db.ts                  # Dexie.js database schema & CRUD write engine
 │   ├── money.ts               # Static FX table & Intl number formatting
 │   └── types.ts               # Domain types, categories, signals
-├── pages/                     # Overview, Flow, ProcessDetail, PaymentMatrix, Insights, Settings
+├── pages/
+│   ├── MasterCommand.tsx      # "/" — the Financial OS cockpit
+│   ├── Overview.tsx           # "/subs" — the Subscriptions engine overview
+│   ├── Flow.tsx, ProcessDetail.tsx, PaymentMatrix.tsx, Insights.tsx
+│   ├── standby/               # CardsDeck, LoansDeck, SpendsDeck + shared StandbyDeck
+│   └── Settings.tsx, NotFound.tsx
 ├── store/ui.ts                # Zustand UI preference store
 └── styles/                    # Tokens, CSS chamfers, fonts, base reset
 ```

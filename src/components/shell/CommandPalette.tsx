@@ -25,14 +25,17 @@ import { KeyCap } from '@/components/ui/Micro'
 import {
   IconArrowRight,
   IconClose,
-  IconCore,
+  IconCommandCenter,
+  IconCreditCard,
   IconData,
+  IconDebt,
   IconDownload,
   IconFlow,
   IconLink,
   IconMoon,
   IconPlus,
   IconSearch,
+  IconSpends,
   IconSun,
   IconSys,
   IconTime,
@@ -88,36 +91,68 @@ export function CommandPalette() {
         run: () => inputRef.current?.focus(),
       },
       {
-        id: 'core',
-        label: 'Open Overview',
-        hint: 'Burn, load, incoming flow',
+        id: 'cmd',
+        label: 'Open Master Command',
+        hint: 'Global runway, subsystem matrix',
         kbd: '1',
-        icon: IconCore,
+        icon: IconCommandCenter,
         run: () => navigate('/'),
       },
       {
-        id: 'flow',
-        label: 'Open Subscriptions',
-        hint: 'Every running subscription',
+        id: 'subs',
+        label: 'Open Subscriptions Cockpit',
+        hint: 'Subscription engine overview',
         kbd: '2',
         icon: IconFlow,
-        run: () => navigate('/flow'),
+        run: () => navigate('/subs'),
+      },
+      {
+        id: 'flow',
+        label: 'Open Subscriptions Registry',
+        hint: 'Searchable process index',
+        kbd: 'F',
+        icon: IconFlow,
+        run: () => navigate('/subs/flow'),
       },
       {
         id: 'time',
         label: 'Open Payment Matrix',
-        hint: 'Calendar of outgoing flow',
-        kbd: '3',
+        hint: '6-week calendar of outgoing cashflow',
+        kbd: 'M',
         icon: IconTime,
-        run: () => navigate('/time'),
+        run: () => navigate('/subs/time'),
       },
       {
         id: 'data',
-        label: 'Open System Analytics',
-        hint: 'Distribution and concentration',
-        kbd: '4',
+        label: 'Open Subscription Insights',
+        hint: 'Category distribution and concentration',
+        kbd: 'I',
         icon: IconData,
-        run: () => navigate('/data'),
+        run: () => navigate('/subs/data'),
+      },
+      {
+        id: 'cards',
+        label: 'Open Credit Cards Deck',
+        hint: 'Statement cut-offs and grace (standby)',
+        kbd: '3',
+        icon: IconCreditCard,
+        run: () => navigate('/cards'),
+      },
+      {
+        id: 'loans',
+        label: 'Open Loans & EMIs Deck',
+        hint: 'Amortization and payoff (standby)',
+        kbd: '4',
+        icon: IconDebt,
+        run: () => navigate('/loans'),
+      },
+      {
+        id: 'spends',
+        label: 'Open Daily Spends Deck',
+        hint: 'Transaction velocity (standby)',
+        kbd: '5',
+        icon: IconSpends,
+        run: () => navigate('/spends'),
       },
       {
         id: 'export',
@@ -153,9 +188,9 @@ export function CommandPalette() {
       },
       {
         id: 'sys',
-        label: 'Open Settings',
-        hint: 'Currency, theme, data volume',
-        kbd: '5',
+        label: 'Open System Host',
+        hint: 'Theme, currency, vault backup',
+        kbd: '6',
         icon: IconSys,
         run: () => navigate('/sys'),
       },
@@ -215,7 +250,7 @@ export function CommandPalette() {
     }
     const hit = processHits[index - commandHits.length]
     if (hit) {
-      navigate(`/flow/${hit.sub.id}`)
+      navigate(`/subs/flow/${hit.sub.id}`)
       close()
     }
   }
@@ -304,7 +339,7 @@ export function CommandPalette() {
                   ref={inputRef}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search subscriptions, jump to views, or execute actions..."
+                  placeholder="Search financial OS, jump to views, execute actions..."
                   aria-label="Query"
                   autoComplete="off"
                   spellCheck={false}

@@ -218,4 +218,43 @@ export const IconLink = (p: IconProps) => (
   </Svg>
 )
 
+/** Master Command mark — a command prompt node with a signal pulse. */
+export const IconCommandCenter = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 5h18v15H3z" />
+    <path d="M6 10h12M6 14h12" />
+    <path d="M12 3v4M12 19v3" strokeWidth={2} />
+  </Svg>
+)
+
+/** Credit card — embossed rectangle with a magnetic strip. */
+export const IconCreditCard = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 4h16v16H4z" />
+    <path d="M4 10.5h16" strokeWidth={2.4} />
+    <path d="M8 14h6M9 17h4" />
+  </Svg>
+)
+
+/** Debt / amortization — a descending decay curve with a baseline. */
+export const IconDebt = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 4h16v17H4z" />
+    <path d="M6 5l3 1 3 1 3 2 3 2 3 3 3 3 3 4" />
+    <path d="M5 21h14" strokeWidth={2} />
+  </Svg>
+)
+
+/** Daily spends — a ledger of stacked transaction lines with a running ticker. */
+export const IconSpends = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 6h18v12H3z" />
+    <path d="M12 8.5v7.5M8 8.5v1M16 8.5v1" strokeWidth={2} />
+    <path d="M12 8.5a4 4 0 1 0 0 7 4 4 0 0 0 0-7z" />
+  </Svg>
+)
+
+/** Inner sub-nav chevrons for domain chrome. */
+export const IconSubsession = IconFlow
+
 export const IconCalendar = IconTime

@@ -10,7 +10,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { useClock, useOnline } from '@/hooks/usePlatform'
 import { formatClock } from '@/lib/date'
-import { navItemFor } from '@/app/nav'
+import { domainFor } from '@/app/nav'
 import { useUI } from '@/store/ui'
 import { CyberButton, IconButton } from '@/components/ui/CyberButton'
 import { IconMoon, IconPlus, IconSearch, IconSun } from '@/components/ui/Icons'
@@ -33,12 +33,13 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
   const { pathname } = useLocation()
   const now = useClock(1000)
   const online = useOnline()
-  const item = navItemFor(pathname)
+  const item = domainFor(pathname)
   const theme = useUI((s) => s.theme)
   const toggleTheme = useUI((s) => s.toggleTheme)
   const setPaletteOpen = useUI((s) => s.setPaletteOpen)
   const openComposer = useUI((s) => s.openComposer)
   const status = statusOf(summary)
+  const standby = item.status === 'standby'
 
   const meta = (
     <>
@@ -50,15 +51,17 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
       <span
         className={cx(
           'micro flex items-center gap-1.5 whitespace-nowrap',
-          status.signal === 'acid'
-            ? 'text-acidink'
-            : status.signal === 'orange'
-              ? 'text-orangeink'
-              : 'text-blueink',
+          standby
+            ? 'text-orangeink'
+            : status.signal === 'acid'
+              ? 'text-acidink'
+              : status.signal === 'orange'
+                ? 'text-orangeink'
+                : 'text-blueink',
         )}
       >
-        <Led signal={status.signal} size="sm" pulse={status.signal !== 'blue'} />
-        {status.label}
+        <Led signal={standby ? 'orange' : status.signal} size="sm" pulse={!standby && status.signal !== 'blue'} />
+        {standby ? 'STANDBY DECK' : status.label}
       </span>
       <span className="micro hidden whitespace-nowrap text-faint sm:inline">
         {formatClock(now)}
@@ -91,7 +94,7 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
           >
             <IconSearch size={14} className="shrink-0 text-faint" />
             <span className="micro flex-1 truncate text-faint group-hover:text-dim">
-              SEARCH SUBSCRIPTIONS...
+              SEARCH FINANCIAL OS...
             </span>
             <KeyCap>⌘K</KeyCap>
           </button>

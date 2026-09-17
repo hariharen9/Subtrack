@@ -111,16 +111,17 @@ const shot = async (name) => {
 
 try {
   /* ---------------------------------------------------------------- boot --- */
+  /* Master Command cockpit on "/" — the OS roll-up across engines.            */
   await page.goto(`${base}/`, { waitUntil: 'load' })
   await page.waitForFunction(
-    () => document.body.innerText.includes('MONTHLY BURN'),
+    () => document.body.innerText.includes('TOTAL SYSTEM BURN'),
     { timeout: 15000 },
   )
   await new Promise((resolve) => setTimeout(resolve, 1200))
 
   const heroText = await page.$eval('h1', (node) => node.innerText)
   const heroValue = Number(heroText.replace(/[^\d.]/g, ''))
-  check('overview renders the monthly burn hero', heroValue > 1000, `₹${heroValue}`)
+  check('master command renders the net burn hero', heroValue > 1000, `₹${heroValue}`)
   check('skin applied to <html>', (await page.$eval('html', (n) => n.dataset.theme)) === 'dark')
   check('theme-color meta synced', (await page.$eval('meta[name="theme-color"]', (n) => n.content)) === '#050505')
 
@@ -139,7 +140,15 @@ try {
   })
   check('demo dataset seeded into IndexedDB', seeded.subs >= 15 && seeded.payments > 50,
     `${seeded.subs} processes, ${seeded.payments} charges`)
+  await shot('01-master')
 
+  /* Subscriptions overview cockpit on "/subs" holds the process grid + rails. */
+  await page.goto(`${base}/subs`, { waitUntil: 'load' })
+  await page.waitForFunction(
+    () => document.body.innerText.includes('MONTHLY BURN'),
+    { timeout: 15000 },
+  )
+  await new Promise((resolve) => setTimeout(resolve, 1100))
   const cardCount = await page.$$eval('a[href^="/flow/"]', (nodes) => nodes.length)
   check('process modules rendered on overview', cardCount >= 6, `${cardCount} links`)
   check('burn rail segments present', (await page.$$('button[aria-label*="percent of burn"]')).length >= 10)
@@ -183,7 +192,7 @@ try {
   const beforeCreate = seeded.subs
   await page.evaluate(() => {
     const buttons = [...document.querySelectorAll('button')]
-    const cta = buttons.find((b) => b.textContent?.includes('INITIALIZE SUBSCRIPTION') && b.closest('[role="dialog"]'))
+    const cta = buttons.find((b) => b.textContent?.includes('ADD SUBSCRIPTION') && b.closest('[role="dialog"]'))
     cta?.click()
   })
   await page.waitForFunction(
@@ -229,9 +238,17 @@ try {
 
   /* ---------------------------------------------------------------- routes --- */
   for (const [path, marker] of [
+    ['/', 'TOTAL SYSTEM BURN'],
+    ['/subs', 'MONTHLY BURN'],
+    ['/subs/flow', 'SUBSCRIPTIONS'],
     ['/flow', 'SUBSCRIPTIONS'],
+    ['/subs/time', 'PAYMENT MATRIX'],
     ['/time', 'PAYMENT MATRIX'],
+    ['/subs/data', 'SYSTEM ANALYTICS'],
     ['/data', 'SYSTEM ANALYTICS'],
+    ['/cards', 'STANDBY'],
+    ['/loans', 'STANDBY'],
+    ['/spends', 'STANDBY'],
     ['/sys', 'SETTINGS'],
     ['/nope', 'NO SUCH MODULE'],
   ]) {
@@ -269,8 +286,8 @@ try {
   await page.goto(`${base}/`, { waitUntil: 'load' })
   await new Promise((resolve) => setTimeout(resolve, 1000))
   const mobile = await page.evaluate(() => {
-    const nav = document.querySelector('nav[aria-label="Primary"]')
-    const rail = document.querySelector('nav[aria-label="Primary"]')?.getBoundingClientRect()
+    const nav = document.querySelector('nav[aria-label="Financial OS Primary Console"]')
+    const rail = document.querySelector('nav[aria-label="Financial OS Primary Console"]')?.getBoundingClientRect()
     return {
       bottomNavVisible: Boolean(nav && nav.getBoundingClientRect().bottom > 700),
       navWidth: rail?.width ?? 0,

@@ -1,9 +1,10 @@
 /**
  * SUBTRACK // CYBER SHELL
  *
- * The frame everything runs inside: navigation rack, instrument header, content
- * well, mobile console and the persistent overlays (log, palette, authoring
- * console, update notice). Pages only ever render their own content well.
+ * The frame everything runs inside: navigation rack, instrument header, the
+ * in-domain chrome strip, content well, mobile console and the persistent
+ * overlays (log, palette, authoring console, update notice). Pages only ever
+ * render their own content well.
  */
 import { Suspense, useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -11,11 +12,12 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { usePayments, useSystem } from '@/hooks/useSystem'
 import { useHotkeys } from '@/hooks/usePlatform'
 import { useUI } from '@/store/ui'
-import { NAV_ITEMS } from '@/app/nav'
+import { DOMAINS } from '@/app/nav'
 import { cx } from '@/lib/cx'
 import { FieldOverlay } from './FieldOverlay'
 import { SystemHeader } from './SystemHeader'
 import { NavigationRail } from './NavigationRail'
+import { DomainFrame } from './DomainFrame'
 import { MobileNav } from './MobileNav'
 import { SystemFooter } from './SystemFooter'
 import { SystemToaster } from './SystemToaster'
@@ -26,43 +28,37 @@ import { TerminationConsole } from '@/components/subs/TerminationConsole'
 import { BootScreen } from '@/components/ui/Skeleton'
 
 /**
- * Route transition: a 200ms lift plus a one-shot chromatic sweep. The sweep is
- * the only glitch in the product, and it lasts exactly one route change.
+ * Route transition: lifts the content well while the domain chrome stays put.
+ * The one-shot chromatic sweep is reserved for real route changes; the content
+ * well is the only thing that moves.
  */
 function RouteStage() {
   const location = useLocation()
   const reduced = useReducedMotion()
-  // const calm = useUI((s) => s.calmMode)
 
   useEffect(() => {
     if (location.hash) return
-    window.scrollTo({ top: 0, behavior: 'auto' })
-  }, [location.pathname, location.hash])
+    window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
+  }, [location.pathname, location.hash, reduced])
 
   return (
     <>
-      {/* Lemon/acid chromatic sweep overlay on route change (commented out per user request):
-      {!reduced && !calm && (
-        <span
-          key={location.pathname}
-          aria-hidden="true"
-          className="glitch-sweep pointer-events-none fixed inset-0 z-[45] bg-acid/10 mix-blend-screen"
-        />
-      )}
-      */}
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, y: reduced ? 0 : 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: reduced ? 0 : -6 }}
-          transition={{ duration: reduced ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <Suspense fallback={<BootScreen label="LOADING MODULE" />}>
-            <Outlet />
-          </Suspense>
-        </motion.div>
-      </AnimatePresence>
+      <DomainFrame />
+      <div className="mt-1">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: reduced ? 0 : 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: reduced ? 0 : -4 }}
+            transition={{ duration: reduced ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Suspense fallback={<BootScreen label="LOADING MODULE" />}>
+              <Outlet />
+            </Suspense>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </>
   )
 }
@@ -85,7 +81,7 @@ export function CyberShell() {
     { key: '/', handler: (event) => { event.preventDefault(); setPaletteOpen(true) } },
     { key: 'n', handler: () => openComposer() },
     { key: 't', handler: () => toggleTheme() },
-    ...NAV_ITEMS.map((item) => ({
+    ...DOMAINS.map((item) => ({
       key: item.key,
       handler: () => navigate(item.path),
     })),
@@ -107,7 +103,7 @@ export function CyberShell() {
       <div className="lg:pl-[88px]">
         <SystemHeader summary={summary} />
 
-        <main id="main" className="relative z-10 pb-[104px] lg:pb-0">
+        <main id="main" className="relative z-10 pb-[112px] lg:pb-0">
           {booted ? (
             <RouteStage />
           ) : (
