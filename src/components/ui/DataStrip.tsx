@@ -32,6 +32,7 @@ export function DataStrip({
 }) {
   return (
     <div
+      data-lenis-prevent={scroll ? '' : undefined}
       className={cx(
         'flex w-full items-stretch',
         scroll ? 'no-scrollbar overflow-x-auto' : 'flex-wrap',

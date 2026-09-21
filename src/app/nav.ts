@@ -219,7 +219,7 @@ export function subNavItemFor(domain: Domain, pathname: string): SubNavItem | un
   // ancestor so /subs/flow/:id keys FLOW over the shorter CORE (/subs) prefix.
   return hits.sort(
     (a, b) =>
-      (pathname === a.path ? 1 : 0) - (pathname === b.path ? 1 : 0) ||
+      (pathname === b.path ? 1 : 0) - (pathname === a.path ? 1 : 0) ||
       b.path.length - a.path.length,
   )[0]
 }

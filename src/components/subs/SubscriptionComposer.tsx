@@ -369,6 +369,7 @@ export function SubscriptionComposer() {
                     initial="hidden"
                     animate="show"
                     className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+                    data-lenis-prevent
                   >
                     {/* 01 SERVICE */}
                     <Section code="01" title="SERVICE">
@@ -392,7 +393,7 @@ export function SubscriptionComposer() {
                       </FieldShell>
 
                       {/* Category quick tabs */}
-                      <div className="no-scrollbar mt-2.5 flex items-center gap-1 overflow-x-auto pb-0.5">
+                      <div className="no-scrollbar mt-2.5 flex items-center gap-1 overflow-x-auto pb-0.5" data-lenis-prevent>
                         <button
                           type="button"
                           onClick={() => setPresetCategory('all')}
@@ -428,7 +429,7 @@ export function SubscriptionComposer() {
                       </div>
 
                       {/* Preset Grid */}
-                      <div className="no-scrollbar mt-2 max-h-[220px] overflow-y-auto overscroll-contain pr-0.5 md:max-h-[240px]">
+                      <div className="no-scrollbar mt-2 max-h-[220px] overflow-y-auto overscroll-contain pr-0.5 md:max-h-[240px]" data-lenis-prevent>
                         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
                           {filteredCatalog.map((service) => {
                             const selected = draft.serviceId === service.id

@@ -164,7 +164,7 @@ export default function Settings() {
                 live rate, and the same number every time you open the console.
               </p>
             </div>
-            <div className="max-h-[220px] overflow-y-auto">
+            <div className="max-h-[220px] overflow-y-auto" data-lenis-prevent>
               <table className="w-full border-collapse">
                 <thead className="sticky top-0 bg-surface">
                   <tr className="border-b border-line">

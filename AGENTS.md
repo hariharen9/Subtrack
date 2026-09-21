@@ -106,11 +106,11 @@ E:/Projects/Subtrack/
     │   │   ├── CommandPalette.tsx# Ctrl/⌘+K query engine (domain jumps + subscription index)
     │   │   ├── CyberShell.tsx    # RouteStage: DomainFrame + AnimatePresence content well,
     │   │   │                     #   rail, header, overlays, per-domain hotkeys
-    │   │   ├── DomainFrame.tsx   # Domain chrome: identity bar (label, code, status chip,
-    │   │   │                     #   manifest, base currency) + in-domain sub-nav strip
+    │   │   ├── DomainFrame.tsx   # Domain chrome: in-domain cockpit sub-navigation strip (CORE, FLOW, etc.)
     │   │   ├── FieldOverlay.tsx  # Viewfinder brackets, coordinate scale, CRT band (desktop)
     │   │   ├── MobileNav.tsx     # 6-cell bottom console (all DOMAINS) + burn edge strip + FAB
     │   │   ├── NavigationRail.tsx# Desktop rack over DOMAINS with sliding active plate + status
+    │   │   ├── SmoothScroll.tsx  # Global Lenis smooth scroll engine + route scroll reset
     │   │   ├── SystemFooter.tsx  # Minimal footer: counts, currency, creator credit
     │   │   ├── SystemHeader.tsx  # Instrument bar: module, status, clock, query trigger, CTA
     │   │   ├── SystemToaster.tsx # Console-log style toast stack (auto-dismiss / sticky)
@@ -129,7 +129,7 @@ E:/Projects/Subtrack/
     │       ├── CyberButton.tsx   # CyberButton (variants/sizes, kbd hint, busy) + IconButton
     │       ├── CyberDatePicker.tsx# Custom calendar popover (keyboard, relative jumps)
     │       ├── DataStrip.tsx     # DataStrip telemetry rail + SystemRail
-    │       ├── Icons.tsx         # 24-box stroke icon set (square caps)
+    │       ├── Icons.tsx         # Lucide vector icon suite (crisp, pixel-aligned geometry via react-icons/lu)
     │       ├── Micro.tsx         # MicroLabel, KeyCap, SectionHeader, HashRule
     │       ├── Signal.tsx        # Led, StatusChip, Tag, SIGNAL_* maps, STATUS_META
     │       └── Skeleton.tsx      # Skeleton, SkeletonPanel, BootScreen, EmptyState

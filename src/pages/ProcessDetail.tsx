@@ -370,7 +370,7 @@ export default function ProcessDetail() {
               signal="blue"
               right={<span className="micro text-faint">{ledger.length} RECORDS</span>}
             />
-            <div className="max-h-[420px] overflow-y-auto">
+            <div className="max-h-[420px] overflow-y-auto" data-lenis-prevent>
               <table className="w-full border-collapse text-left">
                 <thead className="sticky top-0 z-10 bg-surface">
                   <tr className="border-b border-line">

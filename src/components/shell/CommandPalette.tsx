@@ -379,6 +379,7 @@ export function CommandPalette() {
               <ul
                 ref={listRef}
                 className="max-h-[52vh] overflow-y-auto overscroll-contain py-1"
+                data-lenis-prevent
                 role="listbox"
                 aria-label="Results"
               >

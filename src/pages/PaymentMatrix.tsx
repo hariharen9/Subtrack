@@ -147,7 +147,7 @@ export default function PaymentMatrix() {
       </div>
 
       {/* horizon rail */}
-      <div className="no-scrollbar mt-3 flex gap-1 overflow-x-auto pb-1">
+      <div className="no-scrollbar mt-3 flex gap-1 overflow-x-auto pb-1" data-lenis-prevent>
         {horizon.map((key) => {
           const stats = byMonth.get(key)
           const active = key === month
@@ -397,6 +397,7 @@ export default function PaymentMatrix() {
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 440, damping: 40 }}
               className="relative max-h-[72dvh] w-full overflow-y-auto border-t-2 border-linehard bg-surface"
+              data-lenis-prevent
             >
               <div className="safe-b">
                 <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-line bg-bg2 px-3 py-2">

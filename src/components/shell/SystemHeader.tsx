@@ -140,7 +140,7 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
         </div>
       </div>
 
-      <div className="no-scrollbar flex items-center gap-3 overflow-x-auto border-t border-line px-3 py-1 lg:hidden">
+      <div className="no-scrollbar flex items-center gap-3 overflow-x-auto border-t border-line px-3 py-1 lg:hidden" data-lenis-prevent>
         {meta}
       </div>
     </header>

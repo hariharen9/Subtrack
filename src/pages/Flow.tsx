@@ -209,7 +209,7 @@ export default function Flow() {
           </div>
 
           {/* Categories (Center) */}
-          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto xl:justify-center">
+          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto xl:justify-center" data-lenis-prevent>
             <button
               type="button"
               onClick={() => setCategory('all')}

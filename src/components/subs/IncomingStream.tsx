@@ -177,7 +177,7 @@ export function IncomingRail({
 }) {
   if (!events.length) return null
   return (
-    <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+    <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" data-lenis-prevent>
       {events.map((event) => {
         const signal = signalFor(event, today)
         return (

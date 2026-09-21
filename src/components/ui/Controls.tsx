@@ -112,6 +112,7 @@ export function CyberSelect<T extends string>({
           role="listbox"
           aria-label={ariaLabel}
           className="absolute left-0 right-0 top-[calc(100%+3px)] z-50 max-h-64 overflow-y-auto border border-line2 bg-surface shadow-[3px_3px_0_0_var(--c-shadow-hard)]"
+          data-lenis-prevent
           onKeyDown={(event) => {
             if (event.key === 'ArrowDown') {
               event.preventDefault()

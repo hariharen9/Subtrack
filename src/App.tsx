@@ -18,6 +18,7 @@ import ProcessDetail from '@/pages/ProcessDetail'
 import NotFound from '@/pages/NotFound'
 import { ensureSeeded } from '@/lib/db'
 import { useUI } from '@/store/ui'
+import { SmoothScroll } from '@/components/shell/SmoothScroll'
 
 const PaymentMatrix = lazy(() => import('@/pages/PaymentMatrix'))
 const Insights = lazy(() => import('@/pages/Insights'))
@@ -106,6 +107,7 @@ function BootSequence() {
 export default function App() {
   return (
     <BrowserRouter>
+      <SmoothScroll />
       <MotionConfig reducedMotion="user">
         <ThemeSync />
         <BootSequence />

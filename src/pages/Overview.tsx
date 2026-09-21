@@ -661,7 +661,7 @@ export default function Overview() {
                 right={<span className="micro text-faint">{summary.incoming30.length} EVENTS</span>}
               />
               {/* mobile gets a rail, desktop the full stream */}
-              <div className="hidden md:block lg:max-h-[560px] lg:overflow-y-auto">
+              <div className="hidden md:block lg:max-h-[560px] lg:overflow-y-auto" data-lenis-prevent>
                 <IncomingStream
                   events={summary.incoming30}
                   base={base}
