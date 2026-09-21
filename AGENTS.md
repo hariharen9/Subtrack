@@ -104,7 +104,7 @@ E:/Projects/Subtrack/
     │   │   └── SpendingSignal.tsx# SVG signal trace: grid, crosshair, forecast region, a11y table
     │   ├── shell/
     │   │   ├── CommandPalette.tsx# Ctrl/⌘+K query engine (domain jumps + subscription index)
-    │   │   ├── CyberShell.tsx    # RouteStage: DomainFrame + AnimatePresence content well,
+    │   │   ├── CyberShell.tsx    # RouteStage: DomainFrame + smooth motion content well,
     │   │   │                     #   rail, header, overlays, per-domain hotkeys
     │   │   ├── DomainFrame.tsx   # Domain chrome: in-domain cockpit sub-navigation strip (CORE, FLOW, etc.)
     │   │   ├── FieldOverlay.tsx  # Viewfinder brackets, coordinate scale, CRT band (desktop)

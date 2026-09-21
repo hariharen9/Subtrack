@@ -2,12 +2,10 @@
  * SUBTRACK // FINANCIAL OPERATING SYSTEM APP
  *
  * Router, skin synchronisation and boot sequencing for the Financial OS Shell.
- * The domain cockpits (Master, Subscriptions, Cards, Loans, Spends, Host) are
- * code-split and prefetched during idle cycles for instant transitions.
- * Legacy subscription routes (/flow, /time, /data) redirect into /subs/* so
- * there is exactly one canonical path per view.
+ * All domain and module pages are loaded directly for zero-latency 0ms navigation,
+ * full offline reliability on mobile PWAs, and zero route-transition blanking.
  */
-import { lazy, useEffect } from 'react'
+import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { MotionConfig } from 'motion/react'
 import { CyberShell } from '@/components/shell/CyberShell'
@@ -15,17 +13,16 @@ import MasterCommand from '@/pages/MasterCommand'
 import Overview from '@/pages/Overview'
 import Flow from '@/pages/Flow'
 import ProcessDetail from '@/pages/ProcessDetail'
+import PaymentMatrix from '@/pages/PaymentMatrix'
+import Insights from '@/pages/Insights'
+import Settings from '@/pages/Settings'
+import CardsDeck from '@/pages/standby/CardsDeck'
+import LoansDeck from '@/pages/standby/LoansDeck'
+import SpendsDeck from '@/pages/standby/SpendsDeck'
 import NotFound from '@/pages/NotFound'
 import { ensureSeeded } from '@/lib/db'
 import { useUI } from '@/store/ui'
 import { SmoothScroll } from '@/components/shell/SmoothScroll'
-
-const PaymentMatrix = lazy(() => import('@/pages/PaymentMatrix'))
-const Insights = lazy(() => import('@/pages/Insights'))
-const Settings = lazy(() => import('@/pages/Settings'))
-const CardsDeck = lazy(() => import('@/pages/standby/CardsDeck'))
-const LoansDeck = lazy(() => import('@/pages/standby/LoansDeck'))
-const SpendsDeck = lazy(() => import('@/pages/standby/SpendsDeck'))
 
 /**
  * Applies the active skin to <html>, mirrors it where the pre-paint boot script
@@ -79,27 +76,6 @@ function BootSequence() {
       cancelled = true
     }
   }, [setBooted, pushToast])
-
-  useEffect(() => {
-    // Prefetch the split routes once the shell is interactive.
-    const schedule = (callback: () => void): number =>
-      typeof window.requestIdleCallback === 'function'
-        ? window.requestIdleCallback(callback, { timeout: 2500 })
-        : window.setTimeout(callback, 1200)
-    const cancel = (handle: number): void => {
-      if (typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(handle)
-      else window.clearTimeout(handle)
-    }
-    const handle = schedule(() => {
-      void import('@/pages/PaymentMatrix')
-      void import('@/pages/Insights')
-      void import('@/pages/Settings')
-      void import('@/pages/standby/CardsDeck')
-      void import('@/pages/standby/LoansDeck')
-      void import('@/pages/standby/SpendsDeck')
-    })
-    return () => cancel(handle)
-  }, [])
 
   return null
 }

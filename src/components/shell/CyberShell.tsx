@@ -6,9 +6,8 @@
  * overlays (log, palette, authoring console, update notice). Pages only ever
  * render their own content well.
  */
-import { Suspense, useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { usePayments, useSystem } from '@/hooks/useSystem'
 import { useHotkeys } from '@/hooks/usePlatform'
 import { useUI } from '@/store/ui'
@@ -27,37 +26,22 @@ import { SubscriptionComposer } from '@/components/subs/SubscriptionComposer'
 import { TerminationConsole } from '@/components/subs/TerminationConsole'
 import { BootScreen } from '@/components/ui/Skeleton'
 
-/**
- * Route transition: lifts the content well while the domain chrome stays put.
- * The one-shot chromatic sweep is reserved for real route changes; the content
- * well is the only thing that moves.
- */
 function RouteStage() {
   const location = useLocation()
   const reduced = useReducedMotion()
-
-  useEffect(() => {
-    if (location.hash) return
-    window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
-  }, [location.pathname, location.hash, reduced])
 
   return (
     <>
       <DomainFrame />
       <div className="mt-1">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: reduced ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: reduced ? 0 : -4 }}
-            transition={{ duration: reduced ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Suspense fallback={<BootScreen label="LOADING MODULE" />}>
-              <Outlet />
-            </Suspense>
-          </motion.div>
-        </AnimatePresence>
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: reduced ? 0 : 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduced ? 0 : 0.15, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Outlet />
+        </motion.div>
       </div>
     </>
   )
