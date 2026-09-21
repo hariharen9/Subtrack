@@ -9,8 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc --noEmit",
-    "icons": "node scripts/generate-icons.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "dexie": "^4.4.6",

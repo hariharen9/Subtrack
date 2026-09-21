@@ -26,7 +26,6 @@ pnpm install          # or npm install
 pnpm dev              # start development server (http://localhost:5173)
 pnpm build            # strict TypeScript check + production bundle
 pnpm preview          # preview production PWA locally
-pnpm smoke            # headless runtime browser smoke test
 pnpm icons            # regenerate PWA vector icons and textures
 ```
 

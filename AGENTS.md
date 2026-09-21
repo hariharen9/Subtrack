@@ -86,8 +86,7 @@ E:/Projects/Subtrack/
 │   └── textures/
 │       └── noise.png             # 96px grain tile used by the background field
 ├── scripts/
-│   ├── generate-icons.mjs        # Zero-dependency PNG encoder: draws icons + noise tile
-│   └── smoke.mjs                 # Headless runtime smoke test (serves dist/, drives Chrome)
+│   └── generate-icons.mjs        # Zero-dependency PNG encoder: draws icons + noise tile
 └── src/
     ├── app/
     │   └── nav.ts                # DOMAINS (code, label, path, key, blurb, icon, subnav,
