@@ -143,3 +143,95 @@ export const CYCLE_SHORT: Record<BillingCycle, string> = {
   yearly: 'YR',
   custom: 'CS',
 }
+export type SpendMethod = 'upi' | 'card' | 'cash' | 'netbanking' | 'wallet' | 'other'
+
+export type SpendCategory =
+  | 'food'
+  | 'transport'
+  | 'groceries'
+  | 'shopping'
+  | 'entertainment'
+  | 'health'
+  | 'utilities'
+  | 'travel'
+  | 'education'
+  | 'personal'
+  | 'other'
+
+/** A single day-to-day expense. Denormalised enough to survive on its own. */
+export interface Spend {
+  id: string
+  /** What it was / merchant line (e.g. "Zomato — lunch"). */
+  title: string
+  amount: number
+  currency: string
+  category: SpendCategory
+  method: SpendMethod
+  /** ISO date the money left (YYYY-MM-DD). */
+  date: string
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** Display + signal metadata for a spend category. */
+export interface SpendCategoryMeta {
+  id: SpendCategory
+  label: string
+  code: string
+  signal: 'acid' | 'blue' | 'magenta' | 'orange' | 'red'
+  /** Spends in this category count toward the discretionary weekly limiter. */
+  discretionary: boolean
+}
+
+export const SPEND_CATEGORIES: SpendCategoryMeta[] = [
+  { id: 'food', label: 'Food & Dining', code: 'FNB', signal: 'orange', discretionary: true },
+  { id: 'transport', label: 'Transport', code: 'TRN', signal: 'blue', discretionary: false },
+  { id: 'groceries', label: 'Groceries', code: 'GRC', signal: 'acid', discretionary: false },
+  { id: 'shopping', label: 'Shopping', code: 'SHP', signal: 'magenta', discretionary: true },
+  { id: 'entertainment', label: 'Entertainment', code: 'ENT', signal: 'magenta', discretionary: true },
+  { id: 'health', label: 'Health', code: 'HLT', signal: 'red', discretionary: false },
+  { id: 'utilities', label: 'Utilities', code: 'UTL', signal: 'blue', discretionary: false },
+  { id: 'travel', label: 'Travel', code: 'TRV', signal: 'magenta', discretionary: true },
+  { id: 'education', label: 'Education', code: 'EDU', signal: 'acid', discretionary: false },
+  { id: 'personal', label: 'Personal Care', code: 'PER', signal: 'orange', discretionary: true },
+  { id: 'other', label: 'Other', code: 'OTH', signal: 'blue', discretionary: true },
+]
+
+export const SPEND_CATEGORY_META: Record<SpendCategory, SpendCategoryMeta> =
+  Object.fromEntries(SPEND_CATEGORIES.map((c) => [c.id, c])) as Record<
+    SpendCategory,
+    SpendCategoryMeta
+  >
+
+export const SPEND_CATEGORY_LABEL: Record<SpendCategory, string> = SPEND_CATEGORIES.reduce(
+  (acc, c) => {
+    acc[c.id] = c.label
+    return acc
+  },
+  {} as Record<SpendCategory, string>,
+)
+
+export const SPEND_CATEGORY_CODE: Record<SpendCategory, string> = SPEND_CATEGORIES.reduce(
+  (acc, c) => {
+    acc[c.id] = c.code
+    return acc
+  },
+  {} as Record<SpendCategory, string>,
+)
+
+export const SPEND_METHOD_LABEL: Record<SpendMethod, string> = {
+  upi: 'UPI',
+  card: 'Card',
+  cash: 'Cash',
+  netbanking: 'Netbanking',
+  wallet: 'Wallet',
+  other: 'Other',
+}
+
+/** Weekly discretionary limiter stored in the meta table. */
+export interface WeeklySpendLimit {
+  /** Max discretionary spend per ISO week (Mon–Sun), in base currency. */
+  amount: number
+  currency: string
+}

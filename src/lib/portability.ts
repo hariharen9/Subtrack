@@ -71,6 +71,24 @@ export function toCsv(payments: Payment[], subscriptionsById: Map<string, string
   return [header, ...rows].join('\n')
 }
 
+export function toSpendsCsv(spends: import('./types').Spend[]): string {
+  const header = ['date', 'title', 'amount', 'currency', 'category', 'method', 'notes'].join(',')
+  const rows = spends
+    .slice()
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .map((s) =>
+      [s.date, s.title, s.amount, s.currency, s.category, s.method, s.notes || ''].map(escapeCsv).join(','),
+    )
+  return [header, ...rows].join('\n')
+}
+
+export function exportSpendsCsv(spends: import('./types').Spend[]): void {
+  const csv = toSpendsCsv(spends)
+  const stamp = new Date().toISOString().slice(0, 10)
+  downloadFile(`subtrack-spends-${stamp}.csv`, csv, 'text/csv')
+  useUI.getState().pushToast(TOAST_VERBS.info('CSV EXPORT COMPLETE', `${spends.length} transactions exported`))
+}
+
 export function openImportDialog(): void {
   const input = document.createElement('input')
   input.type = 'file'

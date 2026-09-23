@@ -13,6 +13,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useSignalSeries, useSystem } from '@/hooks/useSystem'
+import { useSpendsSystem, type SpendsData } from '@/hooks/useSpends'
 import { useUI } from '@/store/ui'
 import { formatMoney, formatPercent, splitMoney } from '@/lib/money'
 import { formatSignalDate } from '@/lib/date'
@@ -41,6 +42,7 @@ const RISE = {
 function domainTelemetry(
   domain: (typeof DOMAINS)[number],
   summary: SystemSummary,
+  spendsData: SpendsData,
 ): { signal: Signal; primary: string; secondary: string; to: string } {
   switch (domain.code) {
     case 'SUBS':
@@ -52,13 +54,42 @@ function domainTelemetry(
       }
     case 'SYS':
       return { signal: 'acid' as Signal, primary: 'LOCAL', secondary: 'OFFLINE-READY · NO TELEMETRY', to: '/sys' }
+    case 'SPND':
+      return spendsTelemetry(spendsData)
     default:
       return { signal: 'orange' as Signal, primary: 'STANDBY', secondary: `${domain.tag} · PENDING CORE`, to: domain.path }
   }
 }
 
+/** SPND telemetry for the subsystem matrix (kept outside the component
+ *  so it can be referenced by the pure domainTelemetry switch). */
+function spendsTelemetry(
+  spends: SpendsData,
+): { signal: Signal; primary: string; secondary: string; to: string } {
+  const spend = spends.summary
+  const over = spend.weekLimit?.amount && spend.weekUtilisation >= 1
+  const active = spend.weekTotal > 0 || spend.totalToday > 0
+  return {
+    signal: active
+      ? over
+        ? 'red'
+        : spend.weekUtilisation >= 0.72
+          ? 'orange'
+          : 'acid'
+      : 'blue',
+    primary: active ? formatMoney(spend.weekTotal, spend.base) : '—',
+    secondary: spend.weekLimit?.amount
+      ? `${Math.round(spend.weekUtilisation * 100)}% OF WEEKLY CAP`
+      : spend.totalToday > 0
+        ? `${spend.countToday} TXN TODAY`
+        : 'NO SPEND TODAY',
+    to: '/spends',
+  }
+}
+
 export default function MasterCommand() {
   const { summary } = useSystem()
+  const spendsData = useSpendsSystem()
   const base = useUI((s) => s.baseCurrency)
   const series = useSignalSeries('cash', 3, 1)
   const now = summary.today
@@ -134,15 +165,24 @@ export default function MasterCommand() {
             <div className="mt-3 flex flex-wrap gap-x-2 gap-y-1">
               {DOMAINS.map((domain) => {
                 const isSubs = domain.code === 'SUBS'
+                const isSpnd = domain.code === 'SPND'
+                const spndValue = isSpnd ? spendsData.summary.monthTotal : 0
                 return (
                   <span
                     key={domain.code}
-                    className={cx('micro inline-flex items-center gap-1.5 border px-1.5 py-1', isSubs ? 'border-acid bg-acidsoft' : 'border-line bg-surface2')}
+                    className={cx(
+                      'micro inline-flex items-center gap-1.5 border px-1.5 py-1',
+                      isSubs ? 'border-acid bg-acidsoft' : isSpnd ? 'border-orange bg-orangesoft' : 'border-line bg-surface2',
+                    )}
                   >
-                    <Led signal={isSubs ? 'acid' : 'orange'} size="sm" pulse={isSubs && summary.activeCount > 0} />
-                    <span className={cx('font-semibold', isSubs ? 'text-fg' : 'text-faint')}>{domain.code}</span>
-                    <span className={cx(isSubs ? 'text-acidink' : 'text-faint')}>
-                      {isSubs ? formatMoney(summary.monthlyBurn, base) : '0.00'}
+                    <Led
+                      signal={isSubs ? 'acid' : 'orange'}
+                      size="sm"
+                      pulse={(isSubs && summary.activeCount > 0) || (isSpnd && spndValue > 0)}
+                    />
+                    <span className={cx('font-semibold', isSubs || isSpnd ? 'text-fg' : 'text-faint')}>{domain.code}</span>
+                    <span className={cx(isSubs ? 'text-acidink' : isSpnd ? 'text-orangeink' : 'text-faint')}>
+                      {isSubs ? formatMoney(summary.monthlyBurn, base) : isSpnd ? formatMoney(spndValue, base) : '0.00'}
                     </span>
                   </span>
                 )
@@ -189,7 +229,7 @@ export default function MasterCommand() {
           />
           <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
             {DOMAINS.map((domain) => {
-              const tel = domainTelemetry(domain, summary)
+              const tel = domainTelemetry(domain, summary, spendsData)
               const Icon = domain.icon
               const live = domain.status === 'live'
               return (

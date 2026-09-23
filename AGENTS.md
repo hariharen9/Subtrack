@@ -50,8 +50,8 @@ Subtrack treats personal recurring finances not as passive spreadsheets, but as 
 |                                        |                                          |
 |  +-----------------------------------------------------------------------------+  |
 |  |                           LOCAL STORAGE ENGINE                              |  |
-|  |                    IndexedDB / Dexie.js (Schema V1, db "subtrack")          |  |
-|  |           [subscriptions]        [payments]        [meta]                   |  |
+|  |                    IndexedDB / Dexie.js (Schema V2, db "subtrack")          |  |
+|  |           [subscriptions]  [payments]  [spends]  [meta]                    |  |
 |  +-----------------------------------------------------------------------------+  |
 +-----------------------------------------------------------------------------------+
 ```
@@ -114,6 +114,11 @@ E:/Projects/Subtrack/
     │   │   ├── SystemHeader.tsx  # Instrument bar: module, status, clock, query trigger, CTA
     │   │   ├── SystemToaster.tsx # Console-log style toast stack (auto-dismiss / sticky)
     │   │   └── UpdatePrompt.tsx  # SW registration + "SYSTEM UPDATE AVAILABLE" reload prompt
+    │   ├── spends/
+    │   │   ├── SpendBadge.tsx    # Brand glyph & category icon resolver for transactions
+    │   │   ├── SpendComposer.tsx # Quick-capture modal with presets, merchant hints, and batch mode
+    │   │   ├── SpendInstruments.tsx # SpendVelocity (multi-timeframe + cyber hovercards) & LimiterGauge
+    │   │   └── SpendLedger.tsx   # Transaction list with SpendBadge, clone, delete, and filtering
     │   ├── subs/
     │   │   ├── IncomingStream.tsx# Forward-only renewal stream (DayGroups) + IncomingRail
     │   │   ├── ProcessCard.tsx   # Subscription module: ProcessCard (grid) / ProcessRow (list)
@@ -136,7 +141,8 @@ E:/Projects/Subtrack/
     │   ├── useElementWidth.ts    # ResizeObserver width tracking for pixel-exact SVGs
     │   ├── usePlatform.ts        # useClock, useMediaQuery, useOnline, useHotkeys,
     │   │                         # useFocusTrap, useScrollLock
-    │   └── useSystem.ts          # Dexie live queries + memoised analytics pipeline
+    │   ├── useSpends.ts          # spends live queries + memoised spend summary + weekly limiter
+│   └── useSystem.ts            # Dexie live queries + memoised analytics pipeline
     ├── lib/
     │   ├── analytics.ts          # summarize(), viewOf(), series, streams, matrix, notes
     │   ├── catalog.ts            # 62 service presets with Indian pricing + tiers
@@ -148,7 +154,8 @@ E:/Projects/Subtrack/
     │   ├── id.ts                 # pidOf(), traceOf(), slotOf(), txnRef(), hash32()
     │   ├── money.ts              # Static FX, Intl formatting, percent helpers
     │   ├── portability.ts        # JSON snapshot export/import, CSV ledger, clipboard readout
-    │   ├── seed.ts               # 17-subscription demo dataset + reconstructed ledger
+    │   ├── seed.ts               # 17-subscription demo dataset + reconstructed ledger + spends demo
+    │   ├── spends.ts              # spend analytics pipeline (daily/weekly/monthly/yearly velocity, limiter, ratio)
     │   └── types.ts              # Domain interfaces, categories, signal maps
     ├── pages/
     │   ├── MasterCommand.tsx     # "/" — OS cockpit: hero burn, subsystem matrix, next outflow
@@ -162,7 +169,10 @@ E:/Projects/Subtrack/
     │   │   ├── StandbyDeck.tsx   # Shared standby frame (orange STANDBY deck + arrival roadmap)
     │   │   ├── CardsDeck.tsx     # "/cards" — Credit Cards standby engine
     │   │   ├── LoansDeck.tsx     # "/loans" — Loans & EMIs standby engine
-    │   │   └── SpendsDeck.tsx    # "/spends" — Daily Spends standby engine
+    │   ├── Spends.tsx            # "/spends" — Daily Spends cockpit (hero, velocity, ledger, limiter)
+    │   ├── SpendFlow.tsx         # "/spends/flow" — full spend registry with range presets & filters
+    │   ├── SpendInsights.tsx     # "/spends/data" — needs-vs-wants ratio, payment channels, heatmap, forecast
+    │   ├── SpendLimits.tsx       # "/spends/limits" — weekly discretionary limiter
     │   └── NotFound.tsx          # 404 terminal diagnostic view
     ├── store/
     │   └── ui.ts                 # Zustand store (persisted prefs, overlays, toasts, booted)
@@ -216,6 +226,18 @@ erDiagram
         number amount
         string currency
         string origin
+    }
+    SPEND {
+        string id PK
+        string title
+        number amount
+        string currency
+        string category
+        string method
+        string date
+        string notes
+        string createdAt
+        string updatedAt
     }
     META_RECORD {
         string key PK
@@ -317,6 +339,9 @@ class SubTrackDB extends Dexie {
       payments: 'id, subId, date, [subId+date]',
       meta: 'key',
     })
+    this.version(2).stores({
+      spends: 'id, date, category, method, createdAt, updatedAt, [date+category]',
+    })
   }
 }
 ```
@@ -356,6 +381,7 @@ History is **reconstructed from each subscription's own anchor** and capped at `
 | `wipeAll()` / `resetToSeed()` | Destructive maintenance. Both clear `meta`; `resetToSeed()` re-seeds immediately. Both are dual-confirm (ArmedButton / TerminateDialog). |
 | `exportSnapshot(settings)` / `importSnapshot(snapshot, mode)` | Portable `Snapshot { app:'subtrack', version:1, exportedAt, settings, subscriptions, payments }`. `mode` is `'replace'` (clears first) or `'merge'` (`bulkPut`). Returns an `ImportReport`. |
 
+Spend lifecycle: `listSpends()`, `getSpend(id)`, `spendsBetween(from, to)`, `createSpend(draft)`, `updateSpend(id, patch)`, `deleteSpend(id)`. Weekly limiter: `getWeeklyLimit()` / `setWeeklyLimit()` (JSON under the `spends.weeklyLimit` meta row). `ensureSpendsSeeded()` boot-seeds a demo spend ledger (guarded by its own `spends.seeded` marker so existing installs still get an explorable `/spends`). `wipeAll()`, `resetToSeed()` and snapshot import/export all carry the spends table.
 Read helpers: `listSubscriptions()`, `getSubscription(id)`, `listPayments()`, `paymentsFor(subId)`.
 `SubscriptionDraft` is the accepted shape for create/update (name, serviceId, price, currency, billingCycle, customIntervalDays, nextBillingDate, category, icon, color, notes).
 
@@ -614,7 +640,7 @@ The Financial OS cockpit — rolls every engine up into one net position (only l
 - **Subsystem Status matrix**: all six `DOMAINS` with LIVE / STANDBY chips, manifest blurbs and version tags — jump straight into any cockpit.
 - **Next Critical Outflow**: the closest scheduled charge across live engines.
 - **Burn Composition**: `CompositionStrip` broken down by category.
-- **Pending Engines**: arrival-sequence roadmap for the standby decks (`/cards` → `/loans` → `/spends`).
+- **Pending Engines**: arrival-sequence roadmap for the remaining standby decks (`/cards` → `/loans`).
 - **Quick launch strip** into every domain.
 - Empty system → `NO ACTIVE SUBSCRIPTIONS / SYSTEM IS CURRENTLY CLEAN.`
 
@@ -663,14 +689,25 @@ Deep financial intelligence (`Insights.tsx`):
 - **Statistics table**: burn, load, daily rate, averages, highest/lowest, lifetime charged, charges in the last 30 days, longest running, newest, currencies in use, static FX reference.
 - **Billing cycle mix**: monthly/quarterly/yearly/custom distribution with shares, plus observations and system notes.
 
-### 11.6 Standby Engines (`/cards`, `/loans`, `/spends`)
-Each future subsystem ships today as a **standby deck** so the OS rack is complete and honest about pending engines:
+### 11.6 Daily Spends (`/spends`, `/spends/flow`, `/spends/limits`)
+The live variable-cash cockpit (`Spends.tsx`):
+- **Hero**: `SPENT TODAY` spring-odometer, today's transaction count, `+Δ VS PREVIOUS MONTH`, avg/day and week total, plus a `LOG SPEND` quick action.
+- **Readout strip** (`DataStrip`): week total, discretionary (week), limiter remaining, this-month total, month high day.
+- **Daily velocity**: a 28-day SVG bar chart (past / today) with hover readouts.
+- **Weekly limiter** (`SpendLimits.tsx`, `LimiterGauge`): Mon–Sun discretionary cap in the base currency; a radial gauge with signal states (acid/orange/red) and notes near/exceeding the cap. Essential categories never count against it.
+- **Category mix**: composition strip + per-category share/count bars for the month; clicking a category opens the composer pre-tagged.
+- **Recent ledger** (`SpendLedger.tsx`, `SpendRow`): reverse-chronological day groups with title, method, date, note, DISC/ESS tag, amount, edit and two-step delete.
+- `/spends/flow` (`SpendFlow.tsx`) — the full registry: free-text query across title/notes/category plus category and method filter rails, selection readout and the complete ledger.
+- `/spends/limits` (`SpendLimits.tsx`) — arms the weekly discretionary limiter, quick caps and the discretionary-category reference.
+- Empty system → `NO DAY-TO-DAY SPEND YET.` with a LOG FIRST SPEND CTA. The `/spends` route is the `SPND` engine (status `live` in `nav.ts`).
+
+### 11.7 Standby Engines (`/cards`, `/loans`)
+Each remaining future subsystem ships today as a **standby deck** so the OS rack is complete and honest about pending engines:
 - `CardsDeck.tsx` (`/cards`) — Credit Cards: statement cut-offs, 45-day zero-interest grace countdowns, aggregate credit utilisation.
 - `LoansDeck.tsx` (`/loans`) — Loans & EMIs: amortization decay curves, debt runway, prepayment simulations.
-- `SpendsDeck.tsx` (`/spends`) — Daily Spends: micro-transaction ledger, discretionary burn velocity, weekly limiters.
-- All three share one `StandbyDeck` frame: an orange `STANDBY` status strip, manifest hero, a ghosted list of planned instruments, an arrival-sequence roadmap, and a shared-host note that their eventual data unifies under the same local volume. An engine goes `live` by flipping `status: 'standby' → 'live'` in `nav.ts` and pointing its page at real data.
+- Both share one `StandbyDeck` frame: an orange `STANDBY` status strip, manifest hero, a ghosted list of planned instruments, an arrival-sequence roadmap, and a shared-host note that their eventual data unifies under the same local volume. An engine goes `live` by flipping `status: 'standby' → 'live'` in `nav.ts` and pointing its page at real data.
 
-### 11.7 System Host (`/sys`)
+### 11.8 System Host (`/sys`)
 System control and backup room (`Settings.tsx`):
 - **Appearance**: `NIGHT // PRIMARY` vs `DAYLIGHT // BRUTALIST`, background grid toggle, calm motion mode.
 - **Aggregation currency**: 9-currency select + the full static FX reference table (per 1 base, and 1 unit → base).
@@ -732,7 +769,7 @@ The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-leve
 | `2` | Global | Navigate to **Subscriptions** (`/subs`) |
 | `3` | Global | Navigate to **Credit Cards** standby deck (`/cards`) |
 | `4` | Global | Navigate to **Loans & EMIs** standby deck (`/loans`) |
-| `5` | Global | Navigate to **Daily Spends** standby deck (`/spends`) |
+| `5` | Global | Navigate to **Daily Spends** cockpit (`/spends`) |
 | `6` | Global | Navigate to **System Host** (`/sys`) |
 | `T` | Global | Toggle Night / Daylight theme |
 | `ESC` | Global | Close the active modal, sheet, palette or popover |
@@ -750,7 +787,7 @@ The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-leve
 - **Manifest**: hand-authored in `public/manifest.webmanifest` and referenced by `<link>` — the plugin runs with `manifest: false` so the file stays readable and diffable. Includes `standalone` display, theme colours `#050505`/`#F2F1EC`, maskable icon, and three app shortcuts (new subscription, payment matrix, insights).
 - **Service worker**: `vite-plugin-pwa` with `registerType: 'prompt'` and `injectRegister: null` — registration is manual via `virtual:pwa-register/react` in `UpdatePrompt.tsx`, which polls `registration.update()` every 30 minutes and offers a deliberate **RELOAD CONSOLE** when a new build is cached (`skipWaiting` is not auto-called).
 - **Precache**: `globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}']`, `navigateFallback: 'index.html'`, `cleanupOutdatedCaches`, `clientsClaim`, and **no runtime caching** — the app is fully self-contained, so precache ≈ 28 entries / ~846 KB covers offline use entirely.
-- **Code splitting**: `MasterCommand` and `Overview` are statically imported and ship in the entry chunk (the OS cockpit is available on first paint); `PaymentMatrix`, `Insights`, `Settings` and the three standby decks (`CardsDeck`, `LoansDeck`, `SpendsDeck`) are lazy routes dynamically imported once on idle, so the entry stays lean while every cockpit snap-transitions on demand. `manualChunks` groups `react` (react, react-dom, react-router-dom), `motion`, and `data` (dexie, zustand).
+- **Code splitting**: `MasterCommand` and `Overview` are statically imported and ship in the entry chunk (the OS cockpit is available on first paint); `PaymentMatrix`, `Insights`, `Settings` and the spends pages and the two remaining standby decks (`CardsDeck`, `LoansDeck`) are lazy routes dynamically imported once on idle, so the entry stays lean while every cockpit snap-transitions on demand. `manualChunks` groups `react` (react, react-dom, react-router-dom), `motion`, and `data` (dexie, zustand).
 - **Generated assets**: `pnpm run icons` (or `node scripts/generate-icons.mjs`) draws the icon set and the grain tile with a zero-dependency PNG encoder — no hand-checked-in binaries.
 - **Fonts** are self-hosted (`public/fonts/`), so nothing is fetched from a CDN at runtime.
 

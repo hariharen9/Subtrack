@@ -31,6 +31,14 @@ export interface ComposerState {
 
 export type TerminationMode = 'terminate' | 'purge'
 
+export interface SpendComposerState {
+  open: boolean
+  /** Prefill a spend being edited. */
+  editId: string | null
+  /** Preselect a category when opening from a category block. */
+  presetCategory: string | null
+}
+
 export interface TerminationState {
   open: boolean
   subId: string | null
@@ -49,6 +57,7 @@ interface UIState {
   toasts: SystemToast[]
   paletteOpen: boolean
   composer: ComposerState
+  spendComposer: SpendComposerState
   termination: TerminationState
   /** False until the local volume has been opened and seeded. */
   booted: boolean
@@ -66,6 +75,8 @@ interface UIState {
   togglePalette: () => void
   openComposer: (options?: { editId?: string; presetServiceId?: string }) => void
   closeComposer: () => void
+  openSpendComposer: (options?: { editId?: string; presetCategory?: string }) => void
+  closeSpendComposer: () => void
   openTermination: (subId: string, mode: TerminationMode) => void
   closeTermination: () => void
 }
@@ -83,6 +94,7 @@ export const useUI = create<UIState>()(
       toasts: [],
       paletteOpen: false,
       composer: { open: false, editId: null, presetServiceId: null },
+      spendComposer: { open: false, editId: null, presetCategory: null },
       termination: { open: false, subId: null, mode: 'terminate' },
       booted: false,
       setBooted: (booted) => set({ booted }),
@@ -114,6 +126,16 @@ export const useUI = create<UIState>()(
           },
         }),
       closeComposer: () => set({ composer: { open: false, editId: null, presetServiceId: null } }),
+      openSpendComposer: (options) =>
+        set({
+          spendComposer: {
+            open: true,
+            editId: options?.editId ?? null,
+            presetCategory: options?.presetCategory ?? null,
+          },
+        }),
+      closeSpendComposer: () =>
+        set({ spendComposer: { open: false, editId: null, presetCategory: null } }),
       openTermination: (subId, mode) => set({ termination: { open: true, subId, mode } }),
       closeTermination: () =>
         set({ termination: { open: false, subId: null, mode: 'terminate' } }),
@@ -179,6 +201,21 @@ export const TOAST_VERBS = {
     text: `${name} · ${detail}`,
   }),
   info: (label: string, text?: string) => ({ kind: 'info' as ToastKind, label, text }),
+  spendLogged: (title: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'SPEND LOGGED ✓',
+    text: `${title} · ${detail}`,
+  }),
+  spendUpdated: (title: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'SPEND UPDATED',
+    text: `${title} · entry written`,
+  }),
+  spendDeleted: (title: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'SPEND REMOVED',
+    text: `${title} · entry erased`,
+  }),
   warn: (label: string, text?: string) => ({ kind: 'warn' as ToastKind, label, text }),
   error: (label: string, text?: string) => ({
     kind: 'alert' as ToastKind,

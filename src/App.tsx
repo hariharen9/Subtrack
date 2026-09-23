@@ -18,9 +18,12 @@ import Insights from '@/pages/Insights'
 import Settings from '@/pages/Settings'
 import CardsDeck from '@/pages/standby/CardsDeck'
 import LoansDeck from '@/pages/standby/LoansDeck'
-import SpendsDeck from '@/pages/standby/SpendsDeck'
+import Spends from '@/pages/Spends'
+import SpendFlow from '@/pages/SpendFlow'
+import SpendInsights from '@/pages/SpendInsights'
+import SpendLimits from '@/pages/SpendLimits'
 import NotFound from '@/pages/NotFound'
-import { ensureSeeded } from '@/lib/db'
+import { ensureSeeded, ensureSpendsSeeded } from '@/lib/db'
 import { useUI } from '@/store/ui'
 import { SmoothScroll } from '@/components/shell/SmoothScroll'
 
@@ -57,7 +60,7 @@ function BootSequence() {
 
   useEffect(() => {
     let cancelled = false
-    ensureSeeded()
+    Promise.all([ensureSeeded(), ensureSpendsSeeded()])
       .catch((error: unknown) => {
         pushToast({
           kind: 'alert',
@@ -106,10 +109,15 @@ export default function App() {
             <Route path="time" element={<Navigate to="/subs/time" replace />} />
             <Route path="data" element={<Navigate to="/subs/data" replace />} />
 
-            {/* [03][04][05] Standby engines */}
+            {/* [03][04] Standby engines */}
             <Route path="cards" element={<CardsDeck />} />
             <Route path="loans" element={<LoansDeck />} />
-            <Route path="spends" element={<SpendsDeck />} />
+
+            {/* [05] Daily Spends engine */}
+            <Route path="spends" element={<Spends />} />
+            <Route path="spends/flow" element={<SpendFlow />} />
+            <Route path="spends/data" element={<SpendInsights />} />
+            <Route path="spends/limits" element={<SpendLimits />} />
 
             {/* [06] System Host */}
             <Route path="sys" element={<Settings />} />

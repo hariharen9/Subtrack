@@ -56,6 +56,7 @@ export function CommandPalette() {
   const open = useUI((s) => s.paletteOpen)
   const setOpen = useUI((s) => s.setPaletteOpen)
   const openComposer = useUI((s) => s.openComposer)
+  const openSpendComposer = useUI((s) => s.openSpendComposer)
   const toggleTheme = useUI((s) => s.toggleTheme)
   const theme = useUI((s) => s.theme)
   const base = useUI((s) => s.baseCurrency)
@@ -74,6 +75,14 @@ export function CommandPalette() {
 
   const commands = useMemo<Command[]>(
     () => [
+      {
+        id: 'init-spend',
+        label: 'Log daily spend',
+        hint: 'Quick record a variable expense',
+        kbd: 'X',
+        icon: IconPlus,
+        run: () => openSpendComposer(),
+      },
       {
         id: 'init',
         label: 'New subscription',
@@ -115,6 +124,35 @@ export function CommandPalette() {
         run: () => navigate('/subs/flow'),
       },
       {
+        id: 'spends',
+        label: 'Open Daily Spends Cockpit',
+        hint: 'Variable spend overview, velocity, limiter',
+        kbd: '5',
+        icon: IconSpends,
+        run: () => navigate('/spends'),
+      },
+      {
+        id: 'spends-flow',
+        label: 'Open Daily Spends Ledger',
+        hint: 'Full transaction registry and filters',
+        icon: IconFlow,
+        run: () => navigate('/spends/flow'),
+      },
+      {
+        id: 'spends-data',
+        label: 'Open Spends Insights',
+        hint: 'Needs-vs-wants ratio, payment channels, weekday heatmap',
+        icon: IconData,
+        run: () => navigate('/spends/data'),
+      },
+      {
+        id: 'spends-limits',
+        label: 'Open Weekly Spend Limiter',
+        hint: 'Configure discretionary envelope cap',
+        icon: IconTime,
+        run: () => navigate('/spends/limits'),
+      },
+      {
         id: 'time',
         label: 'Open Payment Matrix',
         hint: '6-week calendar of outgoing cashflow',
@@ -145,14 +183,6 @@ export function CommandPalette() {
         kbd: '4',
         icon: IconDebt,
         run: () => navigate('/loans'),
-      },
-      {
-        id: 'spends',
-        label: 'Open Daily Spends Deck',
-        hint: 'Transaction velocity (standby)',
-        kbd: '5',
-        icon: IconSpends,
-        run: () => navigate('/spends'),
       },
       {
         id: 'export',

@@ -8,10 +8,12 @@
  */
 import { useState } from 'react'
 import { usePayments, useSubscriptions, useSystem } from '@/hooks/useSystem'
+import { useSpends } from '@/hooks/useSpends'
 import { useUI, TOAST_VERBS } from '@/store/ui'
 import { CURRENCIES, formatMoney, convert } from '@/lib/money'
+import { downloadFile } from '@/lib/portability'
 import { resetToSeed, wipeAll, reconcileSchedules } from '@/lib/db'
-import { exportJson, openImportDialog, toCsv, downloadFile } from '@/lib/portability'
+import { exportJson, openImportDialog, toCsv } from '@/lib/portability'
 import { pidOf, traceOf } from '@/lib/id'
 import { todayISO } from '@/lib/date'
 import { CutPanel } from '@/components/ui/CutPanel'
@@ -65,6 +67,24 @@ export default function Settings() {
     const csv = toCsv(payments, nameById)
     downloadFile(`subtrack-ledger-${todayISO()}.csv`, csv, 'text/csv')
     pushToast(TOAST_VERBS.info('LEDGER EXPORTED', `${payments.length} rows written as CSV`))
+  }
+  const spends = useSpends()
+  const doExportSpendsCsv = () => {
+    const header = ['date', 'title', 'amount', 'currency', 'category', 'method', 'notes'].join(',')
+    const esc = (value: string | number) => {
+      const text = String(value)
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+    }
+    const rows = spends
+      .slice()
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .map((spend) =>
+        [spend.date, spend.title, spend.amount, spend.currency, spend.category, spend.method, spend.notes]
+          .map(esc)
+          .join(','),
+      )
+    downloadFile(`subtrack-spends-${todayISO()}.csv`, [header, ...rows].join('\n'), 'text/csv')
+    pushToast(TOAST_VERBS.info('SPENDS EXPORTED', `${spends.length} rows written as CSV`))
   }
 
   return (
@@ -261,8 +281,9 @@ export default function Settings() {
                 { label: 'Subscriptions', value: String(subscriptions.length) },
                 { label: 'Archived', value: String(summary.suspended.length + summary.terminated.length) },
                 { label: 'Charges', value: String(payments.length) },
+                { label: 'Spends', value: String(spends.length) },
                 { label: 'Oldest record', value: oldest ?? '—' },
-                { label: 'Schema', value: 'V1' },
+                { label: 'Schema', value: 'V2' },
                 { label: 'Trace', value: traceOf(todayISO()) },
               ]}
             />
@@ -286,6 +307,14 @@ export default function Settings() {
               <CyberButton
                 variant="ghost"
                 size="sm"
+                leading={<IconDownload size={14} />}
+                onClick={doExportSpendsCsv}
+              >
+                EXPORT SPENDS (CSV)
+              </CyberButton>
+              <CyberButton
+                variant="ghost"
+                size="sm"
                 leading={<IconUpload size={14} />}
                 onClick={() => openImportDialog()}
               >
@@ -294,7 +323,7 @@ export default function Settings() {
             </div>
             <div className="border-t border-line px-3 py-3 md:px-4">
               <p className="meta text-faint">
-                A snapshot contains every subscription, every recorded charge and your display settings.
+                A snapshot contains every subscription, every recorded charge, every daily spend and your display settings.
                 Import replaces the local volume after a confirmation — export first if you are unsure.
               </p>
             </div>

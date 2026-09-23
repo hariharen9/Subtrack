@@ -8,8 +8,18 @@
  * tables directly.
  */
 import Dexie, { type Table } from 'dexie'
-import type { AppSettings, MetaRecord, Payment, ProcessStatus, Subscription } from './types'
-import { buildSeed } from './seed'
+import type {
+  AppSettings,
+  MetaRecord,
+  Payment,
+  ProcessStatus,
+  Spend,
+  SpendCategory,
+  SpendMethod,
+  Subscription,
+  WeeklySpendLimit,
+} from './types'
+import { buildSeed, buildSpendSeed } from './seed'
 import { occurrenceAt, occurrencesBetween } from './cycle'
 import { nowStamp, todayISO } from './date'
 import { newId } from './id'
@@ -19,6 +29,7 @@ export const DB_NAME = 'subtrack'
 class SubTrackDB extends Dexie {
   subscriptions!: Table<Subscription, string>
   payments!: Table<Payment, string>
+  spends!: Table<Spend, string>
   meta!: Table<MetaRecord, string>
 
   constructor() {
@@ -28,6 +39,9 @@ class SubTrackDB extends Dexie {
       payments: 'id, subId, date, [subId+date]',
       meta: 'key',
     })
+    this.version(2).stores({
+      spends: 'id, date, category, method, createdAt, updatedAt, [date+category]',
+    })
   }
 }
 
@@ -35,6 +49,7 @@ export const db = new SubTrackDB()
 
 const META_SEEDED = 'seeded'
 const META_SCHEMA = 'schema'
+const META_SPENDS_SEEDED = 'spends.seeded'
 
 /* ------------------------------------------------------------------ boot --- */
 
@@ -56,6 +71,27 @@ export function ensureSeeded(): Promise<void> {
   return seedOnce
 }
 
+let spendsSeedOnce: Promise<void> | null = null
+
+/**
+ * Seeds the daily-spends demo on first boot, independent of the subscription
+ * marker so existing installs still get an explorable /spends cockpit.
+ */
+export function ensureSpendsSeeded(): Promise<void> {
+  if (!spendsSeedOnce) {
+    spendsSeedOnce = (async () => {
+      const marker = await db.meta.get(META_SPENDS_SEEDED)
+      if (marker) return
+      const today = todayISO()
+      const spends = buildSpendSeed(today)
+      await db.transaction('rw', db.spends, db.meta, async () => {
+        await db.spends.bulkPut(spends)
+        await db.meta.put({ key: META_SPENDS_SEEDED, value: nowStamp() })
+      })
+    })()
+  }
+  return spendsSeedOnce
+}
 export async function seedDatabase(): Promise<void> {
   const today = todayISO()
   const { subscriptions, payments } = buildSeed(today)
@@ -83,6 +119,18 @@ export function listPayments(): Promise<Payment[]> {
 
 export function paymentsFor(subId: string): Promise<Payment[]> {
   return db.payments.where('subId').equals(subId).toArray()
+}
+
+export function listSpends(): Promise<Spend[]> {
+  return db.spends.toArray()
+}
+
+export function getSpend(id: string): Promise<Spend | undefined> {
+  return db.spends.get(id)
+}
+
+export function spendsBetween(fromISO: string, toISO: string): Promise<Spend[]> {
+  return db.spends.where('date').between(fromISO, toISO).toArray()
 }
 
 /* ----------------------------------------------------------------- writes --- */
@@ -283,10 +331,68 @@ export async function purgeSubscription(id: string): Promise<void> {
   })
 }
 
+
+/* ----------------------------------------------------------------- spends --- */
+
+export interface SpendDraft {
+  title: string
+  amount: number
+  currency: string
+  category: SpendCategory
+  method: SpendMethod
+  /** ISO date the money left. */
+  date: string
+  notes: string
+}
+
+/** Record a day-to-day expense. Every field is denormalised at the row level. */
+export async function createSpend(draft: SpendDraft): Promise<Spend> {
+  const now = nowStamp()
+  const spend: Spend = {
+    id: newId(),
+    title: draft.title.trim(),
+    amount: draft.amount,
+    currency: draft.currency,
+    category: draft.category,
+    method: draft.method,
+    date: draft.date,
+    notes: draft.notes.trim(),
+    createdAt: now,
+    updatedAt: now,
+  }
+  await db.spends.add(spend)
+  return spend
+}
+
+export async function updateSpend(id: string, patch: Partial<SpendDraft>): Promise<void> {
+  await db.spends.update(id, { ...patch, updatedAt: nowStamp() })
+}
+
+export async function deleteSpend(id: string): Promise<void> {
+  await db.spends.delete(id)
+}
+
+const META_WEEKLY_LIMIT = 'spends.weeklyLimit'
+
+export async function getWeeklyLimit(): Promise<WeeklySpendLimit | null> {
+  const row = await db.meta.get(META_WEEKLY_LIMIT)
+  if (!row) return null
+  try {
+    return JSON.parse(row.value) as WeeklySpendLimit
+  } catch {
+    return null
+  }
+}
+
+export async function setWeeklyLimit(limit: WeeklySpendLimit): Promise<void> {
+  await db.meta.put({ key: META_WEEKLY_LIMIT, value: JSON.stringify(limit) })
+}
+
 export async function wipeAll(): Promise<void> {
-  await db.transaction('rw', db.subscriptions, db.payments, db.meta, async () => {
+  await db.transaction('rw', db.subscriptions, db.payments, db.spends, db.meta, async () => {
     await db.subscriptions.clear()
     await db.payments.clear()
+    await db.spends.clear()
     await db.meta.clear()
   })
 }
@@ -294,6 +400,8 @@ export async function wipeAll(): Promise<void> {
 export async function resetToSeed(): Promise<void> {
   await wipeAll()
   await seedDatabase()
+  spendsSeedOnce = null
+  await ensureSpendsSeeded()
 }
 
 /* ------------------------------------------------------- portability ------ */
@@ -305,10 +413,11 @@ export interface Snapshot {
   settings: AppSettings
   subscriptions: Subscription[]
   payments: Payment[]
+  spends: Spend[]
 }
 
 export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
-  const [subscriptions, payments] = await Promise.all([listSubscriptions(), listPayments()])
+  const [subscriptions, payments, spends] = await Promise.all([listSubscriptions(), listPayments(), listSpends()])
   return {
     app: 'subtrack',
     version: 1,
@@ -316,12 +425,14 @@ export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
     settings,
     subscriptions,
     payments,
+    spends,
   }
 }
 
 export interface ImportReport {
   subscriptions: number
   payments: number
+  spends: number
   mode: 'replace' | 'merge'
 }
 
@@ -334,18 +445,21 @@ export async function importSnapshot(
   }
   const subscriptions = snapshot.subscriptions
   const payments = Array.isArray(snapshot.payments) ? snapshot.payments : []
+  const spends = Array.isArray(snapshot.spends) ? snapshot.spends : []
 
-  await db.transaction('rw', db.subscriptions, db.payments, db.meta, async () => {
+  await db.transaction('rw', db.subscriptions, db.payments, db.spends, db.meta, async () => {
     if (mode === 'replace') {
       await db.subscriptions.clear()
       await db.payments.clear()
+      await db.spends.clear()
     }
     await db.subscriptions.bulkPut(subscriptions)
     if (payments.length) await db.payments.bulkPut(payments)
+    if (spends.length) await db.spends.bulkPut(spends)
     await db.meta.put({ key: META_SEEDED, value: nowStamp() })
   })
 
-  return { subscriptions: subscriptions.length, payments: payments.length, mode }
+  return { subscriptions: subscriptions.length, payments: payments.length, spends: spends.length, mode }
 }
 
 export type { Subscription, Payment, ProcessStatus }

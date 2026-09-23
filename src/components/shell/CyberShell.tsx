@@ -23,6 +23,7 @@ import { SystemToaster } from './SystemToaster'
 import { CommandPalette } from './CommandPalette'
 import { UpdatePrompt } from './UpdatePrompt'
 import { SubscriptionComposer } from '@/components/subs/SubscriptionComposer'
+import { SpendComposer } from '@/components/spends/SpendComposer'
 import { TerminationConsole } from '@/components/subs/TerminationConsole'
 import { BootScreen } from '@/components/ui/Skeleton'
 
@@ -58,12 +59,15 @@ export function CyberShell() {
   const togglePalette = useUI((s) => s.togglePalette)
   const setPaletteOpen = useUI((s) => s.setPaletteOpen)
   const openComposer = useUI((s) => s.openComposer)
+  const openSpendComposer = useUI((s) => s.openSpendComposer)
   const toggleTheme = useUI((s) => s.toggleTheme)
 
   useHotkeys([
     { key: 'k', mod: true, handler: (event) => { event.preventDefault(); togglePalette() } },
     { key: '/', handler: (event) => { event.preventDefault(); setPaletteOpen(true) } },
     { key: 'n', handler: () => openComposer() },
+    { key: 'x', handler: () => openSpendComposer() },
+    { key: 'e', handler: () => openSpendComposer() },
     { key: 't', handler: () => toggleTheme() },
     ...DOMAINS.map((item) => ({
       key: item.key,
@@ -111,6 +115,7 @@ export function CyberShell() {
       <SystemToaster />
       <CommandPalette />
       <SubscriptionComposer />
+      <SpendComposer />
       <TerminationConsole />
       <UpdatePrompt />
     </div>

@@ -53,6 +53,12 @@
       "short_name": "Analytics",
       "description": "Burn, load and category distribution",
       "url": "/data"
+    },
+    {
+      "name": "Log a daily spend",
+      "short_name": "Spends",
+      "description": "Open the daily-spends ledger",
+      "url": "/spends"
     }
   ]
 }
