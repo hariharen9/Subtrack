@@ -21,6 +21,8 @@ import LoansDeck from '@/pages/standby/LoansDeck'
 import Spends from '@/pages/Spends'
 import SpendFlow from '@/pages/SpendFlow'
 import SpendInsights from '@/pages/SpendInsights'
+import SpendDetail from '@/pages/SpendDetail'
+import SpendPatterns from '@/pages/SpendPatterns'
 import SpendLimits from '@/pages/SpendLimits'
 import NotFound from '@/pages/NotFound'
 import { ensureSeeded, ensureSpendsSeeded } from '@/lib/db'
@@ -116,7 +118,9 @@ export default function App() {
             {/* [05] Daily Spends engine */}
             <Route path="spends" element={<Spends />} />
             <Route path="spends/flow" element={<SpendFlow />} />
+            <Route path="spends/flow/:id" element={<SpendDetail />} />
             <Route path="spends/data" element={<SpendInsights />} />
+            <Route path="spends/patterns" element={<SpendPatterns />} />
             <Route path="spends/limits" element={<SpendLimits />} />
 
             {/* [06] System Host */}

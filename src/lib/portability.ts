@@ -34,7 +34,7 @@ export async function exportJson(): Promise<void> {
   })
   const stamp = new Date().toISOString().slice(0, 10)
   downloadFile(`subtrack-snapshot-${stamp}.json`, JSON.stringify(snapshot, null, 2), 'application/json')
-  useUI.getState().pushToast(TOAST_VERBS.info('EXPORT COMPLETE', `${snapshot.subscriptions.length} subscriptions written to file`))
+  useUI.getState().pushToast(TOAST_VERBS.info('EXPORT COMPLETE', `${snapshot.subscriptions.length} subscriptions · ${snapshot.spends?.length ?? 0} spends written to file`))
 }
 
 function escapeCsv(value: string | number): string {
@@ -114,7 +114,7 @@ export function openImportDialog(): void {
         .pushToast(
           TOAST_VERBS.info(
             'SNAPSHOT RESTORED',
-            `${report.subscriptions} subscriptions · ${report.payments} recorded charges`,
+            `${report.subscriptions} subscriptions · ${report.payments} charges · ${report.spends ?? 0} spends`,
           ),
         )
     } catch (error) {

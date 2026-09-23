@@ -7,6 +7,7 @@
  * deletable with a two-step armed confirmation.
  */
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { Spend } from '@/lib/types'
 import {
   SPEND_CATEGORY_META,
@@ -83,7 +84,10 @@ export function SpendRow({ spend }: { spend: Spend }) {
   }
 
   return (
-    <div className="group flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-surface2 md:px-4">
+    <Link
+      to={`/spends/flow/${spend.id}`}
+      className="group flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-surface2 md:px-4"
+    >
       {/* Visual Identity Badge: Real Brand or Category Vector */}
       <SpendBadge category={spend.category} title={spend.title} size="sm" />
 
@@ -105,12 +109,12 @@ export function SpendRow({ spend }: { spend: Spend }) {
         {formatMoney(spend.amount, spend.currency)}
       </span>
 
-      <div className="flex shrink-0 items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+      <div className="flex shrink-0 items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity" onClick={(e) => e.preventDefault()}>
         <IconButton
           label="Duplicate to today"
           size="sm"
           disabled={duplicating}
-          onClick={() => void duplicateSpend()}
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); void duplicateSpend() }}
           title="Clone this transaction for today"
         >
           <IconCopy size={13} />
@@ -118,7 +122,7 @@ export function SpendRow({ spend }: { spend: Spend }) {
         <IconButton
           label="Edit spend"
           size="sm"
-          onClick={() => openSpendComposer({ editId: spend.id })}
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); openSpendComposer({ editId: spend.id }) }}
           title="Edit transaction"
         >
           <IconEdit size={13} />
@@ -127,13 +131,13 @@ export function SpendRow({ spend }: { spend: Spend }) {
           label={armed ? 'Confirm delete' : 'Delete spend'}
           size="sm"
           className={cx(armed && 'border-red text-redink bg-redsoft')}
-          onClick={armTimer}
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); armTimer() }}
           title={armed ? 'Click again to permanently delete' : 'Delete'}
         >
           <IconTerminate size={13} />
         </IconButton>
       </div>
-    </div>
+    </Link>
   )
 }
 

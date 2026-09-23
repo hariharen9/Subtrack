@@ -29,6 +29,7 @@ import { SectionHeader } from '@/components/ui/Micro'
 import { CyberButton } from '@/components/ui/CyberButton'
 import { EmptyState } from '@/components/ui/Skeleton'
 import { SpendLedger } from '@/components/spends/SpendLedger'
+import { SpendCalendar } from '@/components/spends/SpendCalendar'
 import { SIGNAL_HEX } from '@/components/ui/Signal'
 import { IconPlus, IconSearch, IconDownload, IconClose } from '@/components/ui/Icons'
 
@@ -354,37 +355,55 @@ export default function SpendFlow() {
         </CutPanel>
       </motion.div>
 
-      {/* Ledger Stream List */}
-      <motion.div variants={RISE} className="mt-3">
-        <CutPanel cut="br" cutSize={14} innerClassName="p-0">
-          <SectionHeader
-            code="LDG"
-            title="Ledger stream"
-            signal={filtered.length ? 'acid' : 'blue'}
-            right={<span className="micro text-faint">{groups.length} ACTIVE DAY GROUPS</span>}
-          />
-          {groups.length ? (
-            <SpendLedger groups={groups} base={base} />
-          ) : (
-            <div className="p-4">
-              <EmptyState
-                code="NO MATCHES"
-                title="NOTHING FOUND."
-                description={
-                  spends.length
-                    ? 'Your search or active filters matched no records. Try resetting the filters or searching for something else.'
-                    : 'No daily spends recorded yet. Log your first expense to populate the registry.'
-                }
-                action={
-                  spends.length
-                    ? { label: 'RESET FILTERS', onClick: clearFilters }
-                    : { label: '+ LOG FIRST SPEND', onClick: () => openSpendComposer() }
-                }
-              />
-            </div>
-          )}
-        </CutPanel>
-      </motion.div>
+      {/* Ledger + Calendar */}
+      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12">
+        {/* Ledger Stream */}
+        <motion.div variants={RISE} className="lg:col-span-7">
+          <CutPanel cut="br" cutSize={14} innerClassName="p-0">
+            <SectionHeader
+              code="LDG"
+              title="Ledger stream"
+              signal={filtered.length ? 'acid' : 'blue'}
+              right={<span className="micro text-faint">{groups.length} ACTIVE DAY GROUPS</span>}
+            />
+            {groups.length ? (
+              <div className="max-h-[75vh] overflow-y-auto" data-lenis-prevent>
+                <SpendLedger groups={groups} base={base} />
+              </div>
+            ) : (
+              <div className="p-4">
+                <EmptyState
+                  code="NO MATCHES"
+                  title="NOTHING FOUND."
+                  description={
+                    spends.length
+                      ? 'Your search or active filters matched no records. Try resetting the filters or searching for something else.'
+                      : 'No daily spends recorded yet. Log your first expense to populate the registry.'
+                  }
+                  action={
+                    spends.length
+                      ? { label: 'RESET FILTERS', onClick: clearFilters }
+                      : { label: '+ LOG FIRST SPEND', onClick: () => openSpendComposer() }
+                  }
+                />
+              </div>
+            )}
+          </CutPanel>
+        </motion.div>
+
+        {/* Spend Calendar */}
+        <motion.div variants={RISE} className="lg:col-span-5">
+          <CutPanel cut="tl" cutSize={14} innerClassName="p-0" className="h-full">
+            <SectionHeader
+              code="CAL"
+              title="Spend calendar"
+              signal="orange"
+              right={<span className="micro text-faint">MONTH VIEW</span>}
+            />
+            <SpendCalendar spends={filtered.length ? filtered : spends} base={base} />
+          </CutPanel>
+        </motion.div>
+      </div>
     </motion.div>
   )
 }

@@ -462,6 +462,7 @@ export function summarizeSpends(
     monthHighDay,
     notes: buildSpendNotes(
       spends,
+      base,
       today,
       weekStart,
       weekTotal,
@@ -650,6 +651,7 @@ function startOfWeekISO(iso: string): string {
 
 function buildSpendNotes(
   spends: Spend[],
+  base: string,
   today: string,
   weekStart: string,
   weekTotal: number,
@@ -707,7 +709,51 @@ function buildSpendNotes(
     })
   }
 
-  return notes.slice(0, 4)
+  // Month-over-month trend note
+  const thisMonth = monthKey(today)
+  const prevMonth = shiftMonthKey(thisMonth, -1)
+  const thisMonthTotal = sumBase(spends, base, (s) => monthKey(s.date) === thisMonth)
+  const prevMonthTotal = sumBase(spends, base, (s) => monthKey(s.date) === prevMonth)
+  if (prevMonthTotal > 0 && thisMonthTotal > 0) {
+    const delta = percentChange(thisMonthTotal, prevMonthTotal)
+    const absDelta = Math.abs(delta)
+    if (absDelta >= 15) {
+      notes.push({
+        id: delta > 0 ? 'mom-up' : 'mom-down',
+        label: delta > 0 ? 'SPENDING RISING' : 'SPENDING COOLING',
+        signal: delta > 0 ? 'orange' : 'acid',
+        text: `Month-to-date spend is ${delta > 0 ? 'up' : 'down'} ${absDelta.toFixed(0)}% vs the same point last month.`,
+      })
+    }
+  }
+
+  // Weekday pattern note — find the heaviest spending day
+  const weekdayTotals = [0, 0, 0, 0, 0, 0, 0]
+  const weekdayCounts = [0, 0, 0, 0, 0, 0, 0]
+  const sixtyDaysAgo = addDaysISO(today, -60)
+  for (const s of spends) {
+    if (s.date >= sixtyDaysAgo && s.date <= today) {
+      const idx = weekdayIndexMon(s.date)
+      if (idx >= 0 && idx < 7) {
+        weekdayTotals[idx] += convert(s.amount, s.currency, base)
+        weekdayCounts[idx] += 1
+      }
+    }
+  }
+  const peakWeekdayIdx = weekdayTotals.indexOf(Math.max(...weekdayTotals))
+  const peakWeekdayTotal = weekdayTotals[peakWeekdayIdx]
+  const totalWeekdaySpend = weekdayTotals.reduce((a, b) => a + b, 0)
+  if (totalWeekdaySpend > 0 && peakWeekdayTotal / totalWeekdaySpend >= 0.2 && weekdayCounts[peakWeekdayIdx] >= 3) {
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    notes.push({
+      id: 'weekday-peak',
+      label: 'WEEKDAY PATTERN',
+      signal: 'blue',
+      text: `${dayNames[peakWeekdayIdx]}s are your heaviest spend day — ${formatDelta((peakWeekdayTotal / totalWeekdaySpend) * 100)} of 60-day trailing volume.`,
+    })
+  }
+
+  return notes.slice(0, 5)
 }
 
 function formatDelta(percent: number): string {

@@ -11,8 +11,9 @@ import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { useUI } from '@/store/ui'
 import { usePayments, useSubscriptions, useSystem } from '@/hooks/useSystem'
-import { searchSubscriptions, parseQuery, fuzzyScore } from '@/lib/fuzzy'
-import { CATEGORY_CODE } from '@/lib/types'
+import { useSpends } from '@/hooks/useSpends'
+import { searchSubscriptions, searchSpends, parseQuery, fuzzyScore } from '@/lib/fuzzy'
+import { CATEGORY_CODE, SPEND_CATEGORY_META, SPEND_METHOD_LABEL } from '@/lib/types'
 import { cycleSuffix } from '@/lib/cycle'
 import { formatMoney } from '@/lib/money'
 import { formatSignalDate } from '@/lib/date'
@@ -20,6 +21,7 @@ import { pidOf } from '@/lib/id'
 import { cx } from '@/lib/cx'
 import { useFocusTrap, useScrollLock } from '@/hooks/usePlatform'
 import { ServiceBadge } from '@/components/brand/ServiceBadge'
+import { SpendBadge } from '@/components/spends/SpendBadge'
 import { Led } from '@/components/ui/Signal'
 import { KeyCap } from '@/components/ui/Micro'
 import {
@@ -65,6 +67,7 @@ export function CommandPalette() {
   const { summary } = useSystem()
   const subs = useSubscriptions()
   const payments = usePayments()
+  const spends = useSpends()
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -146,11 +149,11 @@ export function CommandPalette() {
         run: () => navigate('/spends/data'),
       },
       {
-        id: 'spends-limits',
-        label: 'Open Weekly Spend Limiter',
-        hint: 'Configure discretionary envelope cap',
+        id: 'spends-patterns',
+        label: 'Open Spend Patterns',
+        hint: 'Forensic analysis: heatmap, anomalies, recurring merchants, discipline',
         icon: IconTime,
-        run: () => navigate('/spends/limits'),
+        run: () => navigate('/spends/patterns'),
       },
       {
         id: 'time',
@@ -246,9 +249,10 @@ export function CommandPalette() {
   }, [commands, query])
 
   const processHits = useMemo(() => searchSubscriptions(subs, query, base), [subs, query, base])
+  const spendHits = useMemo(() => searchSpends(spends, query, base), [spends, query, base])
   const intent = useMemo(() => parseQuery(query), [query])
 
-  const totalRows = commandHits.length + processHits.length
+  const totalRows = commandHits.length + processHits.length + spendHits.length
 
   useEffect(() => {
     if (open) {
@@ -274,13 +278,20 @@ export function CommandPalette() {
     if (index < commandHits.length) {
       const command = commandHits[index]
       command.run()
-      // Commands that keep the palette open (search focus) opt out of closing.
       if (command.id !== 'search') close()
       return
     }
-    const hit = processHits[index - commandHits.length]
-    if (hit) {
+    const subOffset = index - commandHits.length
+    if (subOffset < processHits.length) {
+      const hit = processHits[subOffset]
       navigate(`/subs/flow/${hit.sub.id}`)
+      close()
+      return
+    }
+    const spendOffset = subOffset - processHits.length
+    const spendHit = spendHits[spendOffset]
+    if (spendHit) {
+      navigate(`/spends/flow/${spendHit.spend.id}`)
       close()
     }
   }
@@ -350,6 +361,7 @@ export function CommandPalette() {
                 </span>
                 <span className="micro hidden text-faint sm:inline">
                   INDEX {String(subs.length).padStart(2, '0')} SUBSCRIPTIONS ·{' '}
+                  {String(spends.length).padStart(3, '0')} SPENDS ·{' '}
                   {String(payments.length).padStart(4, '0')} CHARGES
                 </span>
                 <button
@@ -400,7 +412,7 @@ export function CommandPalette() {
                     ))
                   )}
                   <span className="micro ml-auto text-faint">
-                    {commandHits.length} CMD · {processHits.length} SUBS
+                    {commandHits.length} CMD · {processHits.length} SUBS · {spendHits.length} SPNDS
                   </span>
                 </div>
               )}
@@ -460,7 +472,7 @@ export function CommandPalette() {
 
                 {processHits.length > 0 && (
                   <li className="tech-label px-3 py-1.5" role="presentation">
-                    ACTIVE SUBSCRIPTIONS // {processHits.length}
+                    SUBSCRIPTIONS // {processHits.length}
                   </li>
                 )}
                 {processHits.slice(0, 40).map((hit, offset) => {
@@ -507,6 +519,62 @@ export function CommandPalette() {
                           </span>
                           <span className={cx('micro block', active ? 'text-black/60' : 'text-faint')}>
                             {cycleSuffix(sub.billingCycle, sub.customIntervalDays)}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+
+                {spendHits.length > 0 && (
+                  <li className="tech-label px-3 py-1.5" role="presentation">
+                    DAILY SPENDS // {spendHits.length}
+                  </li>
+                )}
+                {spendHits.slice(0, 30).map((hit, offset) => {
+                  const index = commandHits.length + processHits.length + offset
+                  const active = index === activeIndex
+                  const { spend } = hit
+                  const meta = SPEND_CATEGORY_META[spend.category]
+                  return (
+                    <li key={spend.id} role="option" aria-selected={active}>
+                      <button
+                        type="button"
+                        data-index={index}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onClick={() => runIndex(index)}
+                        className={cx(
+                          'flex w-full items-center gap-3 px-3 py-2 text-left transition-colors',
+                          active ? 'bg-acid text-black' : 'hover:bg-surface2',
+                        )}
+                      >
+                        <SpendBadge
+                          category={spend.category}
+                          title={spend.title}
+                          size="sm"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate text-[13px] font-medium">{spend.title}</span>
+                            <span
+                              className={cx('micro', active ? 'text-black/60' : 'text-faint')}
+                            >
+                              {meta?.code}
+                            </span>
+                          </span>
+                          <span
+                            className={cx('pid block truncate', active ? 'text-black/60' : '')}
+                          >
+                            {formatSignalDate(spend.date)} · {SPEND_METHOD_LABEL[spend.method]}
+                            {hit.via.length > 0 && ` · VIA ${hit.via.join('+')}`}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="meta block">
+                            {formatMoney(spend.amount, spend.currency)}
+                          </span>
+                          <span className={cx('micro block', active ? 'text-black/60' : 'text-faint')}>
+                            {spend.method.toUpperCase()}
                           </span>
                         </span>
                       </button>

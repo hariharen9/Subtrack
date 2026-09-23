@@ -96,6 +96,7 @@ export default function MasterCommand() {
 
   const hero = useMemo(() => splitMoney(summary.monthlyBurn, base), [summary.monthlyBurn, base])
   const next = summary.nextPayment
+  const spendMonthTotal = spendsData.summary.monthTotal
 
   // Projected engines contribute 0 until they ship, so the roll-up is honest.
   const standbyEngines = DOMAINS.filter((d) => d.status === 'standby')
@@ -201,6 +202,11 @@ export default function MasterCommand() {
               <span className="micro text-faint">
                 {formatMoney(dailyBurn, base)} DRAIN DAILY
               </span>
+              {spendMonthTotal > 0 && (
+                <span className="micro text-orangeink">
+                  {formatMoney(spendMonthTotal, base)} VARIABLE BURN
+                </span>
+              )}
               <span className="micro text-faint">
                 {formatMoney(coveredBurn, base)} CASH THIS MONTH
               </span>

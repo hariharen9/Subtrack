@@ -27,13 +27,15 @@ import { cx } from '@/lib/cx'
 
 const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['⌘', 'K'], label: 'Open the command palette' },
-  { keys: ['/'], label: 'Query subscriptions from anywhere' },
+  { keys: ['/'], label: 'Query financial OS from anywhere' },
   { keys: ['N'], label: 'Initialize a subscription' },
-  { keys: ['1'], label: 'Overview' },
+  { keys: ['X'], label: 'Log a daily spend' },
+  { keys: ['1'], label: 'Master Command' },
   { keys: ['2'], label: 'Subscriptions' },
-  { keys: ['3'], label: 'Payment matrix' },
-  { keys: ['4'], label: 'System analytics' },
-  { keys: ['5'], label: 'Settings' },
+  { keys: ['3'], label: 'Credit Cards (standby)' },
+  { keys: ['4'], label: 'Loans & EMIs (standby)' },
+  { keys: ['5'], label: 'Daily Spends' },
+  { keys: ['6'], label: 'System Host' },
   { keys: ['T'], label: 'Toggle night / daylight' },
   { keys: ['ESC'], label: 'Close a console, sheet or palette' },
   { keys: ['↑', '↓'], label: 'Move through palette results' },
@@ -378,7 +380,7 @@ export default function Settings() {
                       setBusy(true)
                       await resetToSeed()
                       setBusy(false)
-                      pushToast(TOAST_VERBS.info('DATASET RESET', 'Seventeen demo subscriptions restored'))
+                      pushToast(TOAST_VERBS.info('DATASET RESET', 'Seventeen demo subscriptions and sample spends restored'))
                     }}
                   />
                 </div>
