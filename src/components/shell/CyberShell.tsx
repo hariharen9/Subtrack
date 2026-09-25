@@ -24,6 +24,7 @@ import { CommandPalette } from './CommandPalette'
 import { UpdatePrompt } from './UpdatePrompt'
 import { SubscriptionComposer } from '@/components/subs/SubscriptionComposer'
 import { SpendComposer } from '@/components/spends/SpendComposer'
+import { CardComposer } from '@/components/cards/CardComposer'
 import { TerminationConsole } from '@/components/subs/TerminationConsole'
 import { BootScreen } from '@/components/ui/Skeleton'
 
@@ -88,10 +89,10 @@ export function CyberShell() {
 
       <NavigationRail activePath={pathname} processCount={summary.active.length} />
 
-      <div className="lg:pl-[88px]">
+      <div className="flex min-h-dvh flex-col lg:pl-[88px]">
         <SystemHeader summary={summary} />
 
-        <main id="main" className="relative z-10 pb-[112px] lg:pb-0">
+        <main id="main" className="relative z-10 flex-1 pb-[112px] lg:pb-0">
           {booted ? (
             <RouteStage />
           ) : (
@@ -116,6 +117,7 @@ export function CyberShell() {
       <CommandPalette />
       <SubscriptionComposer />
       <SpendComposer />
+      <CardComposer />
       <TerminationConsole />
       <UpdatePrompt />
     </div>

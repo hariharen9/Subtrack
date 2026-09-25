@@ -173,11 +173,18 @@ export function CommandPalette() {
       },
       {
         id: 'cards',
-        label: 'Open Credit Cards Deck',
-        hint: 'Statement cut-offs and grace (standby)',
+        label: 'Open Credit Cards Cockpit',
+        hint: 'Card vault, utilisation, dues, rewards',
         kbd: '3',
         icon: IconCreditCard,
         run: () => navigate('/cards'),
+      },
+      {
+        id: 'cards-flow',
+        label: 'Open Card Transactions',
+        hint: 'Full card transaction registry',
+        icon: IconCreditCard,
+        run: () => navigate('/cards/flow'),
       },
       {
         id: 'loans',

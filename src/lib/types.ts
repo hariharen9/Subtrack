@@ -320,3 +320,72 @@ export const LOAN_TYPE_LABEL: Record<LoanType, string> = Object.fromEntries(
 export const LOAN_TYPE_CODE: Record<LoanType, string> = Object.fromEntries(
   LOAN_TYPES.map((t) => [t.id, t.code]),
 ) as Record<LoanType, string>
+
+/* ── Credit Cards ────────────────────────────────────────────────────── */
+
+export type CardNetwork = 'visa' | 'mastercard' | 'amex' | 'rupay' | 'diners' | 'other'
+export type CardStatus = 'active' | 'frozen' | 'closed'
+export type CardTxnType = 'purchase' | 'payment' | 'fee' | 'interest' | 'reward' | 'refund'
+
+export interface CreditCard {
+  id: string
+  name: string
+  issuer: string
+  /** Last 4 digits for identity. */
+  last4: string
+  network: CardNetwork
+  status: CardStatus
+  /** Total sanctioned credit limit. */
+  creditLimit: number
+  /** Annual percentage rate. */
+  interestRate: number
+  /** Statement cut-off day of month (1–28). */
+  billingDay: number
+  /** Payment due day of month (1–28). */
+  dueDay: number
+  currency: string
+  /** Card accent for the visual. */
+  color: string
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CardTransaction {
+  id: string
+  cardId: string
+  title: string
+  amount: number
+  currency: string
+  category: SpendCategory
+  type: CardTxnType
+  /** ISO date of the transaction. */
+  date: string
+  /** Rewards points or cashback earned (purchases/rewards only). */
+  rewards: number
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+export const CARD_NETWORKS: { id: CardNetwork; label: string }[] = [
+  { id: 'visa', label: 'Visa' },
+  { id: 'mastercard', label: 'Mastercard' },
+  { id: 'amex', label: 'Amex' },
+  { id: 'rupay', label: 'RuPay' },
+  { id: 'diners', label: 'Diners Club' },
+  { id: 'other', label: 'Other' },
+]
+
+export const CARD_NETWORK_LABEL: Record<CardNetwork, string> = Object.fromEntries(
+  CARD_NETWORKS.map((n) => [n.id, n.label]),
+) as Record<CardNetwork, string>
+
+export const CARD_TXN_TYPE_LABEL: Record<CardTxnType, string> = {
+  purchase: 'Purchase',
+  payment: 'Payment',
+  fee: 'Fee',
+  interest: 'Interest',
+  reward: 'Reward',
+  refund: 'Refund',
+}

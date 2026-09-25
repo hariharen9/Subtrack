@@ -15,6 +15,7 @@ import { motion } from 'motion/react'
 import { useSignalSeries, useSystem } from '@/hooks/useSystem'
 import { useSpendsSystem, type SpendsData } from '@/hooks/useSpends'
 import { useDebtSystem, type DebtData } from '@/hooks/useDebt'
+import { useCardsSystem, type CardsData } from '@/hooks/useCards'
 import { useUI } from '@/store/ui'
 import { formatMoney, formatPercent, splitMoney } from '@/lib/money'
 import { formatSignalDate } from '@/lib/date'
@@ -45,6 +46,7 @@ function domainTelemetry(
   summary: SystemSummary,
   spendsData: SpendsData,
   debtData: DebtData,
+  cardsData: CardsData,
 ): { signal: Signal; primary: string; secondary: string; to: string } {
   switch (domain.code) {
     case 'SUBS':
@@ -60,6 +62,8 @@ function domainTelemetry(
       return spendsTelemetry(spendsData)
     case 'DEBT':
       return debtTelemetry(debtData)
+    case 'CRD':
+      return cardsTelemetry(cardsData)
     default:
       return { signal: 'orange' as Signal, primary: 'STANDBY', secondary: `${domain.tag} · PENDING CORE`, to: domain.path }
   }
@@ -107,10 +111,28 @@ function debtTelemetry(
   }
 }
 
+/** CRD telemetry for the subsystem matrix. */
+function cardsTelemetry(
+  cards: CardsData,
+): { signal: Signal; primary: string; secondary: string; to: string } {
+  const s = cards.summary
+  if (!cards.ready || s.activeViews.length === 0) {
+    return { signal: 'blue' as Signal, primary: '—', secondary: 'NO CARDS TRACKED', to: '/cards' }
+  }
+  const util = s.totalUtilisation
+  return {
+    signal: util >= 0.8 ? 'red' : util >= 0.5 ? 'orange' : 'acid',
+    primary: formatMoney(s.totalOutstanding, s.base),
+    secondary: `${s.activeViews.length} CARDS · ${(util * 100).toFixed(0)}% UTIL${s.nextDue ? ` · DUE ${s.nextDue.days}D` : ''}`,
+    to: '/cards',
+  }
+}
+
 export default function MasterCommand() {
   const { summary } = useSystem()
   const spendsData = useSpendsSystem()
   const debtData = useDebtSystem()
+  const cardsData = useCardsSystem()
   const base = useUI((s) => s.baseCurrency)
   const series = useSignalSeries('cash', 3, 1)
   const now = summary.today
@@ -256,7 +278,7 @@ export default function MasterCommand() {
           />
           <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
             {DOMAINS.map((domain) => {
-              const tel = domainTelemetry(domain, summary, spendsData, debtData)
+              const tel = domainTelemetry(domain, summary, spendsData, debtData, cardsData)
               const Icon = domain.icon
               const live = domain.status === 'live'
               return (

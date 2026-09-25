@@ -109,12 +109,29 @@ export const DOMAINS: Domain[] = [
     label: 'Credit Cards',
     path: '/cards',
     key: '3',
-    blurb: 'Statement cut-offs, grace countdown and zero-interest',
-    status: 'standby',
+    blurb: 'Statement cycles, utilisation and dues',
+    status: 'live',
     icon: IconCreditCard,
     manifest:
-      'Statement cut-off cycles, 45-day zero-interest grace countdowns and aggregate credit limit utilisation gauges.',
-    tag: 'v0.2.0',
+      'Credit card vault: limits, statements, utilisation gauges, due-date countdowns, rewards tracking and full transaction registry.',
+    tag: 'ENGINE LIVE',
+    subnav: [
+      { code: 'CORE', label: 'Overview', path: '/cards', key: 'O', icon: IconCore },
+      {
+        code: 'FLOW',
+        label: 'Registry',
+        path: '/cards/flow',
+        key: 'F',
+        icon: IconFlow,
+      },
+      {
+        code: 'DATA',
+        label: 'Insights',
+        path: '/cards/data',
+        key: 'I',
+        icon: IconData,
+      },
+    ],
   },
   {
     code: 'DEBT',

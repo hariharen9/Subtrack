@@ -57,67 +57,39 @@ export default function DebtFlow() {
   return (
     <motion.div variants={STAGGER} initial="hidden" animate="show" className="px-3 py-4 md:px-5 md:py-5">
       <motion.div variants={RISE}>
-        <CutPanel cut="tl-br" cutSize={16} innerClassName="p-3 md:p-4">
-          {/* Header */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
-            <div className="flex items-center gap-2">
-              <span className="micro border border-line2 bg-bg2 px-1.5 py-0.5 text-dim">FLOW</span>
-              <h1 className="text-[15px] font-semibold text-fg">LOAN REGISTRY</h1>
-              <span className="micro hidden text-faint sm:inline">{filtered.length} / {loans.length} LOANS</span>
+        <CutPanel cut="tl-br" cutSize={16} innerClassName="p-2 md:p-3">
+          {/* Header + Search + Sort — one compact row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="micro border border-line2 bg-bg2 px-1.5 py-0.5 text-dim">FLOW</span>
+            <h1 className="text-[14px] font-semibold text-fg">LOAN REGISTRY</h1>
+            <span className="micro text-faint">{filtered.length}/{loans.length}</span>
+            <div className="flex-1" />
+            <div className="flex items-center gap-1.5 border border-line2 bg-bg2 px-2 focus-within:border-acid">
+              <IconSearch size={13} className="shrink-0 text-faint" />
+              <input className="w-32 bg-transparent py-1.5 font-mono text-[11px] outline-none placeholder:text-faint" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..." autoComplete="off" spellCheck={false} />
+              {query && <button type="button" onClick={() => setQuery('')} className="text-faint hover:text-fg"><IconClose size={11} /></button>}
             </div>
-            <div className="flex items-center gap-2">
-              <select value={sort} onChange={(e) => setSort(e.target.value as SortOrder)} className="micro border border-line2 bg-bg2 px-2 py-1.5 font-mono text-fg outline-none focus:border-acid">
-                <option value="outstanding">OUTSTANDING</option>
-                <option value="emi">EMI</option>
-                <option value="rate">INTEREST RATE</option>
-                <option value="name">NAME</option>
-              </select>
-            </div>
+            <select value={sort} onChange={(e) => setSort(e.target.value as SortOrder)} className="micro border border-line2 bg-bg2 px-1.5 py-1.5 font-mono text-fg outline-none focus:border-acid">
+              <option value="outstanding">OUTSTANDING</option>
+              <option value="emi">EMI</option>
+              <option value="rate">RATE</option>
+              <option value="name">NAME</option>
+            </select>
           </div>
 
-          {/* Search */}
-          <div className="mt-3 flex items-center gap-2 border border-line2 bg-bg2 px-3 transition-colors focus-within:border-acid">
-            <IconSearch size={15} className="shrink-0 text-faint" />
-            <input
-              className="w-full bg-transparent py-2 font-mono text-[12px] outline-none placeholder:text-faint"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search lender, name, type..."
-              autoComplete="off"
-              spellCheck={false}
-            />
-            {query && (
-              <button type="button" onClick={() => setQuery('')} className="text-faint hover:text-fg"><IconClose size={13} /></button>
-            )}
+          {/* Filters — compact single row */}
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            <span className="micro text-[9px] text-faint">TYPE:</span>
+            <button type="button" onClick={() => setTypeFilter('all')} className={cx('micro border px-1.5 py-0.5 transition-colors', typeFilter === 'all' ? 'border-acid bg-acid text-black font-semibold' : 'border-line2 text-dim hover:text-fg')}>ALL</button>
+            {LOAN_TYPES.map((t) => (
+              <button key={t.id} type="button" onClick={() => setTypeFilter(t.id)} className={cx('micro border px-1.5 py-0.5 transition-colors', typeFilter === t.id ? 'border-fg bg-fg text-bg font-semibold' : 'border-line2 text-dim hover:text-fg')}>{t.code}</button>
+            ))}
+            <span className="ml-2 micro text-[9px] text-faint">STATUS:</span>
+            {(['all', 'active', 'paid_off'] as const).map((s) => (
+              <button key={s} type="button" onClick={() => setStatusFilter(s)} className={cx('micro border px-1.5 py-0.5 transition-colors', statusFilter === s ? 'border-acid bg-acid text-black font-semibold' : 'border-line2 text-dim hover:text-fg')}>{s === 'all' ? 'ALL' : s === 'active' ? 'ACTIVE' : 'PAID'}</button>
+            ))}
+            {hasFilters && <button type="button" onClick={clearFilters} className="micro ml-1 text-acidink underline hover:text-fg">RESET</button>}
           </div>
-
-          {/* Filters */}
-          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <div>
-              <span className="micro text-[10px] text-faint">LOAN TYPE</span>
-              <div className="mt-1 flex flex-wrap gap-1">
-                <button type="button" onClick={() => setTypeFilter('all')} className={cx('micro border px-2 py-1 transition-colors', typeFilter === 'all' ? 'border-acid bg-acid text-black font-semibold' : 'border-line2 text-dim hover:text-fg')}>ALL</button>
-                {LOAN_TYPES.map((t) => (
-                  <button key={t.id} type="button" onClick={() => setTypeFilter(t.id)} className={cx('micro border px-2 py-1 transition-colors', typeFilter === t.id ? 'border-fg bg-fg text-bg font-semibold' : 'border-line2 text-dim hover:text-fg')}>{t.code}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <span className="micro text-[10px] text-faint">STATUS</span>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {(['all', 'active', 'paid_off'] as const).map((s) => (
-                  <button key={s} type="button" onClick={() => setStatusFilter(s)} className={cx('micro border px-2 py-1 transition-colors', statusFilter === s ? 'border-acid bg-acid text-black font-semibold' : 'border-line2 text-dim hover:text-fg')}>{s === 'all' ? 'ALL' : s === 'active' ? 'ACTIVE' : 'PAID OFF'}</button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Active filter chips */}
-          {hasFilters && (
-            <div className="mt-3 flex items-center gap-2 border-t border-line pt-2">
-              <button type="button" onClick={clearFilters} className="micro text-acidink underline hover:text-fg">RESET ALL</button>
-            </div>
-          )}
         </CutPanel>
       </motion.div>
 

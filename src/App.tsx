@@ -16,7 +16,10 @@ import ProcessDetail from '@/pages/ProcessDetail'
 import PaymentMatrix from '@/pages/PaymentMatrix'
 import Insights from '@/pages/Insights'
 import Settings from '@/pages/Settings'
-import CardsDeck from '@/pages/standby/CardsDeck'
+import CardsOverview from '@/pages/CardsOverview'
+import CardsFlow from '@/pages/CardsFlow'
+import CardDetail from '@/pages/CardDetail'
+import CardsInsights from '@/pages/CardsInsights'
 import Spends from '@/pages/Spends'
 import SpendFlow from '@/pages/SpendFlow'
 import SpendInsights from '@/pages/SpendInsights'
@@ -30,6 +33,7 @@ import DebtInsights from '@/pages/DebtInsights'
 import NotFound from '@/pages/NotFound'
 import { ensureSeeded, ensureSpendsSeeded } from '@/lib/db'
 import { ensureDebtSeeded } from '@/lib/debt-seed'
+import { ensureCardsSeeded } from '@/lib/card-seed'
 import { useUI } from '@/store/ui'
 import { SmoothScroll } from '@/components/shell/SmoothScroll'
 
@@ -66,7 +70,7 @@ function BootSequence() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([ensureSeeded(), ensureSpendsSeeded(), ensureDebtSeeded()])
+    Promise.all([ensureSeeded(), ensureSpendsSeeded(), ensureDebtSeeded(), ensureCardsSeeded()])
       .catch((error: unknown) => {
         pushToast({
           kind: 'alert',
@@ -115,8 +119,11 @@ export default function App() {
             <Route path="time" element={<Navigate to="/subs/time" replace />} />
             <Route path="data" element={<Navigate to="/subs/data" replace />} />
 
-            {/* [03] Credit Cards standby */}
-            <Route path="cards" element={<CardsDeck />} />
+            {/* [03] Credit Cards engine */}
+            <Route path="cards" element={<CardsOverview />} />
+            <Route path="cards/flow" element={<CardsFlow />} />
+            <Route path="cards/flow/:id" element={<CardDetail />} />
+            <Route path="cards/data" element={<CardsInsights />} />
 
             {/* [04] Loans & EMIs engine */}
             <Route path="loans" element={<DebtOverview />} />

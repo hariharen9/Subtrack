@@ -22,6 +22,9 @@ import type {
   LoanPayment,
   LoanType,
   LoanStatus,
+  CreditCard,
+  CardTransaction,
+  CardTxnType,
 } from './types'
 import { buildSeed, buildSpendSeed } from './seed'
 import { occurrenceAt, occurrencesBetween } from './cycle'
@@ -36,6 +39,8 @@ class SubTrackDB extends Dexie {
   spends!: Table<Spend, string>
   loans!: Table<Loan, string>
   loanPayments!: Table<LoanPayment, string>
+  creditCards!: Table<CreditCard, string>
+  cardTransactions!: Table<CardTransaction, string>
   meta!: Table<MetaRecord, string>
 
   constructor() {
@@ -51,6 +56,10 @@ class SubTrackDB extends Dexie {
     this.version(3).stores({
       loans: 'id, status, loanType, lender, startDate, name, createdAt, updatedAt',
       loanPayments: 'id, loanId, date, emiNumber, [loanId+date]',
+    })
+    this.version(4).stores({
+      creditCards: 'id, status, issuer, network, name, createdAt, updatedAt',
+      cardTransactions: 'id, cardId, date, type, category, [cardId+date]',
     })
   }
 }
@@ -476,6 +485,111 @@ export async function deleteLoan(id: string): Promise<void> {
   })
 }
 
+/* ---------------------------------------------------------- credit cards --- */
+
+export interface CardDraft {
+  name: string
+  issuer: string
+  last4: string
+  network: CreditCard['network']
+  creditLimit: number
+  interestRate: number
+  billingDay: number
+  dueDay: number
+  currency: string
+  color: string
+  notes: string
+}
+
+export async function listCreditCards(): Promise<CreditCard[]> {
+  return db.creditCards.toArray()
+}
+
+export async function getCreditCard(id: string): Promise<CreditCard | undefined> {
+  return db.creditCards.get(id)
+}
+
+export async function createCreditCard(draft: CardDraft): Promise<CreditCard> {
+  const now = nowStamp()
+  const card: CreditCard = {
+    id: newId(),
+    name: draft.name.trim(),
+    issuer: draft.issuer.trim(),
+    last4: draft.last4.trim().slice(-4),
+    network: draft.network,
+    status: 'active',
+    creditLimit: draft.creditLimit,
+    interestRate: draft.interestRate,
+    billingDay: draft.billingDay,
+    dueDay: draft.dueDay,
+    currency: draft.currency,
+    color: draft.color,
+    notes: draft.notes.trim(),
+    createdAt: now,
+    updatedAt: now,
+  }
+  await db.creditCards.add(card)
+  return card
+}
+
+export async function updateCreditCard(id: string, patch: Partial<CardDraft> & { status?: CreditCard['status'] }): Promise<void> {
+  await db.creditCards.update(id, { ...patch, updatedAt: nowStamp() })
+}
+
+export async function deleteCreditCard(id: string): Promise<void> {
+  await db.transaction('rw', db.creditCards, db.cardTransactions, async () => {
+    await db.cardTransactions.where('cardId').equals(id).delete()
+    await db.creditCards.delete(id)
+  })
+}
+
+/* ------------------------------------------------- card transactions ----- */
+
+export interface CardTxnDraft {
+  cardId: string
+  title: string
+  amount: number
+  currency: string
+  category: CardTransaction['category']
+  type: CardTxnType
+  date: string
+  rewards: number
+  notes: string
+}
+
+export async function listCardTransactions(cardId?: string): Promise<CardTransaction[]> {
+  if (cardId) return db.cardTransactions.where('cardId').equals(cardId).sortBy('date')
+  return db.cardTransactions.toArray()
+}
+
+export async function createCardTransaction(draft: CardTxnDraft): Promise<CardTransaction> {
+  const now = nowStamp()
+  const txn: CardTransaction = {
+    id: newId(),
+    cardId: draft.cardId,
+    title: draft.title.trim(),
+    amount: draft.amount,
+    currency: draft.currency,
+    category: draft.category,
+    type: draft.type,
+    date: draft.date,
+    rewards: draft.rewards,
+    notes: draft.notes.trim(),
+    createdAt: now,
+    updatedAt: now,
+  }
+  await db.cardTransactions.add(txn)
+  return txn
+}
+
+export async function updateCardTransaction(id: string, patch: Partial<CardTxnDraft>): Promise<void> {
+  await db.cardTransactions.update(id, { ...patch, updatedAt: nowStamp() })
+}
+
+export async function deleteCardTransaction(id: string): Promise<void> {
+  await db.cardTransactions.delete(id)
+}
+
 const META_WEEKLY_LIMIT = 'spends.weeklyLimit'
 
 export async function getWeeklyLimit(): Promise<WeeklySpendLimit | null> {
@@ -493,12 +607,14 @@ export async function setWeeklyLimit(limit: WeeklySpendLimit): Promise<void> {
 }
 
 export async function wipeAll(): Promise<void> {
-  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.meta], async () => {
+  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.creditCards, db.cardTransactions, db.meta], async () => {
     await db.subscriptions.clear()
     await db.payments.clear()
     await db.spends.clear()
     await db.loans.clear()
     await db.loanPayments.clear()
+    await db.creditCards.clear()
+    await db.cardTransactions.clear()
     await db.meta.clear()
   })
 }
@@ -522,15 +638,19 @@ export interface Snapshot {
   spends: Spend[]
   loans?: Loan[]
   loanPayments?: LoanPayment[]
+  creditCards?: CreditCard[]
+  cardTransactions?: CardTransaction[]
 }
 
 export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
-  const [subscriptions, payments, spends, loans, loanPayments] = await Promise.all([
+  const [subscriptions, payments, spends, loans, loanPayments, creditCards, cardTransactions] = await Promise.all([
     listSubscriptions(),
     listPayments(),
     listSpends(),
     listLoans(),
     db.loanPayments.toArray(),
+    listCreditCards(),
+    db.cardTransactions.toArray(),
   ])
   return {
     app: 'subtrack',
@@ -542,6 +662,8 @@ export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
     spends,
     loans,
     loanPayments,
+    creditCards,
+    cardTransactions,
   }
 }
 
@@ -551,6 +673,8 @@ export interface ImportReport {
   spends: number
   loans: number
   loanPayments: number
+  creditCards: number
+  cardTransactions: number
   mode: 'replace' | 'merge'
 }
 
@@ -566,20 +690,26 @@ export async function importSnapshot(
   const spends = Array.isArray(snapshot.spends) ? snapshot.spends : []
   const loans = Array.isArray(snapshot.loans) ? snapshot.loans : []
   const loanPayments = Array.isArray(snapshot.loanPayments) ? snapshot.loanPayments : []
+  const creditCards = Array.isArray(snapshot.creditCards) ? snapshot.creditCards : []
+  const cardTransactions = Array.isArray(snapshot.cardTransactions) ? snapshot.cardTransactions : []
 
-  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.meta], async () => {
+  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.creditCards, db.cardTransactions, db.meta], async () => {
     if (mode === 'replace') {
       await db.subscriptions.clear()
       await db.payments.clear()
       await db.spends.clear()
       await db.loans.clear()
       await db.loanPayments.clear()
+      await db.creditCards.clear()
+      await db.cardTransactions.clear()
     }
     await db.subscriptions.bulkPut(subscriptions)
     if (payments.length) await db.payments.bulkPut(payments)
     if (spends.length) await db.spends.bulkPut(spends)
     if (loans.length) await db.loans.bulkPut(loans)
     if (loanPayments.length) await db.loanPayments.bulkPut(loanPayments)
+    if (creditCards.length) await db.creditCards.bulkPut(creditCards)
+    if (cardTransactions.length) await db.cardTransactions.bulkPut(cardTransactions)
     await db.meta.put({ key: META_SEEDED, value: nowStamp() })
   })
 
@@ -589,6 +719,8 @@ export async function importSnapshot(
     spends: spends.length,
     loans: loans.length,
     loanPayments: loanPayments.length,
+    creditCards: creditCards.length,
+    cardTransactions: cardTransactions.length,
     mode,
   }
 }

@@ -39,6 +39,16 @@ export interface SpendComposerState {
   presetCategory: string | null
 }
 
+export interface CardComposerState {
+  open: boolean
+  /** 'card' = add/edit a credit card; 'txn' = record a card transaction. */
+  mode: 'card' | 'txn'
+  /** Card being edited (card mode). */
+  editCardId: string | null
+  /** Card preselected for a transaction (txn mode). */
+  presetCardId: string | null
+}
+
 export interface TerminationState {
   open: boolean
   subId: string | null
@@ -58,6 +68,7 @@ interface UIState {
   paletteOpen: boolean
   composer: ComposerState
   spendComposer: SpendComposerState
+  cardComposer: CardComposerState
   termination: TerminationState
   /** False until the local volume has been opened and seeded. */
   booted: boolean
@@ -77,6 +88,8 @@ interface UIState {
   closeComposer: () => void
   openSpendComposer: (options?: { editId?: string; presetCategory?: string }) => void
   closeSpendComposer: () => void
+  openCardComposer: (options?: { mode?: 'card' | 'txn'; editCardId?: string; presetCardId?: string }) => void
+  closeCardComposer: () => void
   openTermination: (subId: string, mode: TerminationMode) => void
   closeTermination: () => void
 }
@@ -95,6 +108,7 @@ export const useUI = create<UIState>()(
       paletteOpen: false,
       composer: { open: false, editId: null, presetServiceId: null },
       spendComposer: { open: false, editId: null, presetCategory: null },
+      cardComposer: { open: false, mode: 'card', editCardId: null, presetCardId: null },
       termination: { open: false, subId: null, mode: 'terminate' },
       booted: false,
       setBooted: (booted) => set({ booted }),
@@ -136,6 +150,17 @@ export const useUI = create<UIState>()(
         }),
       closeSpendComposer: () =>
         set({ spendComposer: { open: false, editId: null, presetCategory: null } }),
+      openCardComposer: (options) =>
+        set({
+          cardComposer: {
+            open: true,
+            mode: options?.mode ?? 'card',
+            editCardId: options?.editCardId ?? null,
+            presetCardId: options?.presetCardId ?? null,
+          },
+        }),
+      closeCardComposer: () =>
+        set({ cardComposer: { open: false, mode: 'card', editCardId: null, presetCardId: null } }),
       openTermination: (subId, mode) => set({ termination: { open: true, subId, mode } }),
       closeTermination: () =>
         set({ termination: { open: false, subId: null, mode: 'terminate' } }),

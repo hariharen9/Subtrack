@@ -15,7 +15,6 @@ import { SectionHeader } from '@/components/ui/Micro'
 import { EmptyState } from '@/components/ui/Skeleton'
 import { DataStrip } from '@/components/ui/DataStrip'
 import { SIGNAL_TEXT, SIGNAL_HEX } from '@/components/ui/Signal'
-import { AmortizationCurve, DebtCompositionRail } from '@/components/charts/DebtCurve'
 import { cx } from '@/lib/cx'
 
 const STAGGER = { hidden: {}, show: { transition: { staggerChildren: 0.05, delayChildren: 0.04 } } }
@@ -60,42 +59,6 @@ export default function DebtInsights() {
           ]}
         />
       </motion.div>
-
-      {/* Composition rail */}
-      {summary.activeViews.length > 1 && (
-        <motion.div variants={RISE} className="mt-3">
-          <CutPanel cut="none" cutSize={0} innerClassName="p-4">
-            <SectionHeader code="COMP" title="Debt composition" signal="magenta" className="border-b-0 px-0 pt-0" right={<span className="micro text-faint">{summary.activeCount} ACTIVE LOANS</span>} />
-            <div className="mt-2">
-              <DebtCompositionRail views={summary.activeViews} base={base} height={36} />
-            </div>
-            <div className="mt-2 flex flex-wrap gap-3">
-              {summary.activeViews.map((v) => {
-                const meta = LOAN_TYPE_META[v.loan.loanType]
-                return (
-                  <span key={v.loan.id} className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5" style={{ background: SIGNAL_HEX[meta.signal] }} />
-                    <span className="micro text-dim">{v.loan.name}</span>
-                    <span className="micro text-faint">{(v.share * 100).toFixed(0)}%</span>
-                  </span>
-                )
-              })}
-            </div>
-          </CutPanel>
-        </motion.div>
-      )}
-
-      {/* Amortization curve for largest loan */}
-      {summary.activeViews.length > 0 && (
-        <motion.div variants={RISE} className="mt-3">
-          <CutPanel cut="none" cutSize={0} innerClassName="p-4 md:p-5">
-            <SectionHeader code="AMORT" title={`Amortization — ${summary.activeViews[0].loan.name}`} signal="acid" className="border-b-0 px-0 pt-0" />
-            <div className="mt-2">
-              <AmortizationCurve loan={summary.activeViews[0].loan} payments={[]} base={base} height={180} />
-            </div>
-          </CutPanel>
-        </motion.div>
-      )}
 
       {/* Row 1: Progress + Type distribution */}
       <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12">
