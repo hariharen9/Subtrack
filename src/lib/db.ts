@@ -18,6 +18,10 @@ import type {
   SpendMethod,
   Subscription,
   WeeklySpendLimit,
+  Loan,
+  LoanPayment,
+  LoanType,
+  LoanStatus,
 } from './types'
 import { buildSeed, buildSpendSeed } from './seed'
 import { occurrenceAt, occurrencesBetween } from './cycle'
@@ -30,6 +34,8 @@ class SubTrackDB extends Dexie {
   subscriptions!: Table<Subscription, string>
   payments!: Table<Payment, string>
   spends!: Table<Spend, string>
+  loans!: Table<Loan, string>
+  loanPayments!: Table<LoanPayment, string>
   meta!: Table<MetaRecord, string>
 
   constructor() {
@@ -41,6 +47,10 @@ class SubTrackDB extends Dexie {
     })
     this.version(2).stores({
       spends: 'id, date, category, method, createdAt, updatedAt, [date+category]',
+    })
+    this.version(3).stores({
+      loans: 'id, status, loanType, lender, startDate, name, createdAt, updatedAt',
+      loanPayments: 'id, loanId, date, emiNumber, [loanId+date]',
     })
   }
 }
@@ -372,6 +382,100 @@ export async function deleteSpend(id: string): Promise<void> {
   await db.spends.delete(id)
 }
 
+/* ----------------------------------------------------------------- loans --- */
+
+export interface LoanDraft {
+  name: string
+  lender: string
+  loanType: LoanType
+  principal: number
+  interestRate: number
+  tenureMonths: number
+  emi: number
+  currency: string
+  startDate: string
+  notes: string
+}
+
+export async function listLoans(): Promise<Loan[]> {
+  return db.loans.toArray()
+}
+
+export async function getLoan(id: string): Promise<Loan | undefined> {
+  return db.loans.get(id)
+}
+
+export async function listLoanPayments(loanId: string): Promise<LoanPayment[]> {
+  return db.loanPayments.where('loanId').equals(loanId).sortBy('emiNumber')
+}
+
+export async function createLoan(draft: LoanDraft): Promise<Loan> {
+  const now = nowStamp()
+  const loan: Loan = {
+    id: newId(),
+    name: draft.name.trim(),
+    lender: draft.lender.trim(),
+    loanType: draft.loanType,
+    status: 'active',
+    principal: draft.principal,
+    interestRate: draft.interestRate,
+    tenureMonths: draft.tenureMonths,
+    emi: draft.emi,
+    currency: draft.currency,
+    startDate: draft.startDate,
+    notes: draft.notes.trim(),
+    createdAt: now,
+    updatedAt: now,
+  }
+  await db.loans.add(loan)
+  return loan
+}
+
+export async function updateLoan(id: string, patch: Partial<LoanDraft>): Promise<void> {
+  await db.loans.update(id, { ...patch, updatedAt: nowStamp() })
+}
+
+export async function setLoanStatus(id: string, status: LoanStatus, closedAt?: string): Promise<void> {
+  await db.loans.update(id, {
+    status,
+    closedAt: status === 'paid_off' ? (closedAt ?? todayISO()) : undefined,
+    updatedAt: nowStamp(),
+  })
+}
+
+export async function recordLoanPayment(
+  loanId: string,
+  date: string,
+  amount: number,
+  principalComponent: number,
+  interestComponent: number,
+  balanceAfter: number,
+  emiNumber: number,
+  currency: string,
+): Promise<LoanPayment> {
+  const payment: LoanPayment = {
+    id: newId(),
+    loanId,
+    date,
+    amount,
+    currency,
+    principalComponent,
+    interestComponent,
+    balanceAfter,
+    emiNumber,
+    createdAt: nowStamp(),
+  }
+  await db.loanPayments.add(payment)
+  return payment
+}
+
+export async function deleteLoan(id: string): Promise<void> {
+  await db.transaction('rw', db.loans, db.loanPayments, async () => {
+    await db.loanPayments.where('loanId').equals(id).delete()
+    await db.loans.delete(id)
+  })
+}
+
 const META_WEEKLY_LIMIT = 'spends.weeklyLimit'
 
 export async function getWeeklyLimit(): Promise<WeeklySpendLimit | null> {
@@ -389,10 +493,12 @@ export async function setWeeklyLimit(limit: WeeklySpendLimit): Promise<void> {
 }
 
 export async function wipeAll(): Promise<void> {
-  await db.transaction('rw', db.subscriptions, db.payments, db.spends, db.meta, async () => {
+  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.meta], async () => {
     await db.subscriptions.clear()
     await db.payments.clear()
     await db.spends.clear()
+    await db.loans.clear()
+    await db.loanPayments.clear()
     await db.meta.clear()
   })
 }
@@ -414,10 +520,18 @@ export interface Snapshot {
   subscriptions: Subscription[]
   payments: Payment[]
   spends: Spend[]
+  loans?: Loan[]
+  loanPayments?: LoanPayment[]
 }
 
 export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
-  const [subscriptions, payments, spends] = await Promise.all([listSubscriptions(), listPayments(), listSpends()])
+  const [subscriptions, payments, spends, loans, loanPayments] = await Promise.all([
+    listSubscriptions(),
+    listPayments(),
+    listSpends(),
+    listLoans(),
+    db.loanPayments.toArray(),
+  ])
   return {
     app: 'subtrack',
     version: 1,
@@ -426,6 +540,8 @@ export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
     subscriptions,
     payments,
     spends,
+    loans,
+    loanPayments,
   }
 }
 
@@ -433,6 +549,8 @@ export interface ImportReport {
   subscriptions: number
   payments: number
   spends: number
+  loans: number
+  loanPayments: number
   mode: 'replace' | 'merge'
 }
 
@@ -446,20 +564,33 @@ export async function importSnapshot(
   const subscriptions = snapshot.subscriptions
   const payments = Array.isArray(snapshot.payments) ? snapshot.payments : []
   const spends = Array.isArray(snapshot.spends) ? snapshot.spends : []
+  const loans = Array.isArray(snapshot.loans) ? snapshot.loans : []
+  const loanPayments = Array.isArray(snapshot.loanPayments) ? snapshot.loanPayments : []
 
-  await db.transaction('rw', db.subscriptions, db.payments, db.spends, db.meta, async () => {
+  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.meta], async () => {
     if (mode === 'replace') {
       await db.subscriptions.clear()
       await db.payments.clear()
       await db.spends.clear()
+      await db.loans.clear()
+      await db.loanPayments.clear()
     }
     await db.subscriptions.bulkPut(subscriptions)
     if (payments.length) await db.payments.bulkPut(payments)
     if (spends.length) await db.spends.bulkPut(spends)
+    if (loans.length) await db.loans.bulkPut(loans)
+    if (loanPayments.length) await db.loanPayments.bulkPut(loanPayments)
     await db.meta.put({ key: META_SEEDED, value: nowStamp() })
   })
 
-  return { subscriptions: subscriptions.length, payments: payments.length, spends: spends.length, mode }
+  return {
+    subscriptions: subscriptions.length,
+    payments: payments.length,
+    spends: spends.length,
+    loans: loans.length,
+    loanPayments: loanPayments.length,
+    mode,
+  }
 }
 
 export type { Subscription, Payment, ProcessStatus }

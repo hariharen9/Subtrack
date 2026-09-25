@@ -121,12 +121,29 @@ export const DOMAINS: Domain[] = [
     label: 'Loans & EMIs',
     path: '/loans',
     key: '4',
-    blurb: 'Amortization curves, principal decay and payoff simulations',
-    status: 'standby',
+    blurb: 'Amortization schedules, outstanding debt and repayment progress',
+    status: 'live',
     icon: IconDebt,
     manifest:
-      'Principal vs interest decay amortization schedules, debt runway metrics and prepayment payoff impact simulations.',
-    tag: 'v0.3.0',
+      'Loan and EMI tracker with amortization schedules, outstanding balance tracking, interest breakdown, and debt-free projections.',
+    tag: 'ENGINE LIVE',
+    subnav: [
+      { code: 'CORE', label: 'Overview', path: '/loans', key: 'O', icon: IconCore },
+      {
+        code: 'FLOW',
+        label: 'Registry',
+        path: '/loans/flow',
+        key: 'F',
+        icon: IconFlow,
+      },
+      {
+        code: 'DATA',
+        label: 'Insights',
+        path: '/loans/data',
+        key: 'I',
+        icon: IconData,
+      },
+    ],
   },
   {
     code: 'SPND',

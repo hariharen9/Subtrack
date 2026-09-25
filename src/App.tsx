@@ -17,15 +17,19 @@ import PaymentMatrix from '@/pages/PaymentMatrix'
 import Insights from '@/pages/Insights'
 import Settings from '@/pages/Settings'
 import CardsDeck from '@/pages/standby/CardsDeck'
-import LoansDeck from '@/pages/standby/LoansDeck'
 import Spends from '@/pages/Spends'
 import SpendFlow from '@/pages/SpendFlow'
 import SpendInsights from '@/pages/SpendInsights'
 import SpendDetail from '@/pages/SpendDetail'
 import SpendPatterns from '@/pages/SpendPatterns'
 import SpendLimits from '@/pages/SpendLimits'
+import DebtOverview from '@/pages/DebtOverview'
+import DebtFlow from '@/pages/DebtFlow'
+import LoanDetail from '@/pages/LoanDetail'
+import DebtInsights from '@/pages/DebtInsights'
 import NotFound from '@/pages/NotFound'
 import { ensureSeeded, ensureSpendsSeeded } from '@/lib/db'
+import { ensureDebtSeeded } from '@/lib/debt-seed'
 import { useUI } from '@/store/ui'
 import { SmoothScroll } from '@/components/shell/SmoothScroll'
 
@@ -62,7 +66,7 @@ function BootSequence() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([ensureSeeded(), ensureSpendsSeeded()])
+    Promise.all([ensureSeeded(), ensureSpendsSeeded(), ensureDebtSeeded()])
       .catch((error: unknown) => {
         pushToast({
           kind: 'alert',
@@ -111,9 +115,14 @@ export default function App() {
             <Route path="time" element={<Navigate to="/subs/time" replace />} />
             <Route path="data" element={<Navigate to="/subs/data" replace />} />
 
-            {/* [03][04] Standby engines */}
+            {/* [03] Credit Cards standby */}
             <Route path="cards" element={<CardsDeck />} />
-            <Route path="loans" element={<LoansDeck />} />
+
+            {/* [04] Loans & EMIs engine */}
+            <Route path="loans" element={<DebtOverview />} />
+            <Route path="loans/flow" element={<DebtFlow />} />
+            <Route path="loans/flow/:id" element={<LoanDetail />} />
+            <Route path="loans/data" element={<DebtInsights />} />
 
             {/* [05] Daily Spends engine */}
             <Route path="spends" element={<Spends />} />

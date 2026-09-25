@@ -181,8 +181,8 @@ export function CommandPalette() {
       },
       {
         id: 'loans',
-        label: 'Open Loans & EMIs Deck',
-        hint: 'Amortization and payoff (standby)',
+        label: 'Open Loans & EMIs Cockpit',
+        hint: 'Debt overview, amortization, outstanding tracking',
         kbd: '4',
         icon: IconDebt,
         run: () => navigate('/loans'),

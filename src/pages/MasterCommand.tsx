@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useSignalSeries, useSystem } from '@/hooks/useSystem'
 import { useSpendsSystem, type SpendsData } from '@/hooks/useSpends'
+import { useDebtSystem, type DebtData } from '@/hooks/useDebt'
 import { useUI } from '@/store/ui'
 import { formatMoney, formatPercent, splitMoney } from '@/lib/money'
 import { formatSignalDate } from '@/lib/date'
@@ -43,6 +44,7 @@ function domainTelemetry(
   domain: (typeof DOMAINS)[number],
   summary: SystemSummary,
   spendsData: SpendsData,
+  debtData: DebtData,
 ): { signal: Signal; primary: string; secondary: string; to: string } {
   switch (domain.code) {
     case 'SUBS':
@@ -56,6 +58,8 @@ function domainTelemetry(
       return { signal: 'acid' as Signal, primary: 'LOCAL', secondary: 'OFFLINE-READY · NO TELEMETRY', to: '/sys' }
     case 'SPND':
       return spendsTelemetry(spendsData)
+    case 'DEBT':
+      return debtTelemetry(debtData)
     default:
       return { signal: 'orange' as Signal, primary: 'STANDBY', secondary: `${domain.tag} · PENDING CORE`, to: domain.path }
   }
@@ -87,9 +91,26 @@ function spendsTelemetry(
   }
 }
 
+/** DEBT telemetry for the subsystem matrix. */
+function debtTelemetry(
+  debt: DebtData,
+): { signal: Signal; primary: string; secondary: string; to: string } {
+  const s = debt.summary
+  if (!debt.ready || s.activeCount === 0) {
+    return { signal: 'blue' as Signal, primary: '—', secondary: 'NO LOANS TRACKED', to: '/loans' }
+  }
+  return {
+    signal: s.avgInterestRate >= 12 ? 'orange' : 'acid',
+    primary: formatMoney(s.monthlyBurden, s.base),
+    secondary: `${s.activeCount} ACTIVE · ${(s.overallProgress * 100).toFixed(0)}% REPAID`,
+    to: '/loans',
+  }
+}
+
 export default function MasterCommand() {
   const { summary } = useSystem()
   const spendsData = useSpendsSystem()
+  const debtData = useDebtSystem()
   const base = useUI((s) => s.baseCurrency)
   const series = useSignalSeries('cash', 3, 1)
   const now = summary.today
@@ -235,7 +256,7 @@ export default function MasterCommand() {
           />
           <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
             {DOMAINS.map((domain) => {
-              const tel = domainTelemetry(domain, summary, spendsData)
+              const tel = domainTelemetry(domain, summary, spendsData, debtData)
               const Icon = domain.icon
               const live = domain.status === 'live'
               return (

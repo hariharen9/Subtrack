@@ -235,3 +235,88 @@ export interface WeeklySpendLimit {
   amount: number
   currency: string
 }
+
+/* ── Debt / Loans / EMIs ─────────────────────────────────────────────── */
+
+export type LoanType =
+  | 'home'
+  | 'vehicle'
+  | 'personal'
+  | 'education'
+  | 'gold'
+  | 'credit_card'
+  | 'other'
+
+export type LoanStatus = 'active' | 'paid_off' | 'defaulted'
+
+export interface Loan {
+  id: string
+  name: string
+  lender: string
+  /** Loan type — drives the icon and grouping. */
+  loanType: LoanType
+  status: LoanStatus
+  /** Original sanctioned amount in native currency. */
+  principal: number
+  /** Annual interest rate as a percentage (e.g. 8.5 for 8.5%). */
+  interestRate: number
+  /** Total tenure in months when the loan was taken. */
+  tenureMonths: number
+  /** Monthly EMI amount in native currency. */
+  emi: number
+  currency: string
+  /** ISO date of the first EMI payment. */
+  startDate: string
+  /** ISO date when the loan was fully paid off (null if active). */
+  closedAt?: string
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface LoanPayment {
+  id: string
+  loanId: string
+  /** ISO date of the EMI payment. */
+  date: string
+  /** Total EMI amount paid. */
+  amount: number
+  currency: string
+  /** Principal component of this EMI. */
+  principalComponent: number
+  /** Interest component of this EMI. */
+  interestComponent: number
+  /** Outstanding balance after this payment. */
+  balanceAfter: number
+  /** EMI sequence number (1-indexed). */
+  emiNumber: number
+  createdAt: string
+}
+
+export interface LoanTypeMeta {
+  id: LoanType
+  label: string
+  code: string
+  signal: 'acid' | 'blue' | 'magenta' | 'orange' | 'red'
+}
+
+export const LOAN_TYPES: LoanTypeMeta[] = [
+  { id: 'home', label: 'Home Loan', code: 'HME', signal: 'blue' },
+  { id: 'vehicle', label: 'Vehicle Loan', code: 'VHC', signal: 'acid' },
+  { id: 'personal', label: 'Personal Loan', code: 'PRN', signal: 'orange' },
+  { id: 'education', label: 'Education Loan', code: 'EDU', signal: 'magenta' },
+  { id: 'gold', label: 'Gold Loan', code: 'GLD', signal: 'orange' },
+  { id: 'credit_card', label: 'Credit Card', code: 'CRD', signal: 'red' },
+  { id: 'other', label: 'Other', code: 'OTH', signal: 'blue' },
+]
+
+export const LOAN_TYPE_META: Record<LoanType, LoanTypeMeta> =
+  Object.fromEntries(LOAN_TYPES.map((t) => [t.id, t])) as Record<LoanType, LoanTypeMeta>
+
+export const LOAN_TYPE_LABEL: Record<LoanType, string> = Object.fromEntries(
+  LOAN_TYPES.map((t) => [t.id, t.label]),
+) as Record<LoanType, string>
+
+export const LOAN_TYPE_CODE: Record<LoanType, string> = Object.fromEntries(
+  LOAN_TYPES.map((t) => [t.id, t.code]),
+) as Record<LoanType, string>

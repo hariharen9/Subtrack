@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import type { Spend } from '@/lib/types'
 import { SPEND_CATEGORY_META } from '@/lib/types'
-import { formatMoney, formatCompact } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import {
   WEEKDAYS_MON,
   formatSignalDate,
