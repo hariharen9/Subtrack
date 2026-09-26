@@ -33,9 +33,19 @@ export function CardVisual({
 
   return (
     <div
-      className={cx('relative w-full overflow-hidden border border-linehard', dims, className)}
+      className={cx(
+        'relative w-full overflow-hidden border border-linehard transition-opacity',
+        card.status !== 'active' && 'opacity-60 saturate-50',
+        dims,
+        className,
+      )}
       style={{ background: `linear-gradient(135deg, ${card.color}22 0%, var(--c-surface) 55%, var(--c-bg-2) 100%)` }}
     >
+      {card.status !== 'active' && (
+        <span aria-hidden="true" className="micro absolute right-2 top-2 z-10 border border-linehard bg-bg px-1.5 py-0.5 font-bold text-fg">
+          {card.status.toUpperCase()}
+        </span>
+      )}
       {/* Utilisation fill — subtle right-to-left */}
       {utilisation !== undefined && utilisation > 0 && (
         <span

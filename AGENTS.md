@@ -102,7 +102,7 @@ E:/Projects/Subtrack/
     │   │   ├── CategoryBlock.tsx # CategoryBar, CategoryDistribution, CompositionStrip, RadialGauge
     │   │   └── SpendingSignal.tsx# SVG signal trace: grid, crosshair, forecast region, a11y table
     │   ├── shell/
-    │   │   ├── CommandPalette.tsx# Ctrl/⌘+K query engine (domain jumps + subscription index)
+    │   │   ├── CommandPalette.tsx# Ctrl/⌘+K query engine (domains, subscriptions, cards, spends)
     │   │   ├── CyberShell.tsx    # RouteStage: DomainFrame + smooth motion content well,
     │   │   │                     #   rail, header, overlays, per-domain hotkeys
     │   │   ├── DomainFrame.tsx   # Domain chrome: in-domain cockpit sub-navigation strip (CORE, FLOW, etc.)
@@ -114,6 +114,11 @@ E:/Projects/Subtrack/
     │   │   ├── SystemHeader.tsx  # Instrument bar: module, status, clock, query trigger, CTA
     │   │   ├── SystemToaster.tsx # Console-log style toast stack (auto-dismiss / sticky)
     │   │   └── UpdatePrompt.tsx  # SW registration + "SYSTEM UPDATE AVAILABLE" reload prompt
+    │   ├── cards/
+    │   │   ├── CardComposer.tsx  # Card console (add/edit/status) + transaction console (create/edit,
+    │   │   │                     #   Ctrl+Enter save, PAY FULL / PAY MIN quick fills)
+    │   │   └── CardVisual.tsx    # Hardware-inspired card face: network mark, masked number,
+    │   │                         #   utilisation fill, frozen/closed dimming
     │   ├── spends/
     │   │   ├── SpendBadge.tsx    # Brand glyph & category icon resolver for transactions
     │   │   ├── SpendComposer.tsx # Quick-capture modal with presets, merchant hints, and batch mode
@@ -142,9 +147,13 @@ E:/Projects/Subtrack/
     │   ├── usePlatform.ts        # useClock, useMediaQuery, useOnline, useHotkeys,
     │   │                         # useFocusTrap, useScrollLock
     │   ├── useSpends.ts          # spends live queries + memoised spend summary + weekly limiter
-│   └── useSystem.ts            # Dexie live queries + memoised analytics pipeline
+    │   ├── useCards.ts           # credit-card live queries + memoised cards summary pipeline
+    │   └── useSystem.ts          # Dexie live queries + memoised analytics pipeline
     ├── lib/
     │   ├── analytics.ts          # summarize(), viewOf(), series, streams, matrix, notes
+    │   ├── cards.ts              # card analytics: cycles, statements, min due, carry cost,
+    │   │                         #   monthly series, rewards, notes
+    │   ├── card-seed.ts          # 3-card demo dataset + 60-day transaction ledger
     │   ├── catalog.ts            # 62 service presets with Indian pricing + tiers
     │   ├── cx.ts                 # Class name joiner
     │   ├── cycle.ts              # Cycle economics + anchor-based occurrence generation
@@ -165,10 +174,18 @@ E:/Projects/Subtrack/
     │   ├── PaymentMatrix.tsx     # "/subs/time" — six-week matrix + 13-month rail + day panel
     │   ├── Insights.tsx          # "/subs/data" — readouts, distribution, gauges, statistics
     │   ├── Settings.tsx          # "/sys" — System Host: skin, currency, horizon, volume, danger
-    │   ├── standby/
+    │   ├── CardsOverview.tsx     # "/cards" — Credit Cards cockpit: vault, utilisation, dues
+    │   ├── CardsFlow.tsx         # "/cards/flow" — card transaction registry (filters, ranges, edit/delete)
+    │   ├── CardDetail.tsx        # "/cards/flow/:id" — per-card board: statements, economics, history
+    │   ├── CardsInsights.tsx     # "/cards/data" — card analytics: register, rewards, fees, compliance
+    │   ├── DebtOverview.tsx      # "/loans" — Loans & EMIs cockpit
+    │   ├── DebtFlow.tsx          # "/loans/flow" — loan registry
+    │   ├── LoanDetail.tsx        # "/loans/flow/:id" — per-loan board (amortization, schedule)
+    │   ├── DebtInsights.tsx      # "/loans/data" — debt analytics
+    │   ├── standby/              # RETIRED — unmounted legacy decks kept for reference
     │   │   ├── StandbyDeck.tsx   # Shared standby frame (orange STANDBY deck + arrival roadmap)
-    │   │   ├── CardsDeck.tsx     # "/cards" — Credit Cards standby engine
-    │   │   ├── LoansDeck.tsx     # "/loans" — Loans & EMIs standby engine
+    │   │   ├── CardsDeck.tsx     # Old "/cards" standby deck (superseded by CardsOverview)
+    │   │   ├── LoansDeck.tsx     # Old "/loans" standby deck (superseded by DebtOverview)
     │   ├── Spends.tsx            # "/spends" — Daily Spends cockpit (hero, velocity, ledger, limiter)
     │   ├── SpendFlow.tsx         # "/spends/flow" — full spend registry with range presets & filters
     │   ├── SpendInsights.tsx     # "/spends/data" — needs-vs-wants ratio, payment channels, heatmap, forecast
@@ -640,7 +657,7 @@ The Financial OS cockpit — rolls every engine up into one net position (only l
 - **Subsystem Status matrix**: all six `DOMAINS` with LIVE / STANDBY chips, manifest blurbs and version tags — jump straight into any cockpit.
 - **Next Critical Outflow**: the closest scheduled charge across live engines.
 - **Burn Composition**: `CompositionStrip` broken down by category.
-- **Pending Engines**: arrival-sequence roadmap for the remaining standby decks (`/cards` → `/loans`).
+- **Pending Engines**: arrival-sequence roadmap — empty today (all six engines are `live`); renders only if a future domain ships as `standby`.
 - **Quick launch strip** into every domain.
 - Empty system → `NO ACTIVE SUBSCRIPTIONS / SYSTEM IS CURRENTLY CLEAN.`
 
@@ -701,13 +718,25 @@ The live variable-cash cockpit (`Spends.tsx`):
 - `/spends/limits` (`SpendLimits.tsx`) — arms the weekly discretionary limiter, quick caps and the discretionary-category reference.
 - Empty system → `NO DAY-TO-DAY SPEND YET.` with a LOG FIRST SPEND CTA. The `/spends` route is the `SPND` engine (status `live` in `nav.ts`).
 
-### 11.7 Standby Engines (`/cards`, `/loans`)
-Each remaining future subsystem ships today as a **standby deck** so the OS rack is complete and honest about pending engines:
-- `CardsDeck.tsx` (`/cards`) — Credit Cards: statement cut-offs, 45-day zero-interest grace countdowns, aggregate credit utilisation.
-- `LoansDeck.tsx` (`/loans`) — Loans & EMIs: amortization decay curves, debt runway, prepayment simulations.
-- Both share one `StandbyDeck` frame: an orange `STANDBY` status strip, manifest hero, a ghosted list of planned instruments, an arrival-sequence roadmap, and a shared-host note that their eventual data unifies under the same local volume. An engine goes `live` by flipping `status: 'standby' → 'live'` in `nav.ts` and pointing its page at real data.
+### 11.7 Credit Cards Engine (`/cards`, `/cards/flow`, `/cards/flow/:id`, `/cards/data`)
+The credit card subsystem is fully live (`CRD` domain in `nav.ts`). Its data model: `CreditCard` (issuer, network, last4, limit, APR, billing day 1–28, due day 1–28, status `active|frozen|closed`) and `CardTransaction` (`purchase|payment|fee|interest|reward|refund`, spend category, rewards points). Balance is always **derived from transactions** — nothing stored, nothing guessed.
 
-### 11.8 System Host (`/sys`)
+- **Statement engine** (`src/lib/cards.ts`): `statementFor()` / `statementHistory()` derive closed statements from the billing-day anchor. A statement window is `[close − 1 month, close)`; payments during the window reduce the due, payments credited between close and due date settle it. `StatementStatus`: `paid | partial | unpaid | current | empty`. `statementDueDate()` resolves the next due-day occurrence after close.
+- **Credit economics**: `minDueFor()` = 5% of due with a 100-unit floor, capped at the due (`MIN_DUE_RATE`, `MIN_DUE_FLOOR`). `cardEconomics()` / `CardView.carryInterest` estimate interest at APR/12 on the carried balance; grace days = close → due date.
+- **Rewards analytics**: `rewardsAnalytics()` — points all-time, velocity (points per 100 spent), top earn category, 6-month points series.
+- **Monthly register**: `monthlyCardSeries()` — per-month spend / payments / fees / rewards for 12 months, all cards or one.
+- **CardsOverview** (`/cards`): hero outstanding odometer + utilisation radial, DataStrip (limit, available, cycle spend/payments, min due, rewards, utilisation), category mix strip, the card stack (CardVisual tiles), dues panel with statement status chips (`PAID/PARTIAL/UNPAID/OPEN`), LATE flag for overdue settlements, min due per card and a one-click **PAY** action (opens the transaction console pre-armed with the statement due), card signals (notes) and per-card utilisation rails.
+- **CardsFlow** (`/cards/flow`): full registry — search, card/type/category filters, date-range presets (7D/30D/90D/YTD/ALL), sort, CSV export, selection readout (debits/credits/points in view, converted to base), per-row **edit** (opens the composer with `editTxnId`) and **armed two-step delete**.
+- **CardDetail** (`/cards/flow/:id`): card face (frozen/closed cards render dimmed with a status tag), control rail (PAY STATEMENT · EDIT · LOG TXN · FREEZE/UNFREEZE · CLOSE CARD (armed) · DELETE CARD (armed — erases the card and its entire history)), cycle telemetry with min due + carry cost, statement history panel, rewards telemetry (earned / velocity / top category / monthly bars), 12-month spend-vs-payments register, and the full transaction history with edit + armed delete.
+- **CardsInsights** (`/cards/data`): instrument-cluster layout — telemetry DataStrip (outstanding, limit, available, cycle spend/payments, min due, rewards, util), unified hero (outstanding odometer + SAFE/ELEVATED/HIGH/CRITICAL band + 0–100 utilisation scale with 30/50/80 zone marks + cycle readouts), combined activity chart with a `28 DAYS / 12 MONTHS` segmented toggle and honest zero-states, right rail (next payment with one-click PAY NOW, per-card health, rewards & cost, statement compliance bar), category distribution and the statistics table (est. min due, rewards velocity, fees + interest all-time, carry cost, compliance).
+- **CardComposer** (`components/cards/CardComposer.tsx`): dual console — CARD form (add/edit incl. status select) and TRANSACTION form (create/edit, category grid, CyberDatePicker, rewards). Payment type exposes **PAY FULL BALANCE / PAY MINIMUM** quick fills computed from the live balance. `⌘/Ctrl+Enter` saves from anywhere in the dialog.
+- **Command palette** indexes cards: fuzzy hits on `name + issuer` / `last4 + network`, rendered in a `CREDIT CARDS` section that jumps to the card detail.
+- Demo data: `ensureCardsSeeded()` (`card-seed.ts`) boot-seeds 3 cards + a 60-day transaction ledger under the `cards.seeded` meta marker.
+
+### 11.8 Loans & EMIs Engine (`/loans`, `/loans/flow`, `/loans/flow/:id`, `/loans/data`)
+Fully live (`DEBT` domain): `DebtOverview` cockpit, `DebtFlow` registry, `LoanDetail` amortization board and `DebtInsights`. Data model: `Loan` + `LoanPayment` (see §3.1). See the live pages for the authoritative feature set.
+
+### 11.9 System Host (`/sys`)
 System control and backup room (`Settings.tsx`):
 - **Appearance**: `NIGHT // PRIMARY` vs `DAYLIGHT // BRUTALIST`, background grid toggle, calm motion mode.
 - **Aggregation currency**: 9-currency select + the full static FX reference table (per 1 base, and 1 unit → base).
@@ -738,6 +767,16 @@ interface UIState {
   toasts: SystemToast[]     // max 4, console-log semantics
   paletteOpen: boolean
   composer: { open: boolean; editId: string | null; presetServiceId: string | null }
+  spendComposer: { open: boolean; editId: string | null; presetCategory: string | null }
+  cardComposer: {
+    open: boolean
+    mode: 'card' | 'txn'
+    editCardId: string | null
+    presetCardId: string | null
+    editTxnId: string | null      // transaction being edited
+    presetType: CardTxnType | null  // e.g. 'payment' for quick PAY actions
+    presetAmount: number | null   // e.g. the statement due for a quick PAY
+  }
   termination: { open: boolean; subId: string | null; mode: 'terminate' | 'purge' }
 
   // Boot
@@ -748,8 +787,10 @@ interface UIState {
   setTheme / toggleTheme / setField / setCalmMode / setBaseCurrency / setHorizonDays
   pushToast(toast) / dismissToast(id) / clearToasts()
   setPaletteOpen(open) / togglePalette()
-  openComposer(opts?: { editId?: string; presetServiceId?: string }) / closeComposer()
-  openTermination(subId: string, mode: 'terminate' | 'purge') / closeTermination()
+  openComposer(opts?) / closeComposer()
+  openSpendComposer(opts?) / closeSpendComposer()
+  openCardComposer(opts?: { mode?, editCardId?, presetCardId?, editTxnId?, presetType?, presetAmount? }) / closeCardComposer()
+  openTermination(subId, mode) / closeTermination()
 }
 ```
 `TOAST_VERBS` provides the system verbs (`initialized`, `updated`, `suspended`, `resumed`, `terminating`, `terminated`, `purged`, `cycle`, `info`, `warn`, `error`) and `announce()` pushes toasts from non-React call sites. Overlay modals (composer, termination console) live at shell level in `CyberShell` so they survive navigation and are driven purely by store actions.
@@ -767,8 +808,8 @@ The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-leve
 | `N` | Global | Open the New Subscription composer |
 | `1` | Global | Navigate to **Master Command** (`/`) |
 | `2` | Global | Navigate to **Subscriptions** (`/subs`) |
-| `3` | Global | Navigate to **Credit Cards** standby deck (`/cards`) |
-| `4` | Global | Navigate to **Loans & EMIs** standby deck (`/loans`) |
+| `3` | Global | Navigate to **Credit Cards** cockpit (`/cards`) |
+| `4` | Global | Navigate to **Loans & EMIs** cockpit (`/loans`) |
 | `5` | Global | Navigate to **Daily Spends** cockpit (`/spends`) |
 | `6` | Global | Navigate to **System Host** (`/sys`) |
 | `T` | Global | Toggle Night / Daylight theme |

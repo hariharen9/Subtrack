@@ -31,6 +31,8 @@ export interface ComposerState {
 
 export type TerminationMode = 'terminate' | 'purge'
 
+export type CardComposerTxnType = 'purchase' | 'payment' | 'fee' | 'interest' | 'reward' | 'refund'
+
 export interface SpendComposerState {
   open: boolean
   /** Prefill a spend being edited. */
@@ -47,6 +49,12 @@ export interface CardComposerState {
   editCardId: string | null
   /** Card preselected for a transaction (txn mode). */
   presetCardId: string | null
+  /** Transaction being edited (txn mode). */
+  editTxnId: string | null
+  /** Transaction type preselected (e.g. a quick PAY action). */
+  presetType: CardComposerTxnType | null
+  /** Amount prefilled (e.g. the statement due for a quick PAY action). */
+  presetAmount: number | null
 }
 
 export interface TerminationState {
@@ -88,7 +96,14 @@ interface UIState {
   closeComposer: () => void
   openSpendComposer: (options?: { editId?: string; presetCategory?: string }) => void
   closeSpendComposer: () => void
-  openCardComposer: (options?: { mode?: 'card' | 'txn'; editCardId?: string; presetCardId?: string }) => void
+  openCardComposer: (options?: {
+    mode?: 'card' | 'txn'
+    editCardId?: string
+    presetCardId?: string
+    editTxnId?: string
+    presetType?: CardComposerTxnType
+    presetAmount?: number
+  }) => void
   closeCardComposer: () => void
   openTermination: (subId: string, mode: TerminationMode) => void
   closeTermination: () => void
@@ -108,7 +123,7 @@ export const useUI = create<UIState>()(
       paletteOpen: false,
       composer: { open: false, editId: null, presetServiceId: null },
       spendComposer: { open: false, editId: null, presetCategory: null },
-      cardComposer: { open: false, mode: 'card', editCardId: null, presetCardId: null },
+      cardComposer: { open: false, mode: 'card', editCardId: null, presetCardId: null, editTxnId: null, presetType: null, presetAmount: null },
       termination: { open: false, subId: null, mode: 'terminate' },
       booted: false,
       setBooted: (booted) => set({ booted }),
@@ -157,10 +172,23 @@ export const useUI = create<UIState>()(
             mode: options?.mode ?? 'card',
             editCardId: options?.editCardId ?? null,
             presetCardId: options?.presetCardId ?? null,
+            editTxnId: options?.editTxnId ?? null,
+            presetType: options?.presetType ?? null,
+            presetAmount: options?.presetAmount ?? null,
           },
         }),
       closeCardComposer: () =>
-        set({ cardComposer: { open: false, mode: 'card', editCardId: null, presetCardId: null } }),
+        set({
+          cardComposer: {
+            open: false,
+            mode: 'card',
+            editCardId: null,
+            presetCardId: null,
+            editTxnId: null,
+            presetType: null,
+            presetAmount: null,
+          },
+        }),
       openTermination: (subId, mode) => set({ termination: { open: true, subId, mode } }),
       closeTermination: () =>
         set({ termination: { open: false, subId: null, mode: 'terminate' } }),

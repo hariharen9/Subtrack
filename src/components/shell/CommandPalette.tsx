@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useUI } from '@/store/ui'
 import { usePayments, useSubscriptions, useSystem } from '@/hooks/useSystem'
 import { useSpends } from '@/hooks/useSpends'
+import { useCreditCards } from '@/hooks/useCards'
 import { searchSubscriptions, searchSpends, parseQuery, fuzzyScore } from '@/lib/fuzzy'
 import { CATEGORY_CODE, SPEND_CATEGORY_META, SPEND_METHOD_LABEL } from '@/lib/types'
 import { cycleSuffix } from '@/lib/cycle'
@@ -68,6 +69,7 @@ export function CommandPalette() {
   const subs = useSubscriptions()
   const payments = usePayments()
   const spends = useSpends()
+  const cards = useCreditCards()
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -257,9 +259,23 @@ export function CommandPalette() {
 
   const processHits = useMemo(() => searchSubscriptions(subs, query, base), [subs, query, base])
   const spendHits = useMemo(() => searchSpends(spends, query, base), [spends, query, base])
+  const cardHits = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const scored = cards
+      .map((card) => ({
+        card,
+        score: Math.max(
+          fuzzyScore(`${card.name} ${card.issuer}`, q),
+          fuzzyScore(`··${card.last4} ${card.network}`, q) - 6,
+        ),
+      }))
+      .sort((a, b) => b.score - a.score)
+    if (!q) return scored.filter((hit) => hit.card.status === 'active')
+    return scored.filter((hit) => hit.score > 0)
+  }, [cards, query])
   const intent = useMemo(() => parseQuery(query), [query])
 
-  const totalRows = commandHits.length + processHits.length + spendHits.length
+  const totalRows = commandHits.length + processHits.length + cardHits.length + spendHits.length
 
   useEffect(() => {
     if (open) {
@@ -295,7 +311,14 @@ export function CommandPalette() {
       close()
       return
     }
-    const spendOffset = subOffset - processHits.length
+    const cardOffset = subOffset - processHits.length
+    if (cardOffset < cardHits.length) {
+      const hit = cardHits[cardOffset]
+      navigate(`/cards/flow/${hit.card.id}`)
+      close()
+      return
+    }
+    const spendOffset = cardOffset - cardHits.length
     const spendHit = spendHits[spendOffset]
     if (spendHit) {
       navigate(`/spends/flow/${spendHit.spend.id}`)
@@ -419,7 +442,7 @@ export function CommandPalette() {
                     ))
                   )}
                   <span className="micro ml-auto text-faint">
-                    {commandHits.length} CMD · {processHits.length} SUBS · {spendHits.length} SPNDS
+                    {commandHits.length} CMD · {processHits.length} SUBS · {cardHits.length} CRDS · {spendHits.length} SPNDS
                   </span>
                 </div>
               )}
@@ -533,13 +556,62 @@ export function CommandPalette() {
                   )
                 })}
 
+                {cardHits.length > 0 && (
+                  <li className="tech-label px-3 py-1.5" role="presentation">
+                    CREDIT CARDS // {cardHits.length}
+                  </li>
+                )}
+                {cardHits.slice(0, 12).map((hit, offset) => {
+                  const index = commandHits.length + processHits.length + offset
+                  const active = index === activeIndex
+                  const { card } = hit
+                  return (
+                    <li key={card.id} role="option" aria-selected={active}>
+                      <button
+                        type="button"
+                        data-index={index}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onClick={() => runIndex(index)}
+                        className={cx(
+                          'flex w-full items-center gap-3 px-3 py-2 text-left transition-colors',
+                          active ? 'bg-acid text-black' : 'hover:bg-surface2',
+                        )}
+                      >
+                        <IconCreditCard size={16} className={active ? 'text-black' : 'text-dim'} />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate text-[13px] font-medium">{card.name}</span>
+                            <span className={cx('micro', active ? 'text-black/60' : 'text-faint')}>
+                              {card.network.toUpperCase()}
+                            </span>
+                            {card.status !== 'active' && (
+                              <span className={cx('micro', active ? 'text-black/60' : 'text-orangeink')}>
+                                {card.status.toUpperCase()}
+                              </span>
+                            )}
+                          </span>
+                          <span className={cx('pid block truncate', active ? 'text-black/60' : '')}>
+                            {card.issuer} ··{card.last4} · LIMIT {formatMoney(card.creditLimit, card.currency)}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="meta block">{card.billingDay}/{card.dueDay}</span>
+                          <span className={cx('micro block', active ? 'text-black/60' : 'text-faint')}>
+                            STMT/DUE DAY
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+
                 {spendHits.length > 0 && (
                   <li className="tech-label px-3 py-1.5" role="presentation">
                     DAILY SPENDS // {spendHits.length}
                   </li>
                 )}
                 {spendHits.slice(0, 30).map((hit, offset) => {
-                  const index = commandHits.length + processHits.length + offset
+                  const index = commandHits.length + processHits.length + cardHits.length + offset
                   const active = index === activeIndex
                   const { spend } = hit
                   const meta = SPEND_CATEGORY_META[spend.category]

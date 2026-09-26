@@ -30,6 +30,10 @@ export default function CardsOverview() {
   const openCardComposer = useUI((s) => s.openCardComposer)
 
   const hero = useMemo(() => splitMoney(summary.totalOutstanding, base), [summary.totalOutstanding, base])
+  const nearestDueView = useMemo(
+    () => summary.activeViews.slice().sort((a, b) => a.daysToDue - b.daysToDue)[0],
+    [summary.activeViews],
+  )
 
   if (!booted) return <div className="px-3 py-6 md:px-5"><BootScreen label="LOADING CARD VAULT" /></div>
 
@@ -120,6 +124,7 @@ export default function CardsOverview() {
                       { label: 'Available', value: formatCompact(summary.totalAvailable, base), signal: 'acid' },
                       { label: 'Cycle spend', value: formatMoney(summary.cycleSpendTotal, base), signal: 'orange' },
                       { label: 'Cycle payments', value: formatMoney(summary.cyclePaymentsTotal, base), signal: 'acid' },
+                      { label: 'Min due', value: formatMoney(nearestDueView?.minDue ?? 0, base), signal: 'orange' },
                       { label: 'Rewards', value: String(Math.round(summary.totalRewards)), signal: 'magenta' },
                       { label: 'Utilisation', value: `${(util * 100).toFixed(0)}%`, signal: utilSignal },
                     ]}
@@ -188,19 +193,54 @@ export default function CardsOverview() {
           {/* Upcoming dues */}
           <motion.div variants={RISE}>
             <CutPanel cut="br" cutSize={14} innerClassName="p-0">
-              <SectionHeader code="DUE" title="Upcoming dues" signal="orange" />
+              <SectionHeader code="DUE" title="Upcoming dues" signal="orange" right={<span className="micro text-faint">MIN DUE = 5% POLICY</span>} />
               <div className="divide-y divide-line">
-                {summary.activeViews.slice().sort((a, b) => a.daysToDue - b.daysToDue).map((view) => (
-                  <div key={view.card.id} className="flex items-center gap-2.5 px-3 py-2 md:px-4">
-                    <span className={cx('micro w-9 shrink-0 text-right font-bold', view.daysToDue <= 3 ? 'text-redink' : view.daysToDue <= 7 ? 'text-orangeink' : 'text-dim')}>
-                      {view.daysToDue}D
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[12px] font-medium text-fg">{view.card.name} ··{view.card.last4}</span>
-                      <span className="micro block text-faint">{formatSignalDate(view.dueDate)} · cycle {formatMoney(view.cycleSpend, base)}</span>
-                    </span>
-                  </div>
-                ))}
+                {summary.activeViews.slice().sort((a, b) => a.daysToDue - b.daysToDue).map((view) => {
+                  const st = view.statement
+                  const overdue = (st.status === 'unpaid' || st.status === 'partial') && st.dueDate < summary.today && st.due > 0
+                  return (
+                    <div key={view.card.id} className="group/due px-3 py-2 transition-colors hover:bg-surface2 md:px-4">
+                      <div className="flex items-center gap-2.5">
+                        <span className={cx('micro w-9 shrink-0 text-right font-bold', overdue ? 'text-redink' : view.daysToDue <= 3 ? 'text-redink' : view.daysToDue <= 7 ? 'text-orangeink' : 'text-dim')}>
+                          {overdue ? 'LATE' : `${view.daysToDue}D`}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="truncate text-[12px] font-medium text-fg">{view.card.name} ··{view.card.last4}</span>
+                            <span className="numeral shrink-0 text-[12px] font-semibold text-fg">{formatMoney(view.minDue, base)}</span>
+                          </span>
+                          <span className="micro block truncate text-faint">
+                            {formatSignalDate(view.dueDate)} · statement {formatMoney(st.due, base)}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openCardComposer({
+                              mode: 'txn',
+                              presetCardId: view.card.id,
+                              presetType: 'payment',
+                              presetAmount: st.due > 0 ? st.due : view.balance,
+                            })
+                          }
+                          className="micro shrink-0 border border-line2 px-2 py-1 text-dim opacity-70 transition-all hover:border-acid hover:text-acidink group-hover/due:opacity-100"
+                          title="Log a statement payment"
+                        >
+                          PAY
+                        </button>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5 pl-[46px]">
+                        <span className={cx(
+                          'micro border px-1 py-0.5 font-semibold',
+                          st.status === 'paid' ? 'border-acid text-acidink' : overdue ? 'border-red text-redink' : st.status === 'partial' ? 'border-orange text-orangeink' : 'border-line2 text-faint',
+                        )}>
+                          {st.status === 'paid' ? 'PAID' : st.status === 'partial' ? 'PARTIAL' : st.status === 'current' ? 'OPEN' : st.status === 'empty' ? 'NO ACTIVITY' : 'UNPAID'}
+                        </span>
+                        <span className="micro text-faint">cycle {formatMoney(view.cycleSpend, base)}</span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </CutPanel>
           </motion.div>

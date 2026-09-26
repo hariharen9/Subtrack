@@ -6,18 +6,26 @@
  * or refund against a card). Driven by the Zustand store so it survives
  * navigation like the subscription/spend composers.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   SPEND_CATEGORIES,
   type SpendCategory,
   type CardNetwork,
+  type CardStatus,
+  type CardTransaction,
   type CardTxnType,
 } from '@/lib/types'
-import { CURRENCIES, symbolOf } from '@/lib/money'
+import { CURRENCIES, formatMoney, symbolOf } from '@/lib/money'
 import { todayISO } from '@/lib/date'
-import { createCreditCard, updateCreditCard, createCardTransaction } from '@/lib/db'
-import { useCreditCards } from '@/hooks/useCards'
+import { minDueFor } from '@/lib/cards'
+import {
+  createCreditCard,
+  updateCreditCard,
+  createCardTransaction,
+  updateCardTransaction,
+} from '@/lib/db'
+import { useCreditCards, useCardTransactions } from '@/hooks/useCards'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { useFocusTrap, useScrollLock } from '@/hooks/usePlatform'
 import { cx } from '@/lib/cx'
@@ -37,6 +45,12 @@ const NETWORK_OPTIONS: { value: CardNetwork; label: string }[] = [
   { value: 'other', label: 'OTHER' },
 ]
 
+const STATUS_OPTIONS: { value: CardStatus; label: string }[] = [
+  { value: 'active', label: 'ACTIVE' },
+  { value: 'frozen', label: 'FROZEN' },
+  { value: 'closed', label: 'CLOSED' },
+]
+
 const CARD_COLORS = ['#F4F4F4', '#00C8FF', '#FF7A00', '#FF2BD6', '#B7FF00', '#FF304F', '#7A5CFF', '#FFD166']
 
 const TXN_TYPES: { value: CardTxnType; label: string }[] = [
@@ -53,6 +67,7 @@ interface CardForm {
   issuer: string
   last4: string
   network: CardNetwork
+  status: CardStatus
   creditLimit: string
   interestRate: string
   billingDay: string
@@ -79,10 +94,22 @@ export function CardComposer() {
   const close = useUI((s) => s.closeCardComposer)
   const pushToast = useUI((s) => s.pushToast)
   const cards = useCreditCards()
+  const txns = useCardTransactions()
   const base = useUI((s) => s.baseCurrency)
 
   const isCard = state.mode === 'card'
   const editingCard = cards.find((c) => c.id === state.editCardId)
+  const editingTxn = state.editTxnId ? txns.find((t) => t.id === state.editTxnId) : undefined
+
+  // Balance per card (native currency) — powers the PAY FULL / PAY MIN quick fills
+  const cardBalances = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const t of txns) {
+      const sign = t.type === 'purchase' || t.type === 'fee' || t.type === 'interest' ? 1 : -1
+      map.set(t.cardId, (map.get(t.cardId) ?? 0) + sign * t.amount)
+    }
+    return map
+  }, [txns])
 
   const trapRef = useFocusTrap<HTMLDivElement>(state.open)
   useScrollLock(state.open)
@@ -102,12 +129,29 @@ export function CardComposer() {
     if (isCard) {
       setCardForm(editingCard ? cardToForm(editingCard) : emptyCardForm(base))
       setCardErrors(false)
+    } else if (state.editTxnId && editingTxn) {
+      setTxnForm(txnToForm(editingTxn))
+      setTxnErrors(false)
     } else {
-      setTxnForm(emptyTxnForm(base, state.presetCardId, cards[0]?.id))
+      const fresh = emptyTxnForm(base, state.presetCardId, cards[0]?.id)
+      if (state.presetType) fresh.type = state.presetType
+      if (state.presetAmount && state.presetAmount > 0) fresh.amount = String(Math.round(state.presetAmount * 100) / 100)
+      if (state.presetType === 'payment') fresh.title = 'Statement payment'
+      if (state.presetType === 'payment') fresh.category = 'other'
+      setTxnForm(fresh)
       setTxnErrors(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.open, state.mode, state.editCardId, state.presetCardId])
+  }, [state.open, state.mode, state.editCardId, state.presetCardId, state.editTxnId, state.presetType, state.presetAmount])
+
+  // ⌘/Ctrl + Enter saves from anywhere in the dialog
+  const submit = () => {
+    if (!state.open) return
+    if (isCard) void saveCard()
+    else void saveTxn()
+  }
+
+  const selectedBalance = Math.max(0, Math.round((cardBalances.get(txnForm.cardId) ?? 0) * 100) / 100)
 
   const saveCard = async () => {
     const limit = Number.parseFloat(cardForm.creditLimit) || 0
@@ -134,7 +178,7 @@ export function CardComposer() {
         notes: cardForm.notes,
       }
       if (editingCard) {
-        await updateCreditCard(editingCard.id, draft)
+        await updateCreditCard(editingCard.id, { ...draft, status: cardForm.status })
         pushToast(TOAST_VERBS.info('CARD UPDATED', `${cardForm.name} ··${draft.last4 || '····'}`))
       } else {
         const created = await createCreditCard(draft)
@@ -167,8 +211,12 @@ export function CardComposer() {
         rewards: Number.parseFloat(txnForm.rewards) || 0,
         notes: txnForm.notes,
       }
-      await createCardTransaction(draft)
-      pushToast(TOAST_VERBS.info('TRANSACTION LOGGED', `${txnForm.title} · ${symbolOf(txnForm.currency)}${amount}`))
+      await (editingTxn ? updateCardTransaction(editingTxn.id, draft) : createCardTransaction(draft))
+      pushToast(
+        editingTxn
+          ? TOAST_VERBS.info('TRANSACTION UPDATED', `${txnForm.title} · ${symbolOf(txnForm.currency)}${amount}`)
+          : TOAST_VERBS.info('TRANSACTION LOGGED', `${txnForm.title} · ${symbolOf(txnForm.currency)}${amount}`),
+      )
       close()
     } catch (error) {
       pushToast(TOAST_VERBS.error('WRITE FAILED', error instanceof Error ? error.message : 'Local store rejected the record'))
@@ -201,6 +249,12 @@ export function CardComposer() {
             transition={{ type: 'spring', stiffness: 440, damping: 38 }}
             className="relative max-h-[92dvh] w-full max-w-[560px] overflow-y-auto"
             data-lenis-prevent
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault()
+                submit()
+              }
+            }}
           >
             <div className="cp">
               <span aria-hidden="true" className="cp-shadow clip-cut-tl" />
@@ -210,7 +264,9 @@ export function CardComposer() {
                   <div className="flex items-center justify-between border-b border-line px-4 py-3">
                     <span className="micro flex items-center gap-2 text-acidink">
                       <Led signal="acid" size="sm" pulse />
-                      {isCard ? 'CRD // CARD CONSOLE' : 'CRD // TRANSACTION'}
+                      {isCard
+                        ? editingCard ? 'CRD // EDIT CARD' : 'CRD // CARD CONSOLE'
+                        : editingTxn ? 'CRD // EDIT TRANSACTION' : 'CRD // TRANSACTION'}
                     </span>
                     <IconButton label="Close" size="sm" onClick={close}>
                       <IconClose size={14} />
@@ -254,11 +310,17 @@ export function CardComposer() {
                         <CyberSelect ariaLabel="Network" value={cardForm.network} onChange={(v) => setCardForm({ ...cardForm, network: v as CardNetwork })} options={NETWORK_OPTIONS} />
                       </FieldShell>
 
-                      <FieldShell label="CURRENCY" code="09">
+                      {editingCard && (
+                        <FieldShell label="STATUS" code="09" hint="Frozen cards stop counting toward dues; closed cards are archived.">
+                          <CyberSelect ariaLabel="Card status" value={cardForm.status} onChange={(v) => setCardForm({ ...cardForm, status: v as CardStatus })} options={STATUS_OPTIONS} />
+                        </FieldShell>
+                      )}
+
+                      <FieldShell label="CURRENCY" code={editingCard ? '10' : '09'}>
                         <CyberSelect ariaLabel="Currency" value={cardForm.currency} onChange={(v) => setCardForm({ ...cardForm, currency: v })} options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.symbol} ${c.code}`, hint: c.name }))} />
                       </FieldShell>
 
-                      <FieldShell label="ACCENT" code="10">
+                      <FieldShell label="ACCENT" code={editingCard ? '11' : '10'}>
                         <div className="flex flex-wrap gap-1.5 py-1">
                           {CARD_COLORS.map((c) => (
                             <button key={c} type="button" onClick={() => setCardForm({ ...cardForm, color: c })} className={cx('h-6 w-6 border transition-transform', cardForm.color === c ? 'scale-110 border-fg' : 'border-line2 hover:scale-105')} style={{ background: c }} aria-label={`Accent ${c}`} />
@@ -266,7 +328,7 @@ export function CardComposer() {
                         </div>
                       </FieldShell>
 
-                      <FieldShell label="NOTES" code="11" hint="Rewards structure, limits, etc.">
+                      <FieldShell label="NOTES" code={editingCard ? '12' : '11'} hint="Rewards structure, limits, etc.">
                         <textarea className="w-full resize-none bg-transparent py-2 font-mono text-[13px] outline-none placeholder:text-faint" rows={2} value={cardForm.notes} onChange={(e) => setCardForm({ ...cardForm, notes: e.target.value.slice(0, 200) })} placeholder="5% cashback on…" aria-label="Notes" />
                       </FieldShell>
 
@@ -277,7 +339,7 @@ export function CardComposer() {
                         <div className="flex gap-2">
                           <CyberButton variant="ghost" size="sm" onClick={close}>CANCEL</CyberButton>
                           <CyberButton variant="solid" size="sm" busy={cardBusy} busyLabel="SAVING" onClick={() => void saveCard()}>
-                            {editingCard ? 'SAVE CARD' : 'ADD CARD'}
+                            {editingCard ? 'SAVE CHANGES' : 'ADD CARD'}
                           </CyberButton>
                         </div>
                       </div>
@@ -298,6 +360,26 @@ export function CardComposer() {
                           ))}
                         </div>
                       </FieldShell>
+
+                      {txnForm.type === 'payment' && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="micro text-[9px] text-faint">QUICK FILL:</span>
+                          <button
+                            type="button"
+                            onClick={() => setTxnForm({ ...txnForm, title: 'Statement payment', category: 'other', amount: String(selectedBalance) })}
+                            className="micro border border-line2 px-2 py-1 text-dim transition-colors hover:border-acid hover:text-acidink"
+                          >
+                            PAY FULL BALANCE · {formatMoney(selectedBalance, txnForm.currency)}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTxnForm({ ...txnForm, title: 'Minimum due payment', category: 'other', amount: String(minDueFor(selectedBalance)) })}
+                            className="micro border border-line2 px-2 py-1 text-dim transition-colors hover:border-acid hover:text-acidink"
+                          >
+                            PAY MINIMUM · {formatMoney(minDueFor(selectedBalance), txnForm.currency)}
+                          </button>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-3">
                         <FieldShell label="TITLE" code="03">
@@ -340,7 +422,9 @@ export function CardComposer() {
                         </span>
                         <div className="flex gap-2">
                           <CyberButton variant="ghost" size="sm" onClick={close}>CANCEL</CyberButton>
-                          <CyberButton variant="solid" size="sm" busy={txnBusy} busyLabel="SAVING" onClick={() => void saveTxn()}>LOG TRANSACTION</CyberButton>
+                          <CyberButton variant="solid" size="sm" busy={txnBusy} busyLabel="SAVING" onClick={() => void saveTxn()}>
+                            {editingTxn ? 'SAVE CHANGES' : 'LOG TRANSACTION'}
+                          </CyberButton>
                         </div>
                       </div>
                     </div>
@@ -356,15 +440,16 @@ export function CardComposer() {
 }
 
 function emptyCardForm(base: string): CardForm {
-  return { name: '', issuer: '', last4: '', network: 'visa', creditLimit: '', interestRate: '', billingDay: '18', dueDay: '5', currency: base, color: '#F4F4F4', notes: '' }
+  return { name: '', issuer: '', last4: '', network: 'visa', status: 'active', creditLimit: '', interestRate: '', billingDay: '18', dueDay: '5', currency: base, color: '#F4F4F4', notes: '' }
 }
 
-function cardToForm(card: { name: string; issuer: string; last4: string; network: CardNetwork; creditLimit: number; interestRate: number; billingDay: number; dueDay: number; currency: string; color: string; notes: string }): CardForm {
+function cardToForm(card: { name: string; issuer: string; last4: string; network: CardNetwork; status: CardStatus; creditLimit: number; interestRate: number; billingDay: number; dueDay: number; currency: string; color: string; notes: string }): CardForm {
   return {
     name: card.name,
     issuer: card.issuer,
     last4: card.last4,
     network: card.network,
+    status: card.status,
     creditLimit: String(card.creditLimit),
     interestRate: String(card.interestRate),
     billingDay: String(card.billingDay),
@@ -372,6 +457,20 @@ function cardToForm(card: { name: string; issuer: string; last4: string; network
     currency: card.currency,
     color: card.color,
     notes: card.notes,
+  }
+}
+
+function txnToForm(t: CardTransaction): TxnForm {
+  return {
+    cardId: t.cardId,
+    title: t.title,
+    amount: String(t.amount),
+    currency: t.currency,
+    category: t.category,
+    type: t.type,
+    date: t.date,
+    rewards: String(t.rewards),
+    notes: t.notes,
   }
 }
 
