@@ -83,8 +83,6 @@ interface UIState {
   zenAccent: ZenAccent
   /** Decorative grid + grain field. */
   field: boolean
-  /** Extra restraint on top of the OS reduced-motion setting. */
-  calmMode: boolean
   baseCurrency: string
   /** Days of incoming flow shown by the stream. */
   horizonDays: number
@@ -104,7 +102,6 @@ interface UIState {
   toggleUiMode: () => void
   setZenAccent: (accent: ZenAccent) => void
   setField: (on: boolean) => void
-  setCalmMode: (on: boolean) => void
   setBaseCurrency: (code: string) => void
   setHorizonDays: (days: number) => void
   pushToast: (toast: Omit<SystemToast, 'id'>) => string
@@ -144,7 +141,6 @@ export const useUI = create<UIState>()(
       uiMode: 'cyber',
       zenAccent: 'emerald',
       field: true,
-      calmMode: false,
       baseCurrency: BASE_CURRENCY,
       horizonDays: 30,
       toasts: [],
@@ -176,7 +172,6 @@ export const useUI = create<UIState>()(
         }
       },
       setField: (field) => set({ field }),
-      setCalmMode: (calmMode) => set({ calmMode }),
       setBaseCurrency: (baseCurrency) => set({ baseCurrency }),
       setHorizonDays: (horizonDays) => set({ horizonDays }),
 
@@ -257,7 +252,6 @@ export const useUI = create<UIState>()(
         uiMode: state.uiMode,
         zenAccent: state.zenAccent,
         field: state.field,
-        calmMode: state.calmMode,
         baseCurrency: state.baseCurrency,
         horizonDays: state.horizonDays,
       }),

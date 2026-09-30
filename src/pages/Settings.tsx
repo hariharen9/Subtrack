@@ -56,8 +56,6 @@ export default function Settings() {
   const setZenAccent = useUI((s) => s.setZenAccent)
   const field = useUI((s) => s.field)
   const setField = useUI((s) => s.setField)
-  const calmMode = useUI((s) => s.calmMode)
-  const setCalmMode = useUI((s) => s.setCalmMode)
   const base = useUI((s) => s.baseCurrency)
   const setBaseCurrency = useUI((s) => s.setBaseCurrency)
   const horizonDays = useUI((s) => s.horizonDays)
@@ -108,9 +106,10 @@ export default function Settings() {
         </span>
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12">
-        {/* appearance */}
-        <div className="lg:col-span-6">
+      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2 items-start">
+        {/* Left Column: UI Personality, Incoming Horizon, Shortcuts */}
+        <div className="flex flex-col gap-3">
+          {/* appearance */}
           <CutPanel cut="tl-br" cutSize={14} innerClassName="p-0">
             <SectionHeader code="UI" title="Appearance" signal="acid" right={<span className="micro text-faint">SKIN</span>} />
             <div className="border-b border-line px-3 py-3 md:px-4">
@@ -205,13 +204,6 @@ export default function Settings() {
                 checked={field}
                 onChange={setField}
               />
-              <ToggleSwitch
-                label="Calm mode"
-                code="MOTION"
-                description="Suppresses the route glitch sweep and decorative motion on top of your system's reduced-motion setting."
-                checked={calmMode}
-                onChange={setCalmMode}
-              />
             </div>
             <div className="flex items-center gap-2 border-t border-line px-3 py-3 md:px-4">
               <CyberButton
@@ -225,10 +217,75 @@ export default function Settings() {
               <span className="micro text-faint">ANIMATED, ~200MS</span>
             </div>
           </CutPanel>
+
+          {/* horizon */}
+          <CutPanel cut="tl" cutSize={14} innerClassName="p-0">
+            <SectionHeader code="HOR" title="Incoming horizon" signal="orange" />
+            <div className="px-3 py-3 md:px-4">
+              <SegmentedControl
+                ariaLabel="Incoming horizon in days"
+                value={String(horizonDays)}
+                onChange={(value) => setHorizonDays(Number(value))}
+                options={[
+                  { value: '7', label: '7 DAYS' },
+                  { value: '14', label: '14 DAYS' },
+                  { value: '30', label: '30 DAYS' },
+                  { value: '60', label: '60 DAYS' },
+                  { value: '90', label: '90 DAYS' },
+                ]}
+                size="sm"
+              />
+              <p className="meta mt-2.5 text-faint">
+                Controls the incoming stream on the overview. Currently showing{' '}
+                {summary.incomingWindow.length} scheduled events inside {horizonDays} days.
+              </p>
+
+              <HashRule label="SCHEDULE REPAIR" className="my-3" />
+              <CyberButton
+                variant="ghost"
+                size="sm"
+                leading={<IconBolt size={14} />}
+                onClick={async () => {
+                  const repaired = await reconcileSchedules()
+                  pushToast(
+                    repaired
+                      ? TOAST_VERBS.info('SCHEDULE RECONCILED', `${repaired} anchors rolled forward`)
+                      : TOAST_VERBS.info('SCHEDULE CLEAN', 'Every active anchor is in the future'),
+                  )
+                }}
+              >
+                RECONCILE SCHEDULES
+              </CyberButton>
+              <p className="micro mt-2 text-faint">
+                ROLLS ANY OVERDUE ANCHOR FORWARD, PRESERVING THE ORIGINAL DAY OF MONTH.
+              </p>
+            </div>
+          </CutPanel>
+
+          {/* shortcuts */}
+          <CutPanel cut="none" cutSize={0} innerClassName="p-0">
+            <SectionHeader code="KEY" title="Keyboard" signal="blue" />
+            <ul className="divide-y divide-line">
+              {SHORTCUTS.map((entry) => (
+                <li
+                  key={entry.label}
+                  className="flex items-center justify-between gap-4 px-3 py-2 md:px-4"
+                >
+                  <span className="text-[12.5px] text-dim">{entry.label}</span>
+                  <span className="flex shrink-0 gap-1">
+                    {entry.keys.map((key) => (
+                      <KeyCap key={key}>{key}</KeyCap>
+                    ))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CutPanel>
         </div>
 
-        {/* aggregation */}
-        <div className="lg:col-span-6">
+        {/* Right Column: FX Currency, Local Volume, Danger Zone */}
+        <div className="flex flex-col gap-3">
+          {/* aggregation */}
           <CutPanel cut="br" cutSize={14} innerClassName="p-0">
             <SectionHeader
               code="FX"
@@ -292,57 +349,9 @@ export default function Settings() {
               </table>
             </div>
           </CutPanel>
-        </div>
 
-        {/* horizon */}
-        <div className="lg:col-span-5">
-          <CutPanel cut="tl" cutSize={14} innerClassName="p-0" className="h-full">
-            <SectionHeader code="HOR" title="Incoming horizon" signal="orange" />
-            <div className="px-3 py-3 md:px-4">
-              <SegmentedControl
-                ariaLabel="Incoming horizon in days"
-                value={String(horizonDays)}
-                onChange={(value) => setHorizonDays(Number(value))}
-                options={[
-                  { value: '7', label: '7 DAYS' },
-                  { value: '14', label: '14 DAYS' },
-                  { value: '30', label: '30 DAYS' },
-                  { value: '60', label: '60 DAYS' },
-                  { value: '90', label: '90 DAYS' },
-                ]}
-                size="sm"
-              />
-              <p className="meta mt-2.5 text-faint">
-                Controls the incoming stream on the overview. Currently showing{' '}
-                {summary.incomingWindow.length} scheduled events inside {horizonDays} days.
-              </p>
-
-              <HashRule label="SCHEDULE REPAIR" className="my-3" />
-              <CyberButton
-                variant="ghost"
-                size="sm"
-                leading={<IconBolt size={14} />}
-                onClick={async () => {
-                  const repaired = await reconcileSchedules()
-                  pushToast(
-                    repaired
-                      ? TOAST_VERBS.info('SCHEDULE RECONCILED', `${repaired} anchors rolled forward`)
-                      : TOAST_VERBS.info('SCHEDULE CLEAN', 'Every active anchor is in the future'),
-                  )
-                }}
-              >
-                RECONCILE SCHEDULES
-              </CyberButton>
-              <p className="micro mt-2 text-faint">
-                ROLLS ANY OVERDUE ANCHOR FORWARD, PRESERVING THE ORIGINAL DAY OF MONTH.
-              </p>
-            </div>
-          </CutPanel>
-        </div>
-
-        {/* data volume */}
-        <div className="lg:col-span-7">
-          <CutPanel cut="br" cutSize={14} innerClassName="p-0" className="h-full">
+          {/* data volume */}
+          <CutPanel cut="br" cutSize={14} innerClassName="p-0">
             <SectionHeader
               code="VOL"
               title="Local volume"
@@ -361,7 +370,7 @@ export default function Settings() {
                 { label: 'Trace', value: traceOf(todayISO()) },
               ]}
             />
-            <div className="flex flex-wrap gap-2 border-t border-line px-3 py-3 md:px-4">
+            <div className="flex flex-wrap items-center gap-2 border-t border-line px-3 py-3 md:px-4">
               <CyberButton
                 variant="ghost"
                 size="sm"
@@ -402,32 +411,8 @@ export default function Settings() {
               </p>
             </div>
           </CutPanel>
-        </div>
 
-        {/* shortcuts */}
-        <div className="lg:col-span-6">
-          <CutPanel cut="none" cutSize={0} innerClassName="p-0">
-            <SectionHeader code="KEY" title="Keyboard" signal="blue" />
-            <ul className="divide-y divide-line">
-              {SHORTCUTS.map((entry) => (
-                <li
-                  key={entry.label}
-                  className="flex items-center justify-between gap-4 px-3 py-2 md:px-4"
-                >
-                  <span className="text-[12.5px] text-dim">{entry.label}</span>
-                  <span className="flex shrink-0 gap-1">
-                    {entry.keys.map((key) => (
-                      <KeyCap key={key}>{key}</KeyCap>
-                    ))}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CutPanel>
-        </div>
-
-        {/* danger zone */}
-        <div className="lg:col-span-6">
+          {/* danger zone */}
           <CutPanel cut="br" cutSize={14} innerClassName="p-0">
             <SectionHeader code="DMG" title="Destructive operations" signal="red" />
             <div className="border-b border-line px-3 py-3 md:px-4">
@@ -479,10 +464,11 @@ export default function Settings() {
             </div>
           </CutPanel>
         </div>
+      </div>
 
-        {/* about */}
-        <div className="lg:col-span-12">
-          <CutPanel cut="tl-br" cutSize={14} innerClassName="p-4 md:p-5">
+      {/* about */}
+      <div className="mt-3">
+        <CutPanel cut="tl-br" cutSize={14} innerClassName="p-4 md:p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-xl">
                 <div className="flex items-center gap-2">
@@ -520,6 +506,5 @@ export default function Settings() {
           </CutPanel>
         </div>
       </div>
-    </div>
-  )
-}
+    )
+  }

@@ -16,10 +16,10 @@ export function DomainFrame() {
   if (!domain.subnav) return null
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="domain-frame-wrap px-3 pt-3 md:px-5 md:pt-4">
       {/* in-domain cockpit sub-navigation */}
       <div
-        className="no-scrollbar flex items-center gap-1 overflow-x-auto border border-line2 bg-surface px-3 py-1.5 md:px-5"
+        className="no-scrollbar flex items-center gap-1.5 overflow-x-auto border border-line2 bg-surface px-2.5 py-1.5 md:px-3.5"
         data-lenis-prevent
         role="navigation"
         aria-label={`${domain.label} cockpit`}

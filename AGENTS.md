@@ -107,7 +107,7 @@ E:/Projects/Subtrack/
     │   │   │                     #   rail, header, overlays, per-domain hotkeys
     │   │   ├── DomainFrame.tsx   # Domain chrome: in-domain cockpit sub-navigation strip (CORE, FLOW, etc.)
     │   │   ├── FieldOverlay.tsx  # Viewfinder brackets, coordinate scale, CRT band (desktop)
-    │   │   ├── MobileNav.tsx     # 6-cell bottom console (all DOMAINS) + burn edge strip + FAB
+    │   │   ├── MobileNav.tsx     # 6-cell bottom console (all DOMAINS) + burn edge strip + context-aware domain FAB
     │   │   ├── NavigationRail.tsx# Desktop rack over DOMAINS with sliding active plate + status
     │   │   ├── SmoothScroll.tsx  # Global Lenis smooth scroll engine + route scroll reset
     │   │   ├── SystemFooter.tsx  # Minimal footer: counts, currency, creator credit
@@ -204,7 +204,7 @@ E:/Projects/Subtrack/
     │   ├── fonts.css             # @font-face for the 4 self-hosted variable woff2 files
     │   ├── base.css              # Reset, background field, focus, scrollbars, reduced motion
     │   ├── components.css        # Panels, chamfers, signals, controls, animations
-    │   └── minimal.css           # Minimal Zen mode: soft modern, calm design with 5 Zen accents (emerald, indigo, amber, slate, cyan)
+    │   └── minimal.css           # Minimal Zen mode: soft modern, calm design with 5 Zen accents (emerald, indigo, amber, slate, cyan), rounded pills and circular switches/thumbs
     ├── App.tsx                   # Router, ThemeSync, BootSequence, statically imported routes
     └── main.tsx                  # Entry point (mounts App, clears #boot)
 ```

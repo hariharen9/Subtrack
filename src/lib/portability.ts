@@ -29,7 +29,8 @@ export async function exportJson(): Promise<void> {
     baseCurrency: settings.baseCurrency,
     theme: settings.theme,
     field: settings.field,
-    calmMode: settings.calmMode,
+    uiMode: settings.uiMode,
+    zenAccent: settings.zenAccent,
     horizonDays: settings.horizonDays,
   })
   const stamp = new Date().toISOString().slice(0, 10)
@@ -110,7 +111,8 @@ export function openImportDialog(): void {
         ui.setHorizonDays(parsed.settings.horizonDays)
         // Older snapshots may omit these — only apply when present.
         if (typeof parsed.settings.field === 'boolean') ui.setField(parsed.settings.field)
-        if (typeof parsed.settings.calmMode === 'boolean') ui.setCalmMode(parsed.settings.calmMode)
+        if (parsed.settings.uiMode) ui.setUiMode(parsed.settings.uiMode)
+        if (parsed.settings.zenAccent) ui.setZenAccent(parsed.settings.zenAccent as any)
       }
       useUI
         .getState()

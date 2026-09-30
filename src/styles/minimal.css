@@ -269,6 +269,31 @@ html[data-ui='minimal'] textarea {
   border-radius: 10px !important;
 }
 
+/* Switch & Toggle Controls: Turn rigid square hardware switches into smooth circular pills */
+html[data-ui='minimal'] button[role='switch'] {
+  border-radius: 9999px !important;
+}
+
+html[data-ui='minimal'] button[role='switch'] > span,
+html[data-ui='minimal'] button[role='switch'] span,
+html[data-ui='minimal'] [role='switch'] > span,
+html[data-ui='minimal'] .toggle-thumb,
+html[data-ui='minimal'] .switch-thumb {
+  border-radius: 9999px !important;
+}
+
+/* Radio buttons & checkboxes */
+html[data-ui='minimal'] input[type='checkbox'],
+html[data-ui='minimal'] input[type='radio'] {
+  border-radius: 9999px !important;
+}
+
+/* Dropdown listboxes */
+html[data-ui='minimal'] ul[role='listbox'] {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2) !important;
+}
+
 html[data-ui='minimal'] .btn {
   letter-spacing: 0.01em !important;
   text-transform: none !important;
@@ -296,18 +321,17 @@ html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] {
 }
 
 html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] a {
-  border-radius: 12px;
+  border-radius: 12px !important;
 }
 
 /* Active navigation item pill */
-html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] [layoutid='rail-plate'] {
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] .rail-plate {
   border-radius: 12px !important;
-  background: var(--c-acid-soft) !important;
-  border: 1px solid var(--c-acid) !important;
+  background: var(--c-acid) !important;
 }
 
-html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] a .text-black {
-  color: var(--c-acid-ink) !important;
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] .rail-pip {
+  display: none !important;
 }
 
 /* Header */
@@ -318,16 +342,22 @@ html[data-ui='minimal'] header {
 }
 
 /* In-Domain Sub-Navigation Tabs */
+html[data-ui='minimal'] .domain-frame-wrap {
+  padding: 16px 20px 0 20px !important;
+}
+
 html[data-ui='minimal'] div[role='navigation'] {
-  border-radius: 14px !important;
+  border-radius: 9999px !important;
   background: var(--c-surface) !important;
   border: 1px solid var(--c-line) !important;
-  padding: 6px 8px !important;
+  padding: 5px 6px !important;
+  box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.08) !important;
 }
 
 html[data-ui='minimal'] div[role='navigation'] a {
-  border-radius: 8px !important;
+  border-radius: 9999px !important;
   font-weight: 500 !important;
+  padding: 5px 12px !important;
 }
 
 html[data-ui='minimal'] div[role='navigation'] span.text-faint.sm\:inline {
@@ -347,6 +377,11 @@ html[data-ui='minimal'] .chip {
 
 html[data-ui='minimal'] .led {
   border-radius: 9999px !important;
+}
+
+html[data-ui='minimal'] .tag,
+html[data-ui='minimal'] span.micro.border {
+  border-radius: 6px !important;
 }
 
 /* --------------------------------------------------------------------------

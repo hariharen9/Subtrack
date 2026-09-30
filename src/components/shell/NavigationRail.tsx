@@ -66,14 +66,14 @@ export function NavigationRail({
                 {active && (
                   <motion.span
                     layoutId="rail-plate"
-                    className="absolute inset-0 bg-acid"
+                    className="rail-plate absolute inset-0 rounded-xl bg-acid"
                     transition={{ type: 'spring', stiffness: 520, damping: 38 }}
                   />
                 )}
                 <span
                   aria-hidden="true"
                   className={cx(
-                    'absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 transition-colors',
+                    'rail-pip absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 transition-colors',
                     active ? 'bg-fg' : 'bg-transparent group-hover:bg-line2',
                   )}
                 />

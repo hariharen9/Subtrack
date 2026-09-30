@@ -80,8 +80,10 @@ export interface AppSettings {
   theme: 'dark' | 'day'
   /** Show the decorative grid/grain field. */
   field: boolean
-  /** Reduce decorative motion further than the OS setting. */
-  calmMode: boolean
+  /** Interface personality: 'cyber' | 'minimal'. */
+  uiMode?: 'cyber' | 'minimal'
+  /** Curated accent color profile in Zen / Minimal mode. */
+  zenAccent?: string
   /** Days ahead used by the incoming stream. */
   horizonDays: number
 }

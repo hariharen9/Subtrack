@@ -20,6 +20,7 @@ import { EmptyState, BootScreen } from '@/components/ui/Skeleton'
 import { Led, SIGNAL_TEXT } from '@/components/ui/Signal'
 import { EMISplitDonut, DebtCompositionRail } from '@/components/charts/DebtCurve'
 import { CyberButton } from '@/components/ui/CyberButton'
+import { IconPlus } from '@/components/ui/Icons'
 import { cx } from '@/lib/cx'
 
 const STAGGER = { hidden: {}, show: { transition: { staggerChildren: 0.05, delayChildren: 0.04 } } }
@@ -66,7 +67,9 @@ export default function DebtOverview() {
           </span>
           <span className="flex items-center gap-2">
             <span className="micro hidden sm:inline text-faint">{formatMoney(summary.monthlyBurden, base)}/MO EMI BURDEN</span>
-            <CyberButton variant="ink" size="sm" onClick={() => openLoanComposer()}>+ ADD LOAN</CyberButton>
+            <CyberButton variant="solid" size="sm" leading={<IconPlus size={12} />} onClick={() => openLoanComposer()}>
+              ADD LOAN
+            </CyberButton>
           </span>
         </div>
       </motion.div>
