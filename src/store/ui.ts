@@ -307,6 +307,36 @@ export const TOAST_VERBS = {
     label: 'EMI RECORDED ✓',
     text: `${name} · ${detail}`,
   }),
+  cardAdded: (name: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'CARD INITIALIZED',
+    text: `${name} · ${detail}`,
+  }),
+  cardUpdated: (name: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'CARD UPDATED',
+    text: `${name} · record written`,
+  }),
+  cardDeleted: (name: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'CARD PURGED',
+    text: `${name} and its transaction history erased`,
+  }),
+  cardTxnLogged: (title: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'TXN RECORDED ✓',
+    text: `${title} · ${detail}`,
+  }),
+  cardTxnUpdated: (title: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'TXN UPDATED',
+    text: `${title} · record written`,
+  }),
+  cardTxnDeleted: (title: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'TXN REMOVED',
+    text: `${title} · entry erased`,
+  }),
   info: (label: string, text?: string) => ({ kind: 'info' as ToastKind, label, text }),
   spendLogged: (title: string, detail: string) => ({
     kind: 'ok' as ToastKind,

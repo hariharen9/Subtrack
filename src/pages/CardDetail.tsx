@@ -291,7 +291,20 @@ export default function CardDetail() {
       {/* History */}
       <motion.div variants={RISE} className="mt-3">
         <CutPanel cut="tr" cutSize={14} innerClassName="p-0">
-          <SectionHeader code="HIST" title="Transaction history" signal="acid" right={<span className="micro text-faint">{txns.length} TXNS</span>} />
+          <SectionHeader
+            code="HIST"
+            title="Transaction history"
+            signal="acid"
+            right={
+              <button
+                type="button"
+                onClick={() => openCardComposer({ mode: 'txn', presetCardId: card.id })}
+                className="micro flex items-center gap-1 text-dim transition-colors hover:text-acidink"
+              >
+                + LOG TXN
+              </button>
+            }
+          />
           {txns.length ? (
             <div className="max-h-[520px] overflow-y-auto" data-lenis-prevent>
               <div className="divide-y divide-line">
@@ -301,7 +314,14 @@ export default function CardDetail() {
               </div>
             </div>
           ) : (
-            <p className="meta px-3 py-5 text-faint">NO TRANSACTIONS YET.</p>
+            <div className="p-4 text-center">
+              <p className="meta text-faint">NO TRANSACTIONS RECORDED FOR THIS CARD YET.</p>
+              <div className="mt-2 flex justify-center">
+                <CyberButton variant="ghost" size="sm" leading={<IconPlus size={12} />} onClick={() => openCardComposer({ mode: 'txn', presetCardId: card.id })}>
+                  LOG FIRST TRANSACTION
+                </CyberButton>
+              </div>
+            </div>
           )}
         </CutPanel>
       </motion.div>

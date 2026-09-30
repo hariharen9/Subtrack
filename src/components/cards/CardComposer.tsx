@@ -1,54 +1,67 @@
 /**
  * SUBTRACK // CARD COMPOSER
  *
- * Two consoles in one overlay: the CARD console (add/edit a credit card) and
- * the TRANSACTION console (record a purchase, payment, fee, interest, reward
- * or refund against a card). Driven by the Zustand store so it survives
- * navigation like the subscription/spend composers.
+ * Two consoles in one panel — matching the Subscription & Loan design language:
+ *   CARD mode — add or edit a credit card, limits, APR, billing/due cycle days
+ *   TXN mode  — record/edit a purchase, payment, fee, interest, reward or refund
+ *
+ * Layout mirrors the subscription console: numbered Section headers with dotted
+ * rules, scrollable flex body, sticky live-readout footer with balance forecast,
+ * two-step destruction safety, and fluid spring animations.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   SPEND_CATEGORIES,
+  SPEND_CATEGORY_META,
+  CARD_TXN_TYPE_LABEL,
   type SpendCategory,
   type CardNetwork,
   type CardStatus,
   type CardTransaction,
   type CardTxnType,
 } from '@/lib/types'
-import { CURRENCIES, formatMoney, symbolOf } from '@/lib/money'
+import { CURRENCIES, formatMoney, symbolOf, convert } from '@/lib/money'
 import { todayISO } from '@/lib/date'
 import { minDueFor } from '@/lib/cards'
 import {
   createCreditCard,
   updateCreditCard,
+  deleteCreditCard,
   createCardTransaction,
   updateCardTransaction,
+  deleteCardTransaction,
+  type CardDraft,
+  type CardTxnDraft,
 } from '@/lib/db'
 import { useCreditCards, useCardTransactions } from '@/hooks/useCards'
 import { TOAST_VERBS, useUI } from '@/store/ui'
-import { useFocusTrap, useScrollLock } from '@/hooks/usePlatform'
+import { useFocusTrap, useIsCompact, useScrollLock } from '@/hooks/usePlatform'
 import { cx } from '@/lib/cx'
 import { CyberButton, IconButton } from '@/components/ui/CyberButton'
-import { FieldShell, CyberSelect } from '@/components/ui/Controls'
+import { FieldShell, CyberSelect, SegmentedControl } from '@/components/ui/Controls'
 import { CyberDatePicker } from '@/components/ui/CyberDatePicker'
-import { IconClose } from '@/components/ui/Icons'
-import { Led } from '@/components/ui/Signal'
+import { IconClose, IconPlus } from '@/components/ui/Icons'
+import { Led, SIGNAL_TEXT } from '@/components/ui/Signal'
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { KeyCap } from '@/components/ui/Micro'
 
-const NETWORK_OPTIONS: { value: CardNetwork; label: string }[] = [
-  { value: 'visa', label: 'VISA' },
-  { value: 'mastercard', label: 'MASTERCARD' },
-  { value: 'amex', label: 'AMEX' },
-  { value: 'rupay', label: 'RUPAY' },
-  { value: 'diners', label: 'DINERS' },
-  { value: 'other', label: 'OTHER' },
+const STAGGER = { hidden: {}, show: { transition: { staggerChildren: 0.022, delayChildren: 0.03 } } }
+const ITEM = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 460, damping: 34 } } }
+
+const NETWORK_OPTIONS: { value: CardNetwork; label: string; hint?: string }[] = [
+  { value: 'visa', label: 'VISA', hint: 'Visa' },
+  { value: 'mastercard', label: 'MASTERCARD', hint: 'Mastercard' },
+  { value: 'amex', label: 'AMEX', hint: 'American Express' },
+  { value: 'rupay', label: 'RUPAY', hint: 'RuPay' },
+  { value: 'diners', label: 'DINERS', hint: 'Diners Club' },
+  { value: 'other', label: 'OTHER', hint: 'Other network' },
 ]
 
-const STATUS_OPTIONS: { value: CardStatus; label: string }[] = [
-  { value: 'active', label: 'ACTIVE' },
-  { value: 'frozen', label: 'FROZEN' },
-  { value: 'closed', label: 'CLOSED' },
+const STATUS_OPTIONS: { value: CardStatus; label: string; hint?: string }[] = [
+  { value: 'active', label: 'ACTIVE', hint: 'Card in active rotation' },
+  { value: 'frozen', label: 'FROZEN', hint: 'Temporarily blocked' },
+  { value: 'closed', label: 'CLOSED', hint: 'Account cancelled' },
 ]
 
 const CARD_COLORS = ['#F4F4F4', '#00C8FF', '#FF7A00', '#FF2BD6', '#B7FF00', '#FF304F', '#7A5CFF', '#FFD166']
@@ -89,361 +102,37 @@ interface TxnForm {
   notes: string
 }
 
-export function CardComposer() {
-  const state = useUI((s) => s.cardComposer)
-  const close = useUI((s) => s.closeCardComposer)
-  const pushToast = useUI((s) => s.pushToast)
-  const cards = useCreditCards()
-  const txns = useCardTransactions()
-  const base = useUI((s) => s.baseCurrency)
-
-  const isCard = state.mode === 'card'
-  const editingCard = cards.find((c) => c.id === state.editCardId)
-  const editingTxn = state.editTxnId ? txns.find((t) => t.id === state.editTxnId) : undefined
-
-  // Balance per card (native currency) — powers the PAY FULL / PAY MIN quick fills
-  const cardBalances = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const t of txns) {
-      const sign = t.type === 'purchase' || t.type === 'fee' || t.type === 'interest' ? 1 : -1
-      map.set(t.cardId, (map.get(t.cardId) ?? 0) + sign * t.amount)
-    }
-    return map
-  }, [txns])
-
-  const trapRef = useFocusTrap<HTMLDivElement>(state.open)
-  useScrollLock(state.open)
-
-  // ── Card form ──
-  const [cardForm, setCardForm] = useState<CardForm>(() => emptyCardForm(base))
-  const [cardBusy, setCardBusy] = useState(false)
-  const [cardErrors, setCardErrors] = useState(false)
-
-  // ── Txn form ──
-  const [txnForm, setTxnForm] = useState<TxnForm>(() => emptyTxnForm(base))
-  const [txnBusy, setTxnBusy] = useState(false)
-  const [txnErrors, setTxnErrors] = useState(false)
-
-  useEffect(() => {
-    if (!state.open) return
-    if (isCard) {
-      setCardForm(editingCard ? cardToForm(editingCard) : emptyCardForm(base))
-      setCardErrors(false)
-    } else if (state.editTxnId && editingTxn) {
-      setTxnForm(txnToForm(editingTxn))
-      setTxnErrors(false)
-    } else {
-      const fresh = emptyTxnForm(base, state.presetCardId, cards[0]?.id)
-      if (state.presetType) fresh.type = state.presetType
-      if (state.presetAmount && state.presetAmount > 0) fresh.amount = String(Math.round(state.presetAmount * 100) / 100)
-      if (state.presetType === 'payment') fresh.title = 'Statement payment'
-      if (state.presetType === 'payment') fresh.category = 'other'
-      setTxnForm(fresh)
-      setTxnErrors(false)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.open, state.mode, state.editCardId, state.presetCardId, state.editTxnId, state.presetType, state.presetAmount])
-
-  // ⌘/Ctrl + Enter saves from anywhere in the dialog
-  const submit = () => {
-    if (!state.open) return
-    if (isCard) void saveCard()
-    else void saveTxn()
-  }
-
-  const selectedBalance = Math.max(0, Math.round((cardBalances.get(txnForm.cardId) ?? 0) * 100) / 100)
-
-  const saveCard = async () => {
-    const limit = Number.parseFloat(cardForm.creditLimit) || 0
-    const rate = Number.parseFloat(cardForm.interestRate) || 0
-    const billing = Number.parseInt(cardForm.billingDay) || 0
-    const due = Number.parseInt(cardForm.dueDay) || 0
-    if (!cardForm.name.trim() || limit <= 0 || billing < 1 || billing > 28 || due < 1 || due > 28) {
-      setCardErrors(true)
-      return
-    }
-    setCardBusy(true)
-    try {
-      const draft = {
-        name: cardForm.name,
-        issuer: cardForm.issuer,
-        last4: cardForm.last4,
-        network: cardForm.network,
-        creditLimit: limit,
-        interestRate: rate,
-        billingDay: billing,
-        dueDay: due,
-        currency: cardForm.currency,
-        color: cardForm.color,
-        notes: cardForm.notes,
-      }
-      if (editingCard) {
-        await updateCreditCard(editingCard.id, { ...draft, status: cardForm.status })
-        pushToast(TOAST_VERBS.info('CARD UPDATED', `${cardForm.name} ··${draft.last4 || '····'}`))
-      } else {
-        const created = await createCreditCard(draft)
-        pushToast(TOAST_VERBS.info('CARD ADDED', `${created.name} ··${created.last4}`))
-      }
-      close()
-    } catch (error) {
-      pushToast(TOAST_VERBS.error('WRITE FAILED', error instanceof Error ? error.message : 'Local store rejected the record'))
-    } finally {
-      setCardBusy(false)
-    }
-  }
-
-  const saveTxn = async () => {
-    const amount = Number.parseFloat(txnForm.amount) || 0
-    if (!txnForm.cardId || !txnForm.title.trim() || amount <= 0) {
-      setTxnErrors(true)
-      return
-    }
-    setTxnBusy(true)
-    try {
-      const draft = {
-        cardId: txnForm.cardId,
-        title: txnForm.title,
-        amount,
-        currency: txnForm.currency,
-        category: txnForm.category,
-        type: txnForm.type,
-        date: txnForm.date,
-        rewards: Number.parseFloat(txnForm.rewards) || 0,
-        notes: txnForm.notes,
-      }
-      await (editingTxn ? updateCardTransaction(editingTxn.id, draft) : createCardTransaction(draft))
-      pushToast(
-        editingTxn
-          ? TOAST_VERBS.info('TRANSACTION UPDATED', `${txnForm.title} · ${symbolOf(txnForm.currency)}${amount}`)
-          : TOAST_VERBS.info('TRANSACTION LOGGED', `${txnForm.title} · ${symbolOf(txnForm.currency)}${amount}`),
-      )
-      close()
-    } catch (error) {
-      pushToast(TOAST_VERBS.error('WRITE FAILED', error instanceof Error ? error.message : 'Local store rejected the record'))
-    } finally {
-      setTxnBusy(false)
-    }
-  }
-
-  return (
-    <AnimatePresence>
-      {state.open && (
-        <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-6">
-          <motion.div
-            className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            onClick={close}
-            aria-hidden="true"
-          />
-          <motion.div
-            ref={trapRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label={isCard ? 'Card console' : 'Card transaction console'}
-            initial={{ opacity: 0, y: 32, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 24, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 440, damping: 38 }}
-            className="relative max-h-[92dvh] w-full max-w-[560px] overflow-y-auto"
-            data-lenis-prevent
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                e.preventDefault()
-                submit()
-              }
-            }}
-          >
-            <div className="cp">
-              <span aria-hidden="true" className="cp-shadow clip-cut-tl" />
-              <div className="cp-frame clip-cut-tl bg-line2">
-                <div className="cp-in clip-cut-tl bg-surface">
-                  {/* Header */}
-                  <div className="flex items-center justify-between border-b border-line px-4 py-3">
-                    <span className="micro flex items-center gap-2 text-acidink">
-                      <Led signal="acid" size="sm" pulse />
-                      {isCard
-                        ? editingCard ? 'CRD // EDIT CARD' : 'CRD // CARD CONSOLE'
-                        : editingTxn ? 'CRD // EDIT TRANSACTION' : 'CRD // TRANSACTION'}
-                    </span>
-                    <IconButton label="Close" size="sm" onClick={close}>
-                      <IconClose size={14} />
-                    </IconButton>
-                  </div>
-
-                  {isCard ? (
-                    /* ── CARD FORM ── */
-                    <div className="space-y-3 px-4 py-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <FieldShell label="CARD NAME" code="01">
-                          <input className="w-full bg-transparent py-2 font-mono text-[13px] outline-none placeholder:text-faint" value={cardForm.name} onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })} placeholder="Millennia" aria-label="Card name" />
-                        </FieldShell>
-                        <FieldShell label="ISSUER" code="02">
-                          <input className="w-full bg-transparent py-2 font-mono text-[13px] outline-none placeholder:text-faint" value={cardForm.issuer} onChange={(e) => setCardForm({ ...cardForm, issuer: e.target.value })} placeholder="HDFC Bank" aria-label="Issuer" />
-                        </FieldShell>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-3">
-                        <FieldShell label="LAST 4" code="03">
-                          <input className="w-full bg-transparent py-2 font-mono text-[13px] tracking-widest outline-none" value={cardForm.last4} onChange={(e) => setCardForm({ ...cardForm, last4: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="4521" inputMode="numeric" aria-label="Last four digits" />
-                        </FieldShell>
-                        <FieldShell label="CREDIT LIMIT" code="04">
-                          <input className="w-full bg-transparent py-2 font-mono text-[13px] outline-none" value={cardForm.creditLimit} onChange={(e) => setCardForm({ ...cardForm, creditLimit: e.target.value.replace(/[^\d.]/g, '').slice(0, 10) })} placeholder="200000" inputMode="decimal" aria-label="Credit limit" />
-                        </FieldShell>
-                        <FieldShell label="APR %" code="05">
-                          <input className="w-full bg-transparent py-2 font-mono text-[13px] outline-none" value={cardForm.interestRate} onChange={(e) => setCardForm({ ...cardForm, interestRate: e.target.value.replace(/[^\d.]/g, '').slice(0, 4) })} placeholder="42" inputMode="decimal" aria-label="Annual interest rate" />
-                        </FieldShell>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <FieldShell label="BILLING DAY" code="06" hint="Statement cut-off (1–28)">
-                          <input className="w-full bg-transparent py-2 font-mono text-[13px] outline-none" value={cardForm.billingDay} onChange={(e) => setCardForm({ ...cardForm, billingDay: e.target.value.replace(/\D/g, '').slice(0, 2) })} placeholder="18" inputMode="numeric" aria-label="Billing day" />
-                        </FieldShell>
-                        <FieldShell label="DUE DAY" code="07" hint="Payment due (1–28)">
-                          <input className="w-full bg-transparent py-2 font-mono text-[13px] outline-none" value={cardForm.dueDay} onChange={(e) => setCardForm({ ...cardForm, dueDay: e.target.value.replace(/\D/g, '').slice(0, 2) })} placeholder="5" inputMode="numeric" aria-label="Due day" />
-                        </FieldShell>
-                      </div>
-
-                      <FieldShell label="NETWORK" code="08">
-                        <CyberSelect ariaLabel="Network" value={cardForm.network} onChange={(v) => setCardForm({ ...cardForm, network: v as CardNetwork })} options={NETWORK_OPTIONS} />
-                      </FieldShell>
-
-                      {editingCard && (
-                        <FieldShell label="STATUS" code="09" hint="Frozen cards stop counting toward dues; closed cards are archived.">
-                          <CyberSelect ariaLabel="Card status" value={cardForm.status} onChange={(v) => setCardForm({ ...cardForm, status: v as CardStatus })} options={STATUS_OPTIONS} />
-                        </FieldShell>
-                      )}
-
-                      <FieldShell label="CURRENCY" code={editingCard ? '10' : '09'}>
-                        <CyberSelect ariaLabel="Currency" value={cardForm.currency} onChange={(v) => setCardForm({ ...cardForm, currency: v })} options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.symbol} ${c.code}`, hint: c.name }))} />
-                      </FieldShell>
-
-                      <FieldShell label="ACCENT" code={editingCard ? '11' : '10'}>
-                        <div className="flex flex-wrap gap-1.5 py-1">
-                          {CARD_COLORS.map((c) => (
-                            <button key={c} type="button" onClick={() => setCardForm({ ...cardForm, color: c })} className={cx('h-6 w-6 border transition-transform', cardForm.color === c ? 'scale-110 border-fg' : 'border-line2 hover:scale-105')} style={{ background: c }} aria-label={`Accent ${c}`} />
-                          ))}
-                        </div>
-                      </FieldShell>
-
-                      <FieldShell label="NOTES" code={editingCard ? '12' : '11'} hint="Rewards structure, limits, etc.">
-                        <textarea className="w-full resize-none bg-transparent py-2 font-mono text-[13px] outline-none placeholder:text-faint" rows={2} value={cardForm.notes} onChange={(e) => setCardForm({ ...cardForm, notes: e.target.value.slice(0, 200) })} placeholder="5% cashback on…" aria-label="Notes" />
-                      </FieldShell>
-
-                      {cardErrors && <p className="meta text-redink">NAME, LIMIT AND CYCLE DAYS (1–28) ARE REQUIRED.</p>}
-
-                      <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
-                        <span className="micro text-faint">STORED LOCALLY · NO ACCOUNT</span>
-                        <div className="flex gap-2">
-                          <CyberButton variant="ghost" size="sm" onClick={close}>CANCEL</CyberButton>
-                          <CyberButton variant="solid" size="sm" busy={cardBusy} busyLabel="SAVING" onClick={() => void saveCard()}>
-                            {editingCard ? 'SAVE CHANGES' : 'ADD CARD'}
-                          </CyberButton>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    /* ── TXN FORM ── */
-                    <div className="space-y-3 px-4 py-4">
-                      <FieldShell label="CARD" code="01">
-                        <CyberSelect ariaLabel="Card" value={txnForm.cardId} onChange={(v) => setTxnForm({ ...txnForm, cardId: v })} options={cards.map((c) => ({ value: c.id, label: `${c.name} ··${c.last4}`, hint: c.issuer }))} />
-                      </FieldShell>
-
-                      <FieldShell label="TYPE" code="02">
-                        <div className="flex flex-wrap gap-1 py-1">
-                          {TXN_TYPES.map((t) => (
-                            <button key={t.value} type="button" onClick={() => setTxnForm({ ...txnForm, type: t.value })} className={cx('micro border px-2 py-1 transition-colors', txnForm.type === t.value ? 'border-acid bg-acid text-black font-semibold' : 'border-line2 text-dim hover:text-fg')}>
-                              {t.label}
-                            </button>
-                          ))}
-                        </div>
-                      </FieldShell>
-
-                      {txnForm.type === 'payment' && (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="micro text-[9px] text-faint">QUICK FILL:</span>
-                          <button
-                            type="button"
-                            onClick={() => setTxnForm({ ...txnForm, title: 'Statement payment', category: 'other', amount: String(selectedBalance) })}
-                            className="micro border border-line2 px-2 py-1 text-dim transition-colors hover:border-acid hover:text-acidink"
-                          >
-                            PAY FULL BALANCE · {formatMoney(selectedBalance, txnForm.currency)}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setTxnForm({ ...txnForm, title: 'Minimum due payment', category: 'other', amount: String(minDueFor(selectedBalance)) })}
-                            className="micro border border-line2 px-2 py-1 text-dim transition-colors hover:border-acid hover:text-acidink"
-                          >
-                            PAY MINIMUM · {formatMoney(minDueFor(selectedBalance), txnForm.currency)}
-                          </button>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <FieldShell label="TITLE" code="03">
-                          <input className="w-full bg-transparent py-2 font-mono text-[13px] outline-none placeholder:text-faint" value={txnForm.title} onChange={(e) => setTxnForm({ ...txnForm, title: e.target.value })} placeholder="Swiggy — dinner" aria-label="Title" />
-                        </FieldShell>
-                        <FieldShell label={`AMOUNT (${symbolOf(txnForm.currency)})`} code="04">
-                          <input className="w-full bg-transparent py-2 font-mono text-[16px] font-semibold outline-none" value={txnForm.amount} onChange={(e) => setTxnForm({ ...txnForm, amount: e.target.value.replace(/[^\d.]/g, '').slice(0, 12) })} placeholder="0" inputMode="decimal" aria-label="Amount" />
-                        </FieldShell>
-                      </div>
-
-                      <FieldShell label="CATEGORY" code="05">
-                        <div className="grid grid-cols-4 gap-1 py-1">
-                          {SPEND_CATEGORIES.map((c) => (
-                            <button key={c.id} type="button" onClick={() => setTxnForm({ ...txnForm, category: c.id })} className={cx('micro border px-1 py-1.5 text-[9px] transition-colors', txnForm.category === c.id ? `border-fg bg-fg text-bg font-semibold` : 'border-line2 text-dim hover:text-fg')}>
-                              {c.code}
-                            </button>
-                          ))}
-                        </div>
-                      </FieldShell>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <FieldShell label="DATE" code="06">
-                          <CyberDatePicker value={txnForm.date} onChange={(v) => setTxnForm({ ...txnForm, date: v })} ariaLabel="Transaction date" />
-                        </FieldShell>
-                        <FieldShell label="REWARDS / CASHBACK" code="07">
-                          <input className="w-full bg-transparent py-2 font-mono text-[13px] outline-none" value={txnForm.rewards} onChange={(e) => setTxnForm({ ...txnForm, rewards: e.target.value.replace(/[^\d.]/g, '').slice(0, 8) })} placeholder="0" inputMode="decimal" aria-label="Rewards earned" />
-                        </FieldShell>
-                      </div>
-
-                      <FieldShell label="NOTES" code="08">
-                        <input className="w-full bg-transparent py-2 font-mono text-[13px] outline-none placeholder:text-faint" value={txnForm.notes} onChange={(e) => setTxnForm({ ...txnForm, notes: e.target.value.slice(0, 200) })} placeholder="Optional note" aria-label="Notes" />
-                      </FieldShell>
-
-                      {txnErrors && <p className="meta text-redink">CARD, TITLE AND AN AMOUNT ABOVE ZERO ARE REQUIRED.</p>}
-
-                      <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
-                        <span className="flex items-center gap-2">
-                          <KeyCap>⌘</KeyCap><KeyCap>⏎</KeyCap>
-                          <span className="tech-label">SAVE</span>
-                        </span>
-                        <div className="flex gap-2">
-                          <CyberButton variant="ghost" size="sm" onClick={close}>CANCEL</CyberButton>
-                          <CyberButton variant="solid" size="sm" busy={txnBusy} busyLabel="SAVING" onClick={() => void saveTxn()}>
-                            {editingTxn ? 'SAVE CHANGES' : 'LOG TRANSACTION'}
-                          </CyberButton>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  )
-}
-
 function emptyCardForm(base: string): CardForm {
-  return { name: '', issuer: '', last4: '', network: 'visa', status: 'active', creditLimit: '', interestRate: '', billingDay: '18', dueDay: '5', currency: base, color: '#F4F4F4', notes: '' }
+  return {
+    name: '',
+    issuer: '',
+    last4: '',
+    network: 'visa',
+    status: 'active',
+    creditLimit: '',
+    interestRate: '42',
+    billingDay: '18',
+    dueDay: '5',
+    currency: base,
+    color: '#F4F4F4',
+    notes: '',
+  }
 }
 
-function cardToForm(card: { name: string; issuer: string; last4: string; network: CardNetwork; status: CardStatus; creditLimit: number; interestRate: number; billingDay: number; dueDay: number; currency: string; color: string; notes: string }): CardForm {
+function cardToForm(card: {
+  name: string
+  issuer: string
+  last4: string
+  network: CardNetwork
+  status: CardStatus
+  creditLimit: number
+  interestRate: number
+  billingDay: number
+  dueDay: number
+  currency: string
+  color: string
+  notes: string
+}): CardForm {
   return {
     name: card.name,
     issuer: card.issuer,
@@ -457,6 +146,20 @@ function cardToForm(card: { name: string; issuer: string; last4: string; network
     currency: card.currency,
     color: card.color,
     notes: card.notes,
+  }
+}
+
+function emptyTxnForm(base: string, presetCardId?: string | null, firstCardId?: string): TxnForm {
+  return {
+    cardId: presetCardId ?? firstCardId ?? '',
+    title: '',
+    amount: '',
+    currency: base,
+    category: 'food',
+    type: 'purchase',
+    date: todayISO(),
+    rewards: '',
+    notes: '',
   }
 }
 
@@ -474,6 +177,667 @@ function txnToForm(t: CardTransaction): TxnForm {
   }
 }
 
-function emptyTxnForm(base: string, presetCardId?: string | null, firstCardId?: string): TxnForm {
-  return { cardId: presetCardId ?? firstCardId ?? '', title: '', amount: '', currency: base, category: 'food', type: 'purchase', date: todayISO(), rewards: '', notes: '' }
+function Section({ code, title, children, last = false }: { code: string; title: string; children: React.ReactNode; last?: boolean }) {
+  return (
+    <motion.section variants={ITEM} className={cx('px-3 py-4 md:px-4', !last && 'border-b border-line')}>
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="micro border border-line2 px-1.5 py-0.5 text-acidink">{code}</span>
+        <h3 className="tech-label text-dim">{title}</h3>
+        <span className="rule-dotted flex-1" />
+      </div>
+      {children}
+    </motion.section>
+  )
+}
+
+export function CardComposer() {
+  const state = useUI((s) => s.cardComposer)
+  const close = useUI((s) => s.closeCardComposer)
+  const pushToast = useUI((s) => s.pushToast)
+  const base = useUI((s) => s.baseCurrency)
+  const compact = useIsCompact()
+  const cards = useCreditCards()
+  const txns = useCardTransactions()
+
+  const isCard = state.mode === 'card'
+  const editingCard = cards.find((c) => c.id === state.editCardId)
+  const editingTxn = state.editTxnId ? txns.find((t) => t.id === state.editTxnId) : undefined
+
+  // Balance per card (native currency)
+  const cardBalances = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const t of txns) {
+      const sign = t.type === 'purchase' || t.type === 'fee' || t.type === 'interest' ? 1 : -1
+      map.set(t.cardId, (map.get(t.cardId) ?? 0) + sign * t.amount)
+    }
+    return map
+  }, [txns])
+
+  const trapRef = useFocusTrap<HTMLDivElement>(state.open)
+  useScrollLock(state.open)
+
+  // ── Card form state ──
+  const [cardForm, setCardForm] = useState<CardForm>(() => emptyCardForm(base))
+  const [cardBusy, setCardBusy] = useState(false)
+  const [showCardErrors, setShowCardErrors] = useState(false)
+  const [showCardDelete, setShowCardDelete] = useState(false)
+
+  // ── Txn form state ──
+  const [txnForm, setTxnForm] = useState<TxnForm>(() => emptyTxnForm(base))
+  const [txnBusy, setTxnBusy] = useState(false)
+  const [showTxnErrors, setShowTxnErrors] = useState(false)
+  const [showTxnDelete, setShowTxnDelete] = useState(false)
+
+  // Sync state when open changes
+  useEffect(() => {
+    if (!state.open) return
+    setShowCardErrors(false)
+    setShowCardDelete(false)
+    setShowTxnErrors(false)
+    setShowTxnDelete(false)
+    setCardBusy(false)
+    setTxnBusy(false)
+
+    if (isCard) {
+      setCardForm(editingCard ? cardToForm(editingCard) : emptyCardForm(base))
+    } else if (state.editTxnId && editingTxn) {
+      setTxnForm(txnToForm(editingTxn))
+    } else {
+      const fresh = emptyTxnForm(base, state.presetCardId, cards[0]?.id)
+      if (state.presetType) fresh.type = state.presetType
+      if (state.presetAmount && state.presetAmount > 0) fresh.amount = String(Math.round(state.presetAmount * 100) / 100)
+      if (state.presetType === 'payment') {
+        fresh.title = 'Statement payment'
+        fresh.category = 'other'
+      }
+      setTxnForm(fresh)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.open, state.mode, state.editCardId, state.presetCardId, state.editTxnId, state.presetType, state.presetAmount])
+
+  // Card economics
+  const limitValue = parseFloat(cardForm.creditLimit) || 0
+  const aprValue = parseFloat(cardForm.interestRate) || 0
+  const billingDayValue = parseInt(cardForm.billingDay) || 0
+  const dueDayValue = parseInt(cardForm.dueDay) || 0
+  const limitInBase = convert(limitValue, cardForm.currency, base)
+  const estMonthlyCarry = aprValue > 0 && limitValue > 0 ? (limitValue * (aprValue / 100)) / 12 : 0
+
+  // Txn economics
+  const txnAmountValue = parseFloat(txnForm.amount) || 0
+  const targetCard = cards.find((c) => c.id === txnForm.cardId) ?? cards[0]
+  const targetBalance = Math.max(0, Math.round((cardBalances.get(txnForm.cardId) ?? 0) * 100) / 100)
+  const targetMinDue = minDueFor(targetBalance)
+  const isDebit = txnForm.type === 'purchase' || txnForm.type === 'fee' || txnForm.type === 'interest'
+  const newBalanceForecast = isDebit ? targetBalance + txnAmountValue : Math.max(0, targetBalance - txnAmountValue)
+
+  // Validation
+  const cardNameError = showCardErrors && !cardForm.name.trim() ? 'CARD NAME REQUIRED' : undefined
+  const cardLimitError = showCardErrors && limitValue <= 0 ? 'ENTER A LIMIT ABOVE ZERO' : undefined
+  const cardBillingError = showCardErrors && (billingDayValue < 1 || billingDayValue > 28) ? 'DAY 1–28' : undefined
+  const cardDueError = showCardErrors && (dueDayValue < 1 || dueDayValue > 28) ? 'DAY 1–28' : undefined
+
+  const txnTitleError = showTxnErrors && !txnForm.title.trim() ? 'TITLE REQUIRED' : undefined
+  const txnAmountError = showTxnErrors && txnAmountValue <= 0 ? 'AMOUNT ABOVE ZERO REQUIRED' : undefined
+
+  const saveCard = async () => {
+    setShowCardErrors(true)
+    if (!cardForm.name.trim() || limitValue <= 0 || billingDayValue < 1 || billingDayValue > 28 || dueDayValue < 1 || dueDayValue > 28) {
+      return
+    }
+    setCardBusy(true)
+    try {
+      const draft: CardDraft = {
+        name: cardForm.name,
+        issuer: cardForm.issuer,
+        last4: cardForm.last4,
+        network: cardForm.network,
+        creditLimit: limitValue,
+        interestRate: aprValue,
+        billingDay: billingDayValue,
+        dueDay: dueDayValue,
+        currency: cardForm.currency,
+        color: cardForm.color,
+        notes: cardForm.notes,
+      }
+      if (editingCard) {
+        await updateCreditCard(editingCard.id, { ...draft, status: cardForm.status })
+        pushToast(TOAST_VERBS.cardUpdated(cardForm.name))
+      } else {
+        const created = await createCreditCard(draft)
+        pushToast(TOAST_VERBS.cardAdded(created.name, `${formatMoney(created.creditLimit, created.currency)} LIMIT ···${created.last4 || '····'}`))
+      }
+      close()
+    } catch (err) {
+      pushToast(TOAST_VERBS.error('WRITE FAILED', err instanceof Error ? err.message : 'Local store rejected'))
+    } finally {
+      setCardBusy(false)
+    }
+  }
+
+  const handleDeleteCard = async () => {
+    if (!editingCard) return
+    setCardBusy(true)
+    try {
+      await deleteCreditCard(editingCard.id)
+      pushToast(TOAST_VERBS.cardDeleted(editingCard.name))
+      close()
+    } catch (err) {
+      pushToast(TOAST_VERBS.error('DELETE FAILED', err instanceof Error ? err.message : 'Could not remove'))
+    } finally {
+      setCardBusy(false)
+    }
+  }
+
+  const saveTxn = async () => {
+    setShowTxnErrors(true)
+    if (!txnForm.cardId || !txnForm.title.trim() || txnAmountValue <= 0) {
+      return
+    }
+    setTxnBusy(true)
+    try {
+      const draft: CardTxnDraft = {
+        cardId: txnForm.cardId,
+        title: txnForm.title,
+        amount: txnAmountValue,
+        currency: txnForm.currency,
+        category: txnForm.category,
+        type: txnForm.type,
+        date: txnForm.date,
+        rewards: parseFloat(txnForm.rewards) || 0,
+        notes: txnForm.notes,
+      }
+      if (editingTxn) {
+        await updateCardTransaction(editingTxn.id, draft)
+        pushToast(TOAST_VERBS.cardTxnUpdated(txnForm.title))
+      } else {
+        await createCardTransaction(draft)
+        pushToast(TOAST_VERBS.cardTxnLogged(txnForm.title, `${symbolOf(txnForm.currency)}${txnAmountValue} · ${CARD_TXN_TYPE_LABEL[txnForm.type]}`))
+      }
+      close()
+    } catch (err) {
+      pushToast(TOAST_VERBS.error('WRITE FAILED', err instanceof Error ? err.message : 'Could not record'))
+    } finally {
+      setTxnBusy(false)
+    }
+  }
+
+  const handleDeleteTxn = async () => {
+    if (!editingTxn) return
+    setTxnBusy(true)
+    try {
+      await deleteCardTransaction(editingTxn.id)
+      pushToast(TOAST_VERBS.cardTxnDeleted(editingTxn.title))
+      close()
+    } catch (err) {
+      pushToast(TOAST_VERBS.error('DELETE FAILED', err instanceof Error ? err.message : 'Could not remove'))
+    } finally {
+      setTxnBusy(false)
+    }
+  }
+
+  const cut = compact ? 'tl' : 'tl-br'
+
+  return (
+    <AnimatePresence>
+      {state.open && (
+        <div className={cx('fixed inset-0 z-[80] flex', compact ? 'items-end' : 'items-center justify-center p-4')}>
+          <motion.div
+            className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={close}
+            aria-hidden="true"
+          />
+          <motion.div
+            ref={trapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="card-composer-title"
+            className={cx('relative flex w-full flex-col', compact ? 'h-[92dvh]' : 'max-h-[88dvh] max-w-[720px]')}
+            initial={compact ? { y: '102%' } : { opacity: 0, scale: 0.975, y: 14 }}
+            animate={compact ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+            exit={compact ? { y: '102%' } : { opacity: 0, scale: 0.985, y: 10 }}
+            transition={compact ? { type: 'spring', stiffness: 420, damping: 40 } : { type: 'spring', stiffness: 440, damping: 36 }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                close()
+              }
+              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault()
+                if (isCard) void saveCard()
+                else void saveTxn()
+              }
+            }}
+          >
+            <div className="cp flex min-h-0 flex-1 flex-col">
+              <span aria-hidden="true" className={cx('cp-shadow', cut === 'tl' ? 'clip-cut-tl' : 'clip-cut-br')} />
+              <div className={cx('cp-frame flex min-h-0 flex-1 flex-col bg-line2', cut === 'tl' ? 'clip-cut-tl' : 'clip-cut-br')}>
+                <div className={cx('cp-in flex min-h-0 flex-1 flex-col bg-surface', cut === 'tl' ? 'clip-cut-tl' : 'clip-cut-br')}>
+
+                  {/* Header */}
+                  <div className="flex items-center justify-between gap-3 border-b-2 border-linehard px-3 py-2.5 md:px-4">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className={cx('micro flex items-center gap-1.5 border px-1.5 py-0.5', isCard ? 'border-line2 text-blueink' : 'border-line2 text-acidink')}>
+                        <Led signal={isCard ? 'blue' : 'acid'} size="sm" pulse />
+                        {isCard ? (editingCard ? 'CRD // EDIT CARD' : 'NEW CREDIT CARD') : editingTxn ? 'CRD // EDIT TXN' : 'CRD // RECORD TXN'}
+                      </span>
+                      <span id="card-composer-title" className="truncate text-[13px] font-semibold text-fg">
+                        {isCard
+                          ? editingCard ? `${editingCard.name} ··${editingCard.last4}` : 'Initialize card'
+                          : editingTxn ? editingTxn.title : targetCard ? `${targetCard.name} ··${targetCard.last4}` : 'Card transaction'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="tech-label hidden md:inline">100% OFFLINE</span>
+                      <IconButton label="Close console" size="sm" onClick={close}>
+                        <IconClose size={14} />
+                      </IconButton>
+                    </div>
+                  </div>
+
+                  {compact && (
+                    <div className="flex justify-center border-b border-line py-1.5" aria-hidden="true">
+                      <span className="block h-1 w-12 bg-line2" />
+                    </div>
+                  )}
+
+                  {/* Body */}
+                  {isCard ? (
+                    <motion.div key="card-body" variants={STAGGER} initial="hidden" animate="show" className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-lenis-prevent>
+                      {/* 01 IDENTITY */}
+                      <Section code="01" title="IDENTITY">
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <div className="md:col-span-2">
+                            <FieldShell label="CARD NAME" code="STRING" htmlFor="card-name" error={cardNameError}>
+                              <input id="card-name" className="field" value={cardForm.name} onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })} placeholder="Infinia / Millennia / Coral" autoComplete="off" spellCheck={false} aria-invalid={Boolean(cardNameError)} autoFocus />
+                            </FieldShell>
+                          </div>
+                          <FieldShell label="ISSUER" code="BANK" htmlFor="card-issuer">
+                            <input id="card-issuer" className="field" value={cardForm.issuer} onChange={(e) => setCardForm({ ...cardForm, issuer: e.target.value })} placeholder="HDFC / ICICI / SBI" autoComplete="off" spellCheck={false} />
+                          </FieldShell>
+                        </div>
+                        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_2fr]">
+                          <FieldShell label="LAST 4 DIGITS" code="DIGITS" htmlFor="card-last4" hint="Card identification">
+                            <input id="card-last4" className="field tracking-widest text-center" value={cardForm.last4} onChange={(e) => setCardForm({ ...cardForm, last4: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="4521" inputMode="numeric" />
+                          </FieldShell>
+                          <FieldShell label="CARD NETWORK" code="RAIL">
+                            <SegmentedControl
+                              ariaLabel="Card network"
+                              columns={3}
+                              size="sm"
+                              value={cardForm.network}
+                              onChange={(v) => setCardForm({ ...cardForm, network: v })}
+                              options={NETWORK_OPTIONS}
+                            />
+                          </FieldShell>
+                        </div>
+                      </Section>
+
+                      {/* 02 ECONOMICS */}
+                      <Section code="02" title="ECONOMICS & LIMIT">
+                        <FieldShell label="CREDIT LIMIT" code="MAX CAPACITY" htmlFor="card-limit" error={cardLimitError}>
+                          <div className="flex items-center border border-line2 bg-bg2 transition-colors focus-within:border-acid">
+                            <span className="pl-3 font-mono text-[18px] text-faint">{symbolOf(cardForm.currency)}</span>
+                            <input
+                              id="card-limit"
+                              value={cardForm.creditLimit}
+                              onChange={(e) => setCardForm({ ...cardForm, creditLimit: e.target.value.replace(/[^\d.]/g, '').slice(0, 10) })}
+                              inputMode="decimal"
+                              placeholder="0"
+                              aria-invalid={Boolean(cardLimitError)}
+                              className="w-full bg-transparent px-2 py-2.5 font-mono text-[22px] font-semibold tnum outline-none placeholder:text-faint"
+                            />
+                            <span className="micro pr-3 text-faint">{cardForm.currency}</span>
+                          </div>
+                        </FieldShell>
+                        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1.2fr_1.2fr]">
+                          <FieldShell label="APR %" code="RATE" htmlFor="card-apr" hint="Annual finance charge (e.g. 42%)">
+                            <input id="card-apr" className="field" value={cardForm.interestRate} onChange={(e) => setCardForm({ ...cardForm, interestRate: e.target.value.replace(/[^\d.]/g, '').slice(0, 4) })} placeholder="42" inputMode="decimal" />
+                          </FieldShell>
+                          <FieldShell label="CURRENCY" code="ISO-4217">
+                            <CyberSelect ariaLabel="Currency" value={cardForm.currency} onChange={(v) => setCardForm({ ...cardForm, currency: v })} options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.symbol} ${c.code}`, hint: c.name }))} />
+                          </FieldShell>
+                          <FieldShell label="ACCENT TONE" code="COLOR">
+                            <div className="flex flex-wrap gap-1.5 py-1">
+                              {CARD_COLORS.map((c) => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() => setCardForm({ ...cardForm, color: c })}
+                                  className={cx('h-6 w-6 border transition-transform', cardForm.color === c ? 'scale-110 border-fg' : 'border-line2 hover:scale-105')}
+                                  style={{ background: c }}
+                                  aria-label={`Color ${c}`}
+                                />
+                              ))}
+                            </div>
+                          </FieldShell>
+                        </div>
+                      </Section>
+
+                      {/* 03 CYCLE & DATES */}
+                      <Section code="03" title="CYCLE & DATES">
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <FieldShell label="BILLING DAY" code="STATEMENT CUT" htmlFor="card-billing" error={cardBillingError} hint="Day of month statement closes (1–28)">
+                            <input id="card-billing" className="field" value={cardForm.billingDay} onChange={(e) => setCardForm({ ...cardForm, billingDay: e.target.value.replace(/\D/g, '').slice(0, 2) })} placeholder="18" inputMode="numeric" />
+                          </FieldShell>
+                          <FieldShell label="DUE DAY" code="PAYMENT DUE" htmlFor="card-due" error={cardDueError} hint="Day of month balance must clear (1–28)">
+                            <input id="card-due" className="field" value={cardForm.dueDay} onChange={(e) => setCardForm({ ...cardForm, dueDay: e.target.value.replace(/\D/g, '').slice(0, 2) })} placeholder="5" inputMode="numeric" />
+                          </FieldShell>
+                        </div>
+
+                        {editingCard && (
+                          <div className="mt-3">
+                            <FieldShell label="CARD STATUS" code="VAULT STATE" hint="Frozen cards stop counting toward dues; closed cards are archived">
+                              <SegmentedControl
+                                ariaLabel="Card status"
+                                columns={3}
+                                size="sm"
+                                value={cardForm.status}
+                                onChange={(v) => setCardForm({ ...cardForm, status: v })}
+                                options={STATUS_OPTIONS}
+                              />
+                            </FieldShell>
+                          </div>
+                        )}
+
+                        <div className="mt-3 flex items-center gap-2 border border-line bg-bg2 px-3 py-2 text-faint">
+                          <Led signal="acid" size="sm" />
+                          <span className="micro text-acidink font-semibold">GRACE PERIOD</span>
+                          <span className="text-linehard">·</span>
+                          <span className="micro text-faint">~20–50 days interest-free window when statement balance is paid in full</span>
+                        </div>
+                      </Section>
+
+                      {/* 04 NOTES */}
+                      <Section code="04" title="NOTES" last>
+                        <FieldShell label="CARD NOTES" code="FREETEXT" htmlFor="card-notes" hint="Cashback rules, milestone bonus conditions, lounge access, customer care number.">
+                          <textarea id="card-notes" className="field min-h-16 resize-y" value={cardForm.notes} onChange={(e) => setCardForm({ ...cardForm, notes: e.target.value.slice(0, 300) })} placeholder="5% cashback on Amazon & Flipkart · 4 lounge visits per quarter" />
+                        </FieldShell>
+                      </Section>
+                    </motion.div>
+                  ) : (
+                    /* ── TXN FORM ── */
+                    <motion.div key="txn-body" variants={STAGGER} initial="hidden" animate="show" className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-lenis-prevent>
+                      {/* Context banner */}
+                      {targetCard && (
+                        <motion.div variants={ITEM} className="mx-3 mt-3 flex items-center justify-between border border-line bg-bg2 px-3 py-2 md:mx-4">
+                          <div>
+                            <span className="block text-[12px] font-semibold text-fg">{targetCard.name} ··{targetCard.last4}</span>
+                            <span className="micro text-faint">{targetCard.issuer} · {formatMoney(targetCard.creditLimit, targetCard.currency)} LIMIT</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="micro block text-dim">CURR BALANCE: {formatMoney(targetBalance, targetCard.currency)}</span>
+                            <span className="micro text-faint">MIN DUE: {formatMoney(targetMinDue, targetCard.currency)}</span>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* 01 SOURCE & TYPE */}
+                      <Section code="01" title="SOURCE & TYPE">
+                        <FieldShell label="ASSIGNED CARD" code="VAULT" hint="Select the credit card to apply this entry to">
+                          <CyberSelect
+                            ariaLabel="Card"
+                            value={txnForm.cardId}
+                            onChange={(v) => {
+                              const c = cards.find((x) => x.id === v)
+                              setTxnForm({ ...txnForm, cardId: v, currency: c?.currency ?? base })
+                            }}
+                            options={cards.map((c) => ({
+                              value: c.id,
+                              label: `${c.name} ··${c.last4}`,
+                              hint: `${c.issuer} (${formatMoney(cardBalances.get(c.id) ?? 0, c.currency)})`,
+                            }))}
+                          />
+                        </FieldShell>
+                        <div className="mt-3">
+                          <FieldShell label="TRANSACTION TYPE" code="CLASSIFIER">
+                            <SegmentedControl
+                              ariaLabel="Transaction type"
+                              columns={3}
+                              size="sm"
+                              value={txnForm.type}
+                              onChange={(v) => {
+                                const updates: Partial<TxnForm> = { type: v }
+                                if (v === 'payment') {
+                                  updates.title = txnForm.title || 'Statement payment'
+                                  updates.category = 'other'
+                                }
+                                setTxnForm((prev) => ({ ...prev, ...updates }))
+                              }}
+                              options={TXN_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                            />
+                          </FieldShell>
+                        </div>
+
+                        {txnForm.type === 'payment' && (
+                          <div className="mt-3 flex flex-wrap items-center gap-2 border border-line bg-bg2 p-2">
+                            <span className="micro text-faint">PAYMENT QUICK-FILL:</span>
+                            <button
+                              type="button"
+                              onClick={() => setTxnForm({ ...txnForm, title: 'Statement payment', category: 'other', amount: String(targetBalance) })}
+                              className="micro border border-line2 bg-surface px-2 py-1 text-dim transition-colors hover:border-acid hover:text-acidink"
+                            >
+                              PAY FULL BALANCE · {formatMoney(targetBalance, txnForm.currency)}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTxnForm({ ...txnForm, title: 'Minimum due payment', category: 'other', amount: String(targetMinDue) })}
+                              className="micro border border-line2 bg-surface px-2 py-1 text-dim transition-colors hover:border-acid hover:text-acidink"
+                            >
+                              PAY MIN DUE · {formatMoney(targetMinDue, txnForm.currency)}
+                            </button>
+                          </div>
+                        )}
+                      </Section>
+
+                      {/* 02 ENTRY DETAILS */}
+                      <Section code="02" title="TRANSACTION DETAILS">
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <FieldShell label="TITLE / MERCHANT" code="STRING" htmlFor="txn-title" error={txnTitleError}>
+                            <input
+                              id="txn-title"
+                              className="field"
+                              value={txnForm.title}
+                              onChange={(e) => setTxnForm({ ...txnForm, title: e.target.value })}
+                              placeholder="Swiggy — dinner / AWS / Fuel"
+                              autoComplete="off"
+                              spellCheck={false}
+                              aria-invalid={Boolean(txnTitleError)}
+                              autoFocus
+                            />
+                          </FieldShell>
+                          <FieldShell label="AMOUNT" code={symbolOf(txnForm.currency)} htmlFor="txn-amount" error={txnAmountError}>
+                            <div className="flex items-center border border-line2 bg-bg2 transition-colors focus-within:border-acid">
+                              <span className="pl-3 font-mono text-[18px] text-faint">{symbolOf(txnForm.currency)}</span>
+                              <input
+                                id="txn-amount"
+                                value={txnForm.amount}
+                                onChange={(e) => setTxnForm({ ...txnForm, amount: e.target.value.replace(/[^\d.]/g, '').slice(0, 12) })}
+                                inputMode="decimal"
+                                placeholder="0"
+                                aria-invalid={Boolean(txnAmountError)}
+                                className="w-full bg-transparent px-2 py-2 font-mono text-[22px] font-semibold tnum outline-none placeholder:text-faint"
+                              />
+                              <span className="micro pr-3 text-faint">{txnForm.currency}</span>
+                            </div>
+                          </FieldShell>
+                        </div>
+                        <div className="mt-3">
+                          <FieldShell label="SPEND CATEGORY" code="CATEGORY" hint="Maps transaction into category mix & rewards engine">
+                            <SegmentedControl
+                              ariaLabel="Spend category"
+                              columns={4}
+                              size="sm"
+                              value={txnForm.category}
+                              onChange={(v) => setTxnForm({ ...txnForm, category: v as SpendCategory })}
+                              options={SPEND_CATEGORIES.map((c) => ({
+                                value: c.id,
+                                label: c.code,
+                                hint: c.label,
+                              }))}
+                            />
+                            <p className={cx('micro mt-1.5', SIGNAL_TEXT[SPEND_CATEGORY_META[txnForm.category]?.signal ?? 'blue'])}>
+                              {SPEND_CATEGORY_META[txnForm.category]?.label.toUpperCase()} · {SPEND_CATEGORY_META[txnForm.category]?.code}
+                            </p>
+                          </FieldShell>
+                        </div>
+                      </Section>
+
+                      {/* 03 DATE & REWARDS */}
+                      <Section code="03" title="DATE & REWARDS">
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <FieldShell label="TRANSACTION DATE" code="ISO DATE" hint="The billing charge or settlement date">
+                            <CyberDatePicker value={txnForm.date} onChange={(v) => setTxnForm({ ...txnForm, date: v })} ariaLabel="Transaction date" />
+                          </FieldShell>
+                          <FieldShell label="REWARDS / POINTS EARNED" code="POINTS" htmlFor="txn-rewards" hint="Credit card reward points or cashback units">
+                            <input
+                              id="txn-rewards"
+                              className="field"
+                              value={txnForm.rewards}
+                              onChange={(e) => setTxnForm({ ...txnForm, rewards: e.target.value.replace(/[^\d.]/g, '').slice(0, 8) })}
+                              placeholder="0"
+                              inputMode="decimal"
+                            />
+                          </FieldShell>
+                        </div>
+                      </Section>
+
+                      {/* 04 NOTES */}
+                      <Section code="04" title="NOTES" last>
+                        <FieldShell label="ANNOTATION" code="FREETEXT" htmlFor="txn-notes" hint="Invoice numbers, EMI conversion notes, receipt references.">
+                          <input
+                            id="txn-notes"
+                            className="field"
+                            value={txnForm.notes}
+                            onChange={(e) => setTxnForm({ ...txnForm, notes: e.target.value.slice(0, 200) })}
+                            placeholder="Optional transaction reference"
+                          />
+                        </FieldShell>
+                      </Section>
+                    </motion.div>
+                  )}
+
+                  {/* Footer */}
+                  {isCard ? (
+                    <div className="border-t-2 border-linehard bg-bg2 px-3 py-2.5 md:px-4">
+                      <div className="flex flex-wrap items-end justify-between gap-3">
+                        <div className="flex items-end gap-3">
+                          <span className="flex items-baseline gap-1">
+                            <span className="numeral text-[26px] text-fg">
+                              <AnimatedNumber value={limitInBase} format={(v) => formatMoney(v, base)} stiffness={260} damping={28} />
+                            </span>
+                            <span className="micro pb-1 text-faint">LIMIT</span>
+                          </span>
+                          {estMonthlyCarry > 0 && (
+                            <span className="meta hidden text-redink sm:block">
+                              ~{formatMoney(estMonthlyCarry, cardForm.currency)}/MO CARRY AT {cardForm.interestRate}% APR
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {editingCard && !showCardDelete && (
+                            <CyberButton variant="danger" size="sm" onClick={() => setShowCardDelete(true)}>
+                              DELETE
+                            </CyberButton>
+                          )}
+                          {editingCard && showCardDelete && (
+                            <>
+                              <span className="micro text-redink">CONFIRM PURGE?</span>
+                              <CyberButton variant="ghost" size="sm" onClick={() => setShowCardDelete(false)}>
+                                NO
+                              </CyberButton>
+                              <CyberButton variant="danger" size="sm" busy={cardBusy} onClick={() => void handleDeleteCard()}>
+                                PURGE
+                              </CyberButton>
+                            </>
+                          )}
+                          {!showCardDelete && (
+                            <>
+                              <CyberButton variant="ghost" onClick={close} disabled={cardBusy}>
+                                CANCEL
+                              </CyberButton>
+                              <CyberButton variant="solid" busy={cardBusy} busyLabel="SAVING" onClick={() => void saveCard()} leading={editingCard ? undefined : <IconPlus size={14} />}>
+                                {editingCard ? 'SAVE CHANGES' : 'ADD CARD'}
+                              </CyberButton>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-2 hidden items-center justify-between border-t border-line pt-1 text-faint md:flex">
+                        <span className="micro flex items-center gap-2">
+                          <span><KeyCap>⌘⏎</KeyCap> SAVE</span>
+                          <span><KeyCap>ESC</KeyCap> CANCEL</span>
+                        </span>
+                        <span className="micro text-faint">DETERMINISTIC · 100% LOCAL</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-t-2 border-linehard bg-bg2 px-3 py-2.5 md:px-4">
+                      <div className="flex flex-wrap items-end justify-between gap-3">
+                        <div className="flex items-end gap-3">
+                          <span className="flex items-baseline gap-1">
+                            <span className={cx('numeral text-[26px]', isDebit ? 'text-fg' : 'text-acidink')}>
+                              <AnimatedNumber value={txnAmountValue} format={(v) => `${isDebit ? '' : '+'}${formatMoney(v, txnForm.currency)}`} stiffness={260} damping={28} />
+                            </span>
+                            <span className="micro pb-1 text-faint">{CARD_TXN_TYPE_LABEL[txnForm.type]}</span>
+                          </span>
+                          <span className="meta hidden sm:block">
+                            <span className="text-dim">BALANCE FORECAST:</span>{' '}
+                            <span className="text-fg font-semibold">{formatMoney(newBalanceForecast, txnForm.currency)}</span>
+                            {parseFloat(txnForm.rewards) > 0 && (
+                              <span className="text-magentaink"> · +{parseFloat(txnForm.rewards)} PTS</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {editingTxn && !showTxnDelete && (
+                            <CyberButton variant="danger" size="sm" onClick={() => setShowTxnDelete(true)}>
+                              DELETE
+                            </CyberButton>
+                          )}
+                          {editingTxn && showTxnDelete && (
+                            <>
+                              <span className="micro text-redink">DELETE ENTRY?</span>
+                              <CyberButton variant="ghost" size="sm" onClick={() => setShowTxnDelete(false)}>
+                                NO
+                              </CyberButton>
+                              <CyberButton variant="danger" size="sm" busy={txnBusy} onClick={() => void handleDeleteTxn()}>
+                                ERASE
+                              </CyberButton>
+                            </>
+                          )}
+                          {!showTxnDelete && (
+                            <>
+                              <CyberButton variant="ghost" onClick={close} disabled={txnBusy}>
+                                CANCEL
+                              </CyberButton>
+                              <CyberButton variant="solid" busy={txnBusy} busyLabel="SAVING" onClick={() => void saveTxn()}>
+                                {editingTxn ? 'SAVE CHANGES' : 'LOG TRANSACTION'}
+                              </CyberButton>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-2 hidden items-center justify-between border-t border-line pt-1 text-faint md:flex">
+                        <span className="micro flex items-center gap-2">
+                          <span><KeyCap>⌘⏎</KeyCap> SAVE</span>
+                          <span><KeyCap>ESC</KeyCap> CANCEL</span>
+                        </span>
+                        <span className="micro text-faint">DETERMINISTIC · 100% LOCAL</span>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  )
 }

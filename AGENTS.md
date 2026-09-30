@@ -115,10 +115,13 @@ E:/Projects/Subtrack/
     │   │   ├── SystemToaster.tsx # Console-log style toast stack (auto-dismiss / sticky)
     │   │   └── UpdatePrompt.tsx  # SW registration + "SYSTEM UPDATE AVAILABLE" reload prompt
     │   ├── cards/
-    │   │   ├── CardComposer.tsx  # Card console (add/edit/status) + transaction console (create/edit,
-    │   │   │                     #   Ctrl+Enter save, PAY FULL / PAY MIN quick fills)
+    │   │   ├── CardComposer.tsx  # Card console (add/edit/delete card) + transaction console (record/edit/delete,
+    │   │   │                     #   Ctrl+Enter save, balance forecast, PAY FULL / PAY MIN quick fills)
     │   │   └── CardVisual.tsx    # Hardware-inspired card face: network mark, masked number,
     │   │                         #   utilisation fill, frozen/closed dimming
+    │   ├── debt/
+    │   │   └── LoanComposer.tsx  # Loan console (add/edit/delete loan, auto-EMI, rate/tenure) +
+    │   │                         #   EMI payment recorder (auto-split from amortization schedule)
     │   ├── spends/
     │   │   ├── SpendBadge.tsx    # Brand glyph & category icon resolver for transactions
     │   │   ├── SpendComposer.tsx # Quick-capture modal with presets, merchant hints, and batch mode

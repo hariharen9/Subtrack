@@ -63,6 +63,7 @@ export function CyberShell() {
   const openComposer = useUI((s) => s.openComposer)
   const openSpendComposer = useUI((s) => s.openSpendComposer)
   const openLoanComposer = useUI((s) => s.openLoanComposer)
+  const openCardComposer = useUI((s) => s.openCardComposer)
   const toggleTheme = useUI((s) => s.toggleTheme)
 
   useHotkeys([
@@ -71,6 +72,7 @@ export function CyberShell() {
     { key: 'n', handler: () => openComposer() },
     { key: 'x', handler: () => openSpendComposer() },
     { key: 'l', handler: () => openLoanComposer() },
+    { key: 'c', handler: () => openCardComposer({ mode: 'txn' }) },
     { key: 't', handler: () => toggleTheme() },
     ...DOMAINS.map((item) => ({
       key: item.key,

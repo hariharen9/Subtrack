@@ -18,6 +18,8 @@ import { DataStrip } from '@/components/ui/DataStrip'
 import { EmptyState, BootScreen } from '@/components/ui/Skeleton'
 import { Led, SIGNAL_TEXT, SIGNAL_HEX } from '@/components/ui/Signal'
 import { CardVisual } from '@/components/cards/CardVisual'
+import { CyberButton } from '@/components/ui/CyberButton'
+import { IconPlus } from '@/components/ui/Icons'
 import { cx } from '@/lib/cx'
 
 const STAGGER = { hidden: {}, show: { transition: { staggerChildren: 0.05, delayChildren: 0.04 } } }
@@ -57,15 +59,22 @@ export default function CardsOverview() {
     <motion.div variants={STAGGER} initial="hidden" animate="show" className="px-3 py-4 md:px-5 md:py-5">
       {/* Header */}
       <motion.div variants={RISE}>
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line pb-2 text-faint">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line pb-2.5 text-faint">
           <span className="micro flex items-center gap-2">
             <span className="text-fg font-medium">CREDIT CARDS // {summary.activeViews.length} ACTIVE</span>
             <span className="text-linehard">·</span>
             <span>{summary.txnCount} TXN ON RECORD</span>
+            <span className="text-linehard hidden sm:inline">·</span>
+            <span className="hidden sm:inline">{formatMoney(summary.cycleSpendTotal, base)} THIS CYCLE</span>
           </span>
-          <span className="micro hidden sm:inline text-faint">
-            {formatMoney(summary.cycleSpendTotal, base)} THIS CYCLE
-          </span>
+          <div className="flex items-center gap-2">
+            <CyberButton variant="ghost" size="sm" leading={<IconPlus size={12} />} onClick={() => openCardComposer({ mode: 'txn' })}>
+              LOG TXN
+            </CyberButton>
+            <CyberButton variant="solid" size="sm" leading={<IconPlus size={12} />} onClick={() => openCardComposer({ mode: 'card' })}>
+              ADD CARD
+            </CyberButton>
+          </div>
         </div>
       </motion.div>
 
@@ -159,30 +168,59 @@ export default function CardsOverview() {
             />
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               {summary.views.map((view) => (
-                <Link key={view.card.id} to={`/cards/flow/${view.card.id}`} className="group block focus-visible:outline-none">
-                  <CutPanel cut="br" cutSize={12} innerClassName="p-2.5 group-hover:bg-surface2 transition-colors">
-                    <CardVisual card={view.card} balance={view.balance} utilisation={view.utilisation} size="md" />
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="micro flex items-center gap-1.5">
-                        <Led signal={view.card.status === 'active' ? view.signal : 'blue'} size="sm" />
-                        <span className="text-dim">{view.card.status.toUpperCase()}</span>
-                      </span>
-                      <span className="micro text-faint">
-                        {view.card.status === 'active' ? `DUE ${formatSignalDate(view.dueDate)}` : '—'}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 grid grid-cols-2 gap-2 border-t border-line pt-2">
-                      <div>
-                        <span className="micro block text-faint">CYCLE</span>
-                        <span className="numeral text-[12px] text-fg">{formatCompact(view.cycleSpend, base)}</span>
+                <div key={view.card.id} className="group relative">
+                  <Link to={`/cards/flow/${view.card.id}`} className="block focus-visible:outline-none">
+                    <CutPanel cut="br" cutSize={12} innerClassName="p-2.5 group-hover:bg-surface2 transition-colors">
+                      <CardVisual card={view.card} balance={view.balance} utilisation={view.utilisation} size="md" />
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="micro flex items-center gap-1.5">
+                          <Led signal={view.card.status === 'active' ? view.signal : 'blue'} size="sm" />
+                          <span className="text-dim">{view.card.status.toUpperCase()}</span>
+                        </span>
+                        <span className="micro text-faint">
+                          {view.card.status === 'active' ? `DUE ${formatSignalDate(view.dueDate)}` : '—'}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <span className="micro block text-faint">REWARDS</span>
-                        <span className="numeral text-[12px] text-magentaink">{Math.round(view.totalRewards)}</span>
+                      <div className="mt-1.5 grid grid-cols-2 gap-2 border-t border-line pt-2">
+                        <div>
+                          <span className="micro block text-faint">CYCLE</span>
+                          <span className="numeral text-[12px] text-fg">{formatCompact(view.cycleSpend, base)}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="micro block text-faint">REWARDS</span>
+                          <span className="numeral text-[12px] text-magentaink">{Math.round(view.totalRewards)}</span>
+                        </div>
                       </div>
-                    </div>
-                  </CutPanel>
-                </Link>
+                    </CutPanel>
+                  </Link>
+                  {/* Quick actions on hover */}
+                  <div className="absolute right-2 top-2 z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        openCardComposer({ mode: 'card', editCardId: view.card.id })
+                      }}
+                      className="micro border border-linehard bg-surface/90 px-1.5 py-0.5 text-dim backdrop-blur-[2px] transition-colors hover:border-acid hover:text-acidink"
+                      title="Edit card"
+                    >
+                      EDIT
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        openCardComposer({ mode: 'txn', presetCardId: view.card.id })
+                      }}
+                      className="micro border border-linehard bg-surface/90 px-1.5 py-0.5 text-dim backdrop-blur-[2px] transition-colors hover:border-acid hover:text-acidink"
+                      title="Log transaction"
+                    >
+                      + TXN
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </motion.div>

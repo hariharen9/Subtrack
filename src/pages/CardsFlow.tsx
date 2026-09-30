@@ -140,6 +140,7 @@ export default function CardsFlow() {
               <option value="amount_asc">AMOUNT LOW</option>
             </select>
             <CyberButton variant="ink" size="sm" leading={<IconDownload size={12} />} onClick={doExport}>CSV</CyberButton>
+            <CyberButton variant="ghost" size="sm" leading={<IconPlus size={12} />} onClick={() => openCardComposer({ mode: 'card' })}>ADD CARD</CyberButton>
             <CyberButton variant="solid" size="sm" leading={<IconPlus size={12} />} onClick={() => openCardComposer({ mode: 'txn' })}>LOG TXN</CyberButton>
           </div>
 
