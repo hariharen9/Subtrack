@@ -6,6 +6,7 @@
  * primary action on the right. On mobile it keeps the same vocabulary in two
  * compact rows instead of shrinking the desktop bar into illegibility.
  */
+import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { useClock, useOnline } from '@/hooks/usePlatform'
@@ -38,8 +39,53 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
   const toggleTheme = useUI((s) => s.toggleTheme)
   const setPaletteOpen = useUI((s) => s.setPaletteOpen)
   const openComposer = useUI((s) => s.openComposer)
+  const openSpendComposer = useUI((s) => s.openSpendComposer)
+  const openCardComposer = useUI((s) => s.openCardComposer)
+  const openLoanComposer = useUI((s) => s.openLoanComposer)
   const status = statusOf(summary)
   const standby = item.status === 'standby'
+
+  // Context-aware primary action depending on active domain
+  const action = useMemo(() => {
+    switch (item.code) {
+      case 'SUBS':
+        return {
+          label: 'NEW SUBSCRIPTION',
+          shortLabel: '+ NEW SUB',
+          kbd: 'N',
+          onClick: () => openComposer(),
+        }
+      case 'CRD':
+        return {
+          label: 'LOG CARD TXN',
+          shortLabel: '+ LOG TXN',
+          kbd: 'C',
+          onClick: () => openCardComposer({ mode: 'txn' }),
+        }
+      case 'DEBT':
+        return {
+          label: 'INITIALIZE LOAN',
+          shortLabel: '+ NEW LOAN',
+          kbd: 'L',
+          onClick: () => openLoanComposer({ mode: 'loan' }),
+        }
+      case 'SPND':
+        return {
+          label: 'LOG SPEND',
+          shortLabel: '+ LOG SPEND',
+          kbd: 'X',
+          onClick: () => openSpendComposer(),
+        }
+      case 'CMD':
+      default:
+        return {
+          label: 'LOG SPEND',
+          shortLabel: '+ LOG SPEND',
+          kbd: 'X',
+          onClick: () => openSpendComposer(),
+        }
+    }
+  }, [item.code, openComposer, openCardComposer, openLoanComposer, openSpendComposer])
 
   const meta = (
     <>
@@ -131,11 +177,11 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
             size="md"
             className="hidden md:inline-flex"
             leading={<IconPlus size={14} />}
-            onClick={() => openComposer()}
-            kbd="N"
+            onClick={action.onClick}
+            kbd={action.kbd}
           >
-            <span className="hidden xl:inline">NEW SUBSCRIPTION</span>
-            <span className="xl:hidden">+ NEW</span>
+            <span className="hidden xl:inline">{action.label}</span>
+            <span className="xl:hidden">{action.shortLabel}</span>
           </CyberButton>
         </div>
       </div>

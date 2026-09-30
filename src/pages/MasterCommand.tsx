@@ -1,501 +1,688 @@
 /**
- * SUBTRACK // MASTER COMMAND
+ * SUBTRACK // MASTER COMMAND COCKPIT
  *
- * The Financial OS cockpit — the top of the stack. Where the Overview is the
- * Subscriptions engine's instrument panel, Master Command is the whole machine:
- * it rolls every domain engine into one Net Burn, one Runway and one
- * Next-Critical-Transaction readout, and shows the live/standby health of each
- * subsystem. Every engine (SUBS, CRD, DEBT, SPND) is live today, so the matrix
- * reports their telemetry directly; any future domain that ships as standby
- * flows into the same roll-up automatically.
+ * The Financial OS Central Command. Rolls every live domain engine (Subscriptions,
+ * Credit Cards, Loans & EMIs, Daily Spends) into an apex command dashboard:
+ *
+ * 1. APEX HERO & RUN-RATE TELEMETRY — Aggregate Net Burn, Fixed vs Variable split,
+ *    daily drain velocity, and proportional domain allocation register.
+ * 2. RAPID INGESTION DOCK — 1-click launchpads for capturing Subs, Spends, EMIs, Txns.
+ * 3. 4-ENGINE COMMAND MATRIX — Interactive cockpit modules with visual gauges,
+ *    repayment progress, credit utilization rings, and velocity meters.
+ * 4. 14-DAY CROSS-DOMAIN RADAR — Unified chronological queue of upcoming Subscriptions,
+ *    Credit Card statement dues, and Loan EMI schedules.
+ * 5. MULTI-ENGINE RESOURCE ALLOCATION — Consolidated financial footprint composition
+ *    and 50/30/20 budgetary health metrics.
  */
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { useSignalSeries, useSystem } from '@/hooks/useSystem'
-import { useSpendsSystem, type SpendsData } from '@/hooks/useSpends'
-import { useDebtSystem, type DebtData } from '@/hooks/useDebt'
-import { useCardsSystem, type CardsData } from '@/hooks/useCards'
+import { useSystem } from '@/hooks/useSystem'
+import { useSpendsSystem, useSpends } from '@/hooks/useSpends'
+import { useDebtSystem } from '@/hooks/useDebt'
+import { useCardsSystem } from '@/hooks/useCards'
 import { useUI } from '@/store/ui'
-import { formatMoney, formatPercent, splitMoney } from '@/lib/money'
-import { formatSignalDate } from '@/lib/date'
-import { DOMAINS } from '@/app/nav'
+import { formatMoney, formatPercent, splitMoney, formatCompact } from '@/lib/money'
+import { formatSignalDate, todayISO, diffDays, addMonthsClamped } from '@/lib/date'
+import { SPEND_CATEGORY_META } from '@/lib/types'
 import { cx } from '@/lib/cx'
 import { CutPanel } from '@/components/ui/CutPanel'
 import { SectionHeader, KeyCap } from '@/components/ui/Micro'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { Led, SIGNAL_HEX, SIGNAL_TEXT, type Signal } from '@/components/ui/Signal'
 import { CompositionStrip } from '@/components/charts/CategoryBlock'
-import { DataStrip } from '@/components/ui/DataStrip'
 import { ServiceBadge } from '@/components/brand/ServiceBadge'
-import { IconArrowRight } from '@/components/ui/Icons'
-import type { SystemSummary } from '@/lib/analytics'
+import { CyberButton } from '@/components/ui/CyberButton'
+import {
+  IconArrowRight,
+  IconPlus,
+  IconFlow,
+  IconCreditCard,
+  IconDebt,
+  IconSpends,
+  IconSys,
+  IconZap,
+} from '@/components/ui/Icons'
 
 const STAGGER = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.05, delayChildren: 0.04 } },
+  show: { transition: { staggerChildren: 0.04, delayChildren: 0.03 } },
 }
 const RISE = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 420, damping: 34 } },
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 440, damping: 32 } },
 }
 
-/** Telemetry for a domain in the matrix. */
-function domainTelemetry(
-  domain: (typeof DOMAINS)[number],
-  summary: SystemSummary,
-  spendsData: SpendsData,
-  debtData: DebtData,
-  cardsData: CardsData,
-): { signal: Signal; primary: string; secondary: string; to: string } {
-  switch (domain.code) {
-    case 'CMD': {
-      const live = DOMAINS.filter((d) => d.status === 'live').length
-      return {
-        signal: 'acid' as Signal,
-        primary: 'ONLINE',
-        secondary: `${live}/${DOMAINS.length} ENGINES · OS CORE`,
-        to: '/',
-      }
-    }
-    case 'SUBS':
-      return {
-        signal: summary.activeCount ? (summary.overdue.length ? 'orange' : 'acid') : 'blue',
-        primary: summary.activeCount ? formatMoney(summary.monthlyBurn, summary.base) : '—',
-        secondary: `${summary.activeCount} ACTIVE · ${summary.overdue.length} OVERDUE`,
-        to: '/subs',
-      }
-    case 'SYS':
-      return { signal: 'acid' as Signal, primary: 'LOCAL', secondary: 'OFFLINE-READY · NO TELEMETRY', to: '/sys' }
-    case 'SPND':
-      return spendsTelemetry(spendsData)
-    case 'DEBT':
-      return debtTelemetry(debtData)
-    case 'CRD':
-      return cardsTelemetry(cardsData)
-    default:
-      return { signal: 'orange' as Signal, primary: 'STANDBY', secondary: `${domain.tag} · PENDING CORE`, to: domain.path }
-  }
-}
-
-/** SPND telemetry for the subsystem matrix (kept outside the component
- *  so it can be referenced by the pure domainTelemetry switch). */
-function spendsTelemetry(
-  spends: SpendsData,
-): { signal: Signal; primary: string; secondary: string; to: string } {
-  const spend = spends.summary
-  const over = spend.weekLimit?.amount && spend.weekUtilisation >= 1
-  const active = spend.weekTotal > 0 || spend.totalToday > 0
-  return {
-    signal: active
-      ? over
-        ? 'red'
-        : spend.weekUtilisation >= 0.72
-          ? 'orange'
-          : 'acid'
-      : 'blue',
-    primary: active ? formatMoney(spend.weekTotal, spend.base) : '—',
-    secondary: spend.weekLimit?.amount
-      ? `${Math.round(spend.weekUtilisation * 100)}% OF WEEKLY CAP`
-      : spend.totalToday > 0
-        ? `${spend.countToday} TXN TODAY`
-        : 'NO SPEND TODAY',
-    to: '/spends',
-  }
-}
-
-/** DEBT telemetry for the subsystem matrix. */
-function debtTelemetry(
-  debt: DebtData,
-): { signal: Signal; primary: string; secondary: string; to: string } {
-  const s = debt.summary
-  if (!debt.ready || s.activeCount === 0) {
-    return { signal: 'blue' as Signal, primary: '—', secondary: 'NO LOANS TRACKED', to: '/loans' }
-  }
-  return {
-    signal: s.avgInterestRate >= 12 ? 'orange' : 'acid',
-    primary: formatMoney(s.monthlyBurden, s.base),
-    secondary: `${s.activeCount} ACTIVE · ${(s.overallProgress * 100).toFixed(0)}% REPAID`,
-    to: '/loans',
-  }
-}
-
-/** CRD telemetry for the subsystem matrix. */
-function cardsTelemetry(
-  cards: CardsData,
-): { signal: Signal; primary: string; secondary: string; to: string } {
-  const s = cards.summary
-  if (!cards.ready || s.activeViews.length === 0) {
-    return { signal: 'blue' as Signal, primary: '—', secondary: 'NO CARDS TRACKED', to: '/cards' }
-  }
-  const util = s.totalUtilisation
-  return {
-    signal: util >= 0.8 ? 'red' : util >= 0.5 ? 'orange' : 'acid',
-    primary: formatMoney(s.totalOutstanding, s.base),
-    secondary: `${s.activeViews.length} CARDS · ${(util * 100).toFixed(0)}% UTIL${s.nextDue ? ` · DUE ${s.nextDue.days}D` : ''}`,
-    to: '/cards',
-  }
-}
-
-/** Engines that contribute a monthly figure to the OS roll-up. */
-const BURN_ENGINES = new Set(['SUBS', 'SPND', 'DEBT', 'CRD'])
-
-/** Numeric monthly figure each engine contributes (0 for non-burn or unready). */
-function engineMonthly(
-  domain: (typeof DOMAINS)[number],
-  summary: SystemSummary,
-  spendsData: SpendsData,
-  debtData: DebtData,
-  cardsData: CardsData,
-): number {
-  switch (domain.code) {
-    case 'SUBS':
-      return summary.monthlyBurn
-    case 'SPND':
-      return spendsData.summary.monthTotal
-    case 'DEBT':
-      return debtData.ready ? debtData.summary.monthlyBurden : 0
-    case 'CRD':
-      return cardsData.ready ? cardsData.summary.carryInterestMonthly : 0
-    default:
-      return 0
-  }
-}
-
-/** Display form of an engine's monthly figure for the roll-up chips. */
-function engineRunRate(
-  domain: (typeof DOMAINS)[number],
-  summary: SystemSummary,
-  spendsData: SpendsData,
-  debtData: DebtData,
-  cardsData: CardsData,
-  base: string,
-): { value: string; active: boolean } {
-  if (!BURN_ENGINES.has(domain.code)) return { value: '—', active: false }
-  if ((domain.code === 'DEBT' && !debtData.ready) || (domain.code === 'CRD' && !cardsData.ready)) {
-    return { value: '—', active: false }
-  }
-  const amount = engineMonthly(domain, summary, spendsData, debtData, cardsData)
-  return { value: formatMoney(amount, base), active: amount > 0 }
+interface UnifiedOutflow {
+  id: string
+  engine: 'SUBS' | 'CRD' | 'DEBT'
+  title: string
+  subtitle: string
+  date: string
+  days: number
+  amount: number
+  minDue?: number
+  icon?: string
+  color?: string
+  to: string
+  signal: Signal
 }
 
 export default function MasterCommand() {
   const { summary } = useSystem()
   const spendsData = useSpendsSystem()
+  const recentSpends = useSpends()
   const debtData = useDebtSystem()
   const cardsData = useCardsSystem()
   const base = useUI((s) => s.baseCurrency)
-  const series = useSignalSeries('cash', 3, 1)
-  const now = summary.today
+  const openComposer = useUI((s) => s.openComposer)
+  const openSpendComposer = useUI((s) => s.openSpendComposer)
+  const openLoanComposer = useUI((s) => s.openLoanComposer)
+  const openCardComposer = useUI((s) => s.openCardComposer)
+  const today = todayISO()
 
-  // Total system burn = the sum of every live engine's monthly figure, so the
-  // hero equals the sum of the chips shown below it.
-  const systemBurn = useMemo(
-    () =>
-      DOMAINS.reduce(
-        (sum, domain) => sum + engineMonthly(domain, summary, spendsData, debtData, cardsData),
-        0,
-      ),
-    [summary, spendsData, debtData, cardsData],
-  )
+  // ── Engine Monthly Contributions ──
+  const subsMonthly = summary.monthlyBurn
+  const debtMonthly = debtData.ready ? debtData.summary.monthlyBurden : 0
+  const spendsMonthly = spendsData.summary.monthTotal
+  const cardsCarryMonthly = cardsData.ready ? cardsData.summary.carryInterestMonthly : 0
+
+  // ── Total System Burn ──
+  const systemBurn = subsMonthly + debtMonthly + spendsMonthly + cardsCarryMonthly
   const hero = useMemo(() => splitMoney(systemBurn, base), [systemBurn, base])
-  const next = summary.nextPayment
-  const spendMonthTotal = spendsData.summary.monthTotal
 
-  const standbyEngines = DOMAINS.filter((d) => d.status === 'standby')
-  const engineCount = DOMAINS.filter((d) => d.status === 'live').length
+  // ── Fixed vs Variable Split ──
+  const fixedBurn = subsMonthly + debtMonthly
+  const variableBurn = spendsMonthly + (cardsData.ready ? cardsData.summary.totalOutstanding : 0)
+  const dailyDrain = systemBurn / 30.4375
+  const annualBurn = systemBurn * 12
 
-  const dailyBurn = systemBurn / 30.4375
-  const coveredBurn = summary.thisMonthCash > 0 ? summary.thisMonthCash : systemBurn
+  // ── Domain Allocation Shares ──
+  const allocationSlices = useMemo(() => {
+    if (systemBurn <= 0) return []
+    return [
+      { code: 'SUBS', label: 'Subscriptions', amount: subsMonthly, share: subsMonthly / systemBurn, signal: 'acid' as Signal },
+      { code: 'DEBT', label: 'Loans & EMIs', amount: debtMonthly, share: debtMonthly / systemBurn, signal: 'blue' as Signal },
+      { code: 'SPND', label: 'Daily Spends', amount: spendsMonthly, share: spendsMonthly / systemBurn, signal: 'orange' as Signal },
+      { code: 'CRD', label: 'Card Interest', amount: cardsCarryMonthly, share: cardsCarryMonthly / systemBurn, signal: 'magenta' as Signal },
+    ].filter((s) => s.amount > 0)
+  }, [systemBurn, subsMonthly, debtMonthly, spendsMonthly, cardsCarryMonthly])
 
-  /** Composition across live engines (subs only today). */
-  const composition = summary.categories
+  // ── Unified 14-Day Cross-Domain Radar Queue ──
+  const radarQueue = useMemo(() => {
+    const items: UnifiedOutflow[] = []
 
-  // Cash momentum over the last 3 actual months for the drift readout.
-  const actual = series.filter((p) => p.kind !== 'projected')
-  const lastActual = actual[actual.length - 1]
-  const drift = lastActual && actual.length > 1 ? lastActual.amount - actual[actual.length - 2].amount : 0
+    // 1. Subscriptions
+    for (const u of summary.incomingWindow.slice(0, 8)) {
+      items.push({
+        id: `sub-${u.sub.id}-${u.date}`,
+        engine: 'SUBS',
+        title: u.sub.name,
+        subtitle: `Subscription renewal · ${formatSignalDate(u.date)}`,
+        date: u.date,
+        days: u.days,
+        amount: u.baseAmount,
+        icon: u.sub.icon,
+        color: u.sub.color,
+        to: `/subs/flow/${u.sub.id}`,
+        signal: u.days <= 1 ? 'orange' : 'acid',
+      })
+    }
 
-  const monthLabel = lastActual ? lastActual.label : now.slice(0, 7)
+    // 2. Credit Cards
+    if (cardsData.ready) {
+      for (const view of cardsData.summary.activeViews) {
+        if (view.card.status === 'active' && view.balance > 0) {
+          const dueAmt = view.statement.due > 0 ? view.statement.due : view.balance
+          items.push({
+            id: `crd-${view.card.id}`,
+            engine: 'CRD',
+            title: `${view.card.name} ··${view.card.last4}`,
+            subtitle: `Card statement due · ${formatSignalDate(view.dueDate)}`,
+            date: view.dueDate,
+            days: view.daysToDue,
+            amount: dueAmt,
+            minDue: view.minDue,
+            color: view.card.color,
+            to: `/cards/flow/${view.card.id}`,
+            signal: view.daysToDue <= 3 ? 'red' : view.daysToDue <= 7 ? 'orange' : 'blue',
+          })
+        }
+      }
+    }
+
+    // 3. Loans & EMIs
+    if (debtData.ready) {
+      for (const view of debtData.summary.views) {
+        if (view.loan.status === 'active' && view.emisRemaining > 0) {
+          const nextEmiDate = addMonthsClamped(view.loan.startDate, view.emisPaid)
+          const days = diffDays(nextEmiDate, today)
+          items.push({
+            id: `debt-${view.loan.id}`,
+            engine: 'DEBT',
+            title: view.loan.name,
+            subtitle: `EMI #${view.emisPaid + 1} of ${view.loan.tenureMonths} · ${view.loan.lender}`,
+            date: nextEmiDate,
+            days: Math.max(0, days),
+            amount: view.loan.emi,
+            color: '#7A5CFF',
+            to: `/loans/flow/${view.loan.id}`,
+            signal: days <= 3 ? 'orange' : 'blue',
+          })
+        }
+      }
+    }
+
+    return items.sort((a, b) => a.days - b.days)
+  }, [summary.incomingWindow, cardsData.ready, cardsData.summary.activeViews, debtData.ready, debtData.summary.views, today])
+
+  const nearestOutflow = radarQueue[0]
 
   return (
-    <motion.div
-      variants={STAGGER}
-      initial="hidden"
-      animate="show"
-      className="px-3 py-4 md:px-5 md:py-5"
-    >
-      {/* ---------- top telemetry strip ---------- */}
+    <motion.div variants={STAGGER} initial="hidden" animate="show" className="px-3 py-4 md:px-5 md:py-5">
+
+      {/* ── 01. APEX TELEMETRY BAR & RAPID ACTION DOCK ── */}
       <motion.div variants={RISE}>
-        <DataStrip
-          size="sm"
-          scroll={false}
-          items={[
-            { label: 'OS MODULE', value: 'MASTER COMMAND' },
-            { label: 'ENGINES ONLINE', value: `${engineCount}/${DOMAINS.length}`, signal: 'acid' },
-            { label: 'TOTAL MONTHLY BURN', value: formatMoney(systemBurn, base), signal: 'acid' },
-            {
-              label: 'ANNUAL COMMITMENT',
-              value: formatMoney(summary.annualLoad, base),
-            },
-            { label: 'NEXT CHARGE', value: next ? formatMoney(next.baseAmount, base) : '—' },
-          ]}
-        />
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b-2 border-linehard pb-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="micro flex items-center gap-1.5 border border-line2 bg-bg2 px-2 py-0.5 text-acidink">
+              <Led signal="acid" size="sm" pulse />
+              MASTER COMMAND
+            </span>
+            <span className="micro text-faint hidden sm:inline">OS CORE // 4 ENGINES LIVE</span>
+            <span className="text-linehard hidden sm:inline">·</span>
+            <span className="micro text-faint hidden md:inline">100% OFFLINE LOCAL VAULT</span>
+          </div>
+
+          {/* Quick Rapid Action Dock */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <CyberButton variant="ghost" size="sm" leading={<IconPlus size={12} />} onClick={() => openSpendComposer()}>
+              SPEND <KeyCap className="ml-1 hidden lg:inline">X</KeyCap>
+            </CyberButton>
+            <CyberButton variant="ghost" size="sm" leading={<IconPlus size={12} />} onClick={() => openComposer()}>
+              SUB <KeyCap className="ml-1 hidden lg:inline">N</KeyCap>
+            </CyberButton>
+            <CyberButton variant="ghost" size="sm" leading={<IconPlus size={12} />} onClick={() => openCardComposer({ mode: 'txn' })}>
+              CARD <KeyCap className="ml-1 hidden lg:inline">C</KeyCap>
+            </CyberButton>
+            <CyberButton variant="ghost" size="sm" leading={<IconPlus size={12} />} onClick={() => openLoanComposer({ mode: 'loan' })}>
+              LOAN <KeyCap className="ml-1 hidden lg:inline">L</KeyCap>
+            </CyberButton>
+          </div>
+        </div>
       </motion.div>
 
-      {/* ---------- hero: net burn roll-up ---------- */}
+      {/* ── 02. APEX HERO: TOTAL SYSTEM BURN & RESOURCE LOAD ── */}
       <motion.div variants={RISE} className="mt-3">
-        <CutPanel cut="tl-br" cutSize={20} innerClassName="relative overflow-hidden px-4 py-5 md:px-6 md:py-7" shadow="hard">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid-field opacity-[0.16]" />
-          <div className="relative flex flex-col gap-1">
-            <span className="micro flex items-center gap-2 text-acidink">
-              <Led signal="acid" size="sm" pulse />
-              TOTAL SYSTEM BURN // {monthLabel}
-            </span>
-            <h1 className="mt-1 flex items-start gap-1.5">
-              <span className="numeral mt-1 text-[clamp(1.7rem,5vw,3rem)] text-dim">{hero.symbol}</span>
-              <span className="numeral text-hero text-fg">
-                <AnimatedNumber
-                  value={systemBurn}
-                  format={(value) => splitMoney(value, base).value}
-                  stiffness={120}
-                  damping={26}
-                />
+        <CutPanel cut="tl-br" cutSize={20} innerClassName="relative overflow-hidden p-4 md:p-6" shadow="hard">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid-field opacity-[0.18]" />
+          <div className="relative">
+            {/* Top row: Label + Telemetry Badges */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="micro flex items-center gap-2 text-acidink">
+                <IconZap size={14} className="text-acid" />
+                TOTAL SYSTEM BURN // NET MONTHLY RUN RATE
               </span>
-            </h1>
-
-            {/* run-rate roll-up by engine */}
-            <div className="mt-3 flex flex-wrap gap-x-2 gap-y-1">
-              {DOMAINS.map((domain) => {
-                const run = engineRunRate(domain, summary, spendsData, debtData, cardsData, base)
-                const live = domain.status === 'live'
-                return (
-                  <span
-                    key={domain.code}
-                    className={cx(
-                      'micro inline-flex items-center gap-1.5 border px-1.5 py-1',
-                      run.active ? 'border-acid bg-acidsoft' : 'border-line bg-surface2',
-                    )}
-                  >
-                    <Led signal={run.active ? 'acid' : 'blue'} size="sm" pulse={run.active} />
-                    <span className={cx('font-semibold', live ? 'text-fg' : 'text-faint')}>{domain.code}</span>
-                    <span className={cx(run.active ? 'text-acidink' : 'text-faint')}>{run.value}</span>
-                  </span>
-                )
-              })}
+              <div className="flex items-center gap-2">
+                <span className="micro border border-line2 bg-bg2 px-2 py-0.5 text-faint">
+                  ANNUALIZED: <span className="text-fg font-semibold">{formatCompact(annualBurn, base)}</span>
+                </span>
+                <span className="micro border border-line2 bg-bg2 px-2 py-0.5 text-acidink">
+                  DRAIN: <span className="text-fg font-semibold">{formatMoney(dailyDrain, base)}/D</span>
+                </span>
+              </div>
             </div>
 
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span
-                className={cx(
-                  'micro',
-                  summary.runRateDelta > 0 ? 'text-orangeink' : summary.runRateDelta < 0 ? 'text-acidink' : 'text-faint',
-                )}
-              >
-                SUBSCRIPTIONS {formatPercent(summary.runRateDelta, 1)} VS PREV
-              </span>
-              <span className="micro text-faint">
-                {formatMoney(dailyBurn, base)} DRAIN DAILY
-              </span>
-              {spendMonthTotal > 0 && (
-                <span className="micro text-orangeink">
-                  INCL. {formatMoney(spendMonthTotal, base)} VARIABLE SPEND
-                </span>
-              )}
-              <span className="micro text-faint">
-                {formatMoney(coveredBurn, base)} CASH THIS MONTH
-              </span>
-              {drift !== 0 && (
-                <span className={cx('micro', drift > 0 ? 'text-orangeink' : 'text-acidink')}>
-                  {formatMoney(drift, base)} MOMENTUM {monthLabel}
-                </span>
-              )}
+            {/* Main Odometer + Hero Numerals */}
+            <div className="mt-2 grid grid-cols-1 items-end gap-4 lg:grid-cols-12">
+              <div className="lg:col-span-6">
+                <h1 className="flex items-start gap-1.5">
+                  <span className="numeral mt-1 text-[clamp(1.8rem,5vw,3rem)] text-dim">{hero.symbol}</span>
+                  <span className="numeral text-hero text-fg tracking-tight">
+                    <AnimatedNumber
+                      value={systemBurn}
+                      format={(value) => splitMoney(value, base).value}
+                      stiffness={120}
+                      damping={26}
+                    />
+                  </span>
+                </h1>
+                <p className="micro mt-1 text-faint">
+                  NORMALIZED ACROSS ALL 4 DOMAINS · INCLUDES RECURRING PROCESSES, LOANS, DISCRETIONARY CASH & CARDS
+                </p>
+              </div>
+
+              {/* Fixed vs Variable Split Telemetry */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:col-span-6">
+                <div className="border border-line bg-bg2 p-2.5">
+                  <span className="micro block text-faint">FIXED COMMITMENTS</span>
+                  <span className="numeral mt-0.5 block text-[17px] font-bold text-fg">{formatCompact(fixedBurn, base)}</span>
+                  <span className="micro text-acidink">
+                    {systemBurn > 0 ? `${((fixedBurn / systemBurn) * 100).toFixed(0)}% OF TOTAL` : '0%'}
+                  </span>
+                </div>
+                <div className="border border-line bg-bg2 p-2.5">
+                  <span className="micro block text-faint">VARIABLE VELOCITY</span>
+                  <span className="numeral mt-0.5 block text-[17px] font-bold text-orangeink">{formatCompact(variableBurn, base)}</span>
+                  <span className="micro text-faint">SPENDS + DUES</span>
+                </div>
+                <div className="col-span-2 border border-line bg-bg2 p-2.5 sm:col-span-1">
+                  <span className="micro block text-faint">NEXT OUTFLOW</span>
+                  <span className="numeral mt-0.5 block text-[17px] font-bold text-acidink">
+                    {nearestOutflow ? `${nearestOutflow.days}D` : '—'}
+                  </span>
+                  <span className="micro truncate text-dim">
+                    {nearestOutflow ? nearestOutflow.title : 'NO CHARGE DUE'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Proportional Domain Allocation Strip */}
+            <div className="mt-4 border-t border-line pt-3">
+              <div className="flex items-center justify-between">
+                <span className="micro text-faint">DOMAIN ALLOCATION REGISTER</span>
+                <span className="micro text-dim">100% VOLUME BREAKDOWN</span>
+              </div>
+              <div className="mt-1.5 flex h-3.5 w-full overflow-hidden border border-line bg-surface2">
+                {allocationSlices.map((slice) => (
+                  <div
+                    key={slice.code}
+                    className="h-full transition-all hover:brightness-125"
+                    style={{ width: `${Math.max(2, slice.share * 100)}%`, background: SIGNAL_HEX[slice.signal] }}
+                    title={`${slice.label} (${slice.code}): ${formatMoney(slice.amount, base)} (${(slice.share * 100).toFixed(1)}%)`}
+                  />
+                ))}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {allocationSlices.map((slice) => (
+                  <span key={slice.code} className={cx('micro inline-flex items-center gap-1.5 border px-1.5 py-0.5', SIGNAL_TEXT[slice.signal])}>
+                    <span aria-hidden="true" className="h-1.5 w-1.5" style={{ background: SIGNAL_HEX[slice.signal] }} />
+                    <span className="font-semibold">{slice.code}</span>
+                    <span className="text-fg">{formatMoney(slice.amount, base)}</span>
+                    <span className="opacity-70 font-normal">({(slice.share * 100).toFixed(0)}%)</span>
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </CutPanel>
       </motion.div>
 
-      {/* ---------- subsystem status matrix ---------- */}
+      {/* ── 03. 4-SUBSYSTEM COMMAND COCKPIT MATRIX ── */}
       <motion.div variants={RISE} className="mt-3">
-        <CutPanel cut="br" cutSize={14} innerClassName="p-2">
+        <CutPanel cut="br" cutSize={16} innerClassName="p-3">
           <SectionHeader
             code="MATRIX"
-            title="Subsystem Status"
+            title="Subsystem Cockpits"
+            signal="acid"
+            right={<span className="micro text-faint">4 LIVE DOMAINS ONLINE</span>}
+          />
+
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+
+            {/* SUBSCRIPTIONS */}
+            <Link to="/subs" className="group block focus-visible:outline-none">
+              <CutPanel cut="tl" cutSize={12} innerClassName="p-3.5 transition-colors group-hover:bg-surface2 group-hover:border-acid">
+                <div className="flex items-center justify-between">
+                  <span className="micro flex items-center gap-1.5">
+                    <IconFlow size={14} className="text-acid" />
+                    <span className="font-semibold text-fg">SUBSCRIPTIONS</span>
+                  </span>
+                  <span className="micro flex items-center gap-1 text-acidink">
+                    <Led signal="acid" size="sm" pulse />
+                    ACTIVE
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="numeral text-[22px] font-bold text-fg">{formatMoney(subsMonthly, base)}</span>
+                  <span className="micro block text-faint">MONTHLY BURN</span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-2">
+                  <div>
+                    <span className="micro block text-faint">PROCESSES</span>
+                    <span className="numeral text-[13px] text-fg">{summary.activeCount} ACTIVE</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="micro block text-faint">DELTA</span>
+                    <span className={cx('numeral text-[13px]', summary.runRateDelta > 0 ? 'text-orangeink' : summary.runRateDelta < 0 ? 'text-acidink' : 'text-dim')}>
+                      {formatPercent(summary.runRateDelta, 1)}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-1.5">
+                  <span className="micro text-faint truncate">
+                    {summary.nextPayment ? `NEXT: ${summary.nextPayment.sub.name} (${summary.nextPayment.days}D)` : 'NO CHARGE SCHEDULED'}
+                  </span>
+                  <span className="micro flex items-center gap-0.5 text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-acidink">
+                    DECK <IconArrowRight size={11} />
+                  </span>
+                </div>
+              </CutPanel>
+            </Link>
+
+            {/* CREDIT CARDS */}
+            <Link to="/cards" className="group block focus-visible:outline-none">
+              <CutPanel cut="none" cutSize={0} innerClassName="p-3.5 transition-colors group-hover:bg-surface2 group-hover:border-blue">
+                <div className="flex items-center justify-between">
+                  <span className="micro flex items-center gap-1.5">
+                    <IconCreditCard size={14} className="text-blue" />
+                    <span className="font-semibold text-fg">CREDIT CARDS</span>
+                  </span>
+                  <span className="micro flex items-center gap-1 text-blueink">
+                    <Led signal="blue" size="sm" />
+                    VAULT
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="numeral text-[22px] font-bold text-fg">
+                    {formatMoney(cardsData.ready ? cardsData.summary.totalOutstanding : 0, base)}
+                  </span>
+                  <span className="micro block text-faint">TOTAL OUTSTANDING</span>
+                </div>
+                <div className="mt-3 border-t border-line pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="micro text-faint">UTILISATION</span>
+                    <span className="micro font-bold text-fg">
+                      {cardsData.ready ? `${(cardsData.summary.totalUtilisation * 100).toFixed(0)}%` : '0%'}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-full bg-surface border border-line">
+                    <div
+                      className={cx('h-full', cardsData.ready && cardsData.summary.totalUtilisation >= 0.8 ? 'bg-red' : cardsData.ready && cardsData.summary.totalUtilisation >= 0.5 ? 'bg-orange' : 'bg-blue')}
+                      style={{ width: `${Math.max(2, (cardsData.ready ? cardsData.summary.totalUtilisation : 0) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-1.5">
+                  <span className="micro text-faint truncate">
+                    {cardsData.ready && cardsData.summary.nextDue ? `DUE: ${cardsData.summary.nextDue.card.name} (${cardsData.summary.nextDue.days}D)` : `${cardsData.ready ? cardsData.summary.activeViews.length : 0} CARDS ON RECORD`}
+                  </span>
+                  <span className="micro flex items-center gap-0.5 text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-blueink">
+                    DECK <IconArrowRight size={11} />
+                  </span>
+                </div>
+              </CutPanel>
+            </Link>
+
+            {/* LOANS & EMIS */}
+            <Link to="/loans" className="group block focus-visible:outline-none">
+              <CutPanel cut="none" cutSize={0} innerClassName="p-3.5 transition-colors group-hover:bg-surface2 group-hover:border-acid">
+                <div className="flex items-center justify-between">
+                  <span className="micro flex items-center gap-1.5">
+                    <IconDebt size={14} className="text-acid" />
+                    <span className="font-semibold text-fg">LOANS & DEBT</span>
+                  </span>
+                  <span className="micro flex items-center gap-1 text-acidink">
+                    <Led signal="acid" size="sm" />
+                    AMORTIZING
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="numeral text-[22px] font-bold text-fg">{formatMoney(debtMonthly, base)}</span>
+                  <span className="micro block text-faint">MONTHLY EMI BURDEN</span>
+                </div>
+                <div className="mt-3 border-t border-line pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="micro text-faint">REPAYMENT PROGRESS</span>
+                    <span className="micro font-bold text-acidink">
+                      {debtData.ready ? `${(debtData.summary.overallProgress * 100).toFixed(0)}%` : '0%'}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-full bg-surface border border-line">
+                    <div
+                      className="h-full bg-acid"
+                      style={{ width: `${Math.max(2, (debtData.ready ? debtData.summary.overallProgress : 0) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-1.5">
+                  <span className="micro text-faint truncate">
+                    {debtData.ready && debtData.summary.nearestDebtFree ? `DEBT FREE: ${debtData.summary.nearestDebtFree.date.slice(0, 4)}` : '0 LOANS TRACKED'}
+                  </span>
+                  <span className="micro flex items-center gap-0.5 text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-acidink">
+                    DECK <IconArrowRight size={11} />
+                  </span>
+                </div>
+              </CutPanel>
+            </Link>
+
+            {/* DAILY SPENDS */}
+            <Link to="/spends" className="group block focus-visible:outline-none">
+              <CutPanel cut="br" cutSize={12} innerClassName="p-3.5 transition-colors group-hover:bg-surface2 group-hover:border-orange">
+                <div className="flex items-center justify-between">
+                  <span className="micro flex items-center gap-1.5">
+                    <IconSpends size={14} className="text-orange" />
+                    <span className="font-semibold text-fg">DAILY SPENDS</span>
+                  </span>
+                  <span className="micro flex items-center gap-1 text-orangeink">
+                    <Led signal="orange" size="sm" />
+                    LEDGER
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="numeral text-[22px] font-bold text-fg">{formatMoney(spendsMonthly, base)}</span>
+                  <span className="micro block text-faint">MONTH-TO-DATE SPEND</span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-2">
+                  <div>
+                    <span className="micro block text-faint">TODAY</span>
+                    <span className="numeral text-[13px] text-fg">
+                      {spendsData.summary.totalToday > 0 ? formatMoney(spendsData.summary.totalToday, base) : '₹0'}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="micro block text-faint">WEEK LIMIT</span>
+                    <span className="numeral text-[13px] text-orangeink">
+                      {spendsData.summary.weekLimit?.amount ? `${Math.round(spendsData.summary.weekUtilisation * 100)}%` : 'NO CAP'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-1.5">
+                  <span className="micro text-faint truncate">
+                    {spendsData.summary.countToday > 0 ? `${spendsData.summary.countToday} TXN TODAY` : 'READY FOR CAPTURE'}
+                  </span>
+                  <span className="micro flex items-center gap-0.5 text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-orangeink">
+                    DECK <IconArrowRight size={11} />
+                  </span>
+                </div>
+              </CutPanel>
+            </Link>
+
+          </div>
+        </CutPanel>
+      </motion.div>
+
+      {/* ── 04. 14-DAY OUTFLOW RADAR + RESOURCE COMPOSITION ── */}
+      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12">
+
+        {/* 14-Day Cross-Domain Financial Radar */}
+        <motion.div variants={RISE} className="lg:col-span-7">
+          <CutPanel cut="tl" cutSize={14} innerClassName="p-0">
+            <SectionHeader
+              code="RADAR"
+              title="14-Day Financial Outflow Radar"
+              signal="orange"
+              right={<span className="micro text-faint">{radarQueue.length} SCHEDULED CHARGES</span>}
+            />
+            {radarQueue.length ? (
+              <div className="divide-y divide-line max-h-[440px] overflow-y-auto" data-lenis-prevent>
+                {radarQueue.map((item) => (
+                  <div key={item.id} className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface2 md:px-4">
+                    {/* Engine badge */}
+                    <span className={cx(
+                      'micro shrink-0 border px-1.5 py-0.5 font-bold',
+                      item.engine === 'SUBS' ? 'border-acid text-acidink' : item.engine === 'CRD' ? 'border-blue text-blueink' : 'border-orange text-orangeink',
+                    )}>
+                      {item.engine}
+                    </span>
+
+                    {/* Service glyph or icon */}
+                    {item.icon ? (
+                      <ServiceBadge icon={item.icon} color={item.color || '#F4F4F4'} size="sm" />
+                    ) : (
+                      <span className="grid h-7 w-7 shrink-0 place-items-center border border-line2 text-[10px] font-bold text-fg">
+                        {item.title.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+
+                    {/* Details */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Link to={item.to} className="truncate text-[13px] font-medium text-fg hover:text-acidink transition-colors">
+                          {item.title}
+                        </Link>
+                      </div>
+                      <span className="micro block truncate text-faint">
+                        {item.subtitle}
+                      </span>
+                    </div>
+
+                    {/* Amount & Countdown */}
+                    <div className="shrink-0 text-right">
+                      <span className="numeral block text-[13px] font-semibold text-fg">
+                        {formatMoney(item.amount, base)}
+                      </span>
+                      <span className={cx(
+                        'micro font-bold',
+                        item.days === 0 ? 'text-redink' : item.days <= 2 ? 'text-orangeink' : 'text-dim',
+                      )}>
+                        {item.days === 0 ? 'DUE TODAY' : item.days === 1 ? 'TOMORROW' : `IN ${item.days} DAYS`}
+                      </span>
+                    </div>
+
+                    {/* Action link */}
+                    <Link
+                      to={item.to}
+                      className="micro shrink-0 border border-line2 px-2 py-1 text-dim opacity-70 transition-all hover:border-acid hover:text-acidink group-hover:opacity-100"
+                    >
+                      VIEW
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="meta px-3 py-6 text-faint">NO UPCOMING CHARGES IN THE NEXT 14 DAYS.</p>
+            )}
+          </CutPanel>
+        </motion.div>
+
+        {/* Resource Allocation & Budget Dial */}
+        <motion.div variants={RISE} className="lg:col-span-5">
+          <CutPanel cut="tr" cutSize={14} innerClassName="p-0">
+            <SectionHeader
+              code="ALLOC"
+              title="Resource Load & Budget Split"
+              signal="magenta"
+              right={<span className="micro text-faint">50/30/20 PRINCIPLE</span>}
+            />
+            <div className="p-4 space-y-4">
+              {/* Category Composition Strip */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="micro text-faint">SUBSCRIPTIONS LOAD STRIP</span>
+                  <span className="micro text-fg font-semibold">
+                    {summary.categories[0]?.label?.toUpperCase() || '—'} DOMINANT
+                  </span>
+                </div>
+                <div className="mt-1.5">
+                  <CompositionStrip slices={summary.categories} height={18} />
+                </div>
+              </div>
+
+              {/* 50/30/20 Budget Health Matrix */}
+              <div className="border border-line bg-bg2 p-3">
+                <span className="micro text-dim block mb-2 font-semibold">FINANCIAL DISCIPLINE RATIO</span>
+                <div className="space-y-2.5">
+                  <div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="micro text-faint">FIXED ESSENTIALS (SUBS + EMIs)</span>
+                      <span className="numeral font-bold text-fg">{formatMoney(fixedBurn, base)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full bg-surface border border-line">
+                      <div className="h-full bg-acid" style={{ width: `${Math.min(100, systemBurn > 0 ? (fixedBurn / systemBurn) * 100 : 0)}%` }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="micro text-faint">LIFESTYLE & SPENDS (VARIABLE)</span>
+                      <span className="numeral font-bold text-orangeink">{formatMoney(spendsMonthly, base)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full bg-surface border border-line">
+                      <div className="h-full bg-orange" style={{ width: `${Math.min(100, systemBurn > 0 ? (spendsMonthly / systemBurn) * 100 : 0)}%` }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="micro text-faint">CREDIT CARRY / REWARDS IMPACT</span>
+                      <span className="numeral font-bold text-magentaink">{formatMoney(cardsCarryMonthly, base)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full bg-surface border border-line">
+                      <div className="h-full bg-magenta" style={{ width: `${Math.min(100, systemBurn > 0 ? (cardsCarryMonthly / systemBurn) * 100 : 0)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* System Host Status Quick Panel */}
+              <div className="flex items-center justify-between border-t border-line pt-3 text-faint">
+                <span className="micro flex items-center gap-1.5">
+                  <IconSys size={13} className="text-acid" />
+                  <span>LOCAL IDB SCHEMA V4 · ZERO TELEMETRY</span>
+                </span>
+                <Link to="/sys" className="micro text-acidink hover:underline">
+                  SYSTEM HOST →
+                </Link>
+              </div>
+            </div>
+          </CutPanel>
+        </motion.div>
+
+      </div>
+
+      {/* ── 05. RECENT CROSS-ENGINE ACTIVITY LEDGER ── */}
+      <motion.div variants={RISE} className="mt-3">
+        <CutPanel cut="tl-br" cutSize={14} innerClassName="p-0">
+          <SectionHeader
+            code="STREAM"
+            title="Recent Cross-Engine Ledger Activity"
             signal="acid"
             right={
               <span className="micro text-faint">
-                {engineCount} LIVE · {DOMAINS.length - engineCount} STANDBY
+                LIVE INGESTION STREAM
               </span>
             }
           />
-          <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
-            {DOMAINS.map((domain) => {
-              const tel = domainTelemetry(domain, summary, spendsData, debtData, cardsData)
-              const Icon = domain.icon
-              const live = domain.status === 'live'
-              return (
-                <Link
-                  key={domain.code}
-                  to={tel.to}
-                  className={cx(
-                    'group relative flex flex-col justify-between gap-3 border border-line2 p-3 transition-colors hover:border-linehard hover:bg-surface2',
-                  )}
-                >
-                  <span className="flex items-center justify-between">
-                    <span className={cx('micro flex items-center gap-2')}>
-                      <Icon size={16} className={live ? 'text-fg' : 'text-faint'} />
-                      <span className={cx('font-semibold tracking-wide', live ? 'text-fg' : 'text-dim')}>
-                        {domain.code}
-                      </span>
-                    </span>
-                    <span className={cx('micro flex items-center gap-1', SIGNAL_TEXT[tel.signal])}>
-                      <Led signal={tel.signal} size="sm" pulse={tel.signal === 'acid'} />
-                      {live ? 'LIVE' : 'STANDBY'}
-                    </span>
-                  </span>
-                  <span className={cx('meta truncate', live ? 'text-fg' : 'text-faint')}>
-                    {domain.label}
-                  </span>
-                  <span className="flex items-end justify-between gap-2">
-                    <span className={cx('block text-[18px] font-semibold tnum', tel.signal === 'acid' && 'text-acidink')}>
-                      {tel.primary}
-                    </span>
-                    <span className="micro flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 text-faint">
-                      ENTER <IconArrowRight size={12} />
-                    </span>
-                  </span>
-                  <span className="micro block truncate text-faint">{tel.secondary}</span>
-                </Link>
-              )
-            })}
-          </div>
-        </CutPanel>
-      </motion.div>
-
-      {/* ---------- next critical + composition ---------- */}
-      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12">
-        {/* next critical across engines */}
-        <motion.div variants={RISE} className="lg:col-span-4">
-          <CutPanel cut="tl" cutSize={14} innerClassName="p-3" className="h-full">
-            <SectionHeader code="CRIT" title="Next Critical Outflow" signal={next ? (next.days <= 1 ? 'orange' : 'blue') : 'blue'} />
-            {next ? (
-              <div className="px-3 py-3">
-                <div className="flex items-center gap-2.5">
-                  <ServiceBadge icon={next.sub.icon} color={next.sub.color} size="sm" />
-                  <span className="min-w-0 flex-1">
-                    <Link to={`/subs/flow/${next.sub.id}`} className="truncate text-[13px] font-semibold text-fg hover:underline">
-                      {next.sub.name}
-                    </Link>
-                    <span className="meta block text-faint">{formatSignalDate(next.date)}</span>
-                  </span>
-                  <span className="meta shrink-0 text-fg">{formatMoney(next.baseAmount, base)}</span>
-                </div>
-                <div className="mt-3 pt-2">
-                  <span className={cx('micro flex items-center gap-1.5', next.days <= 1 ? 'text-orangeink' : 'text-blueink')}>
-                    <Led signal={next.days <= 1 ? 'orange' : 'blue'} size="sm" pulse={next.days <= 1} />
-                    {next.days === 0 ? 'DUE TODAY' : next.days === 1 ? 'DUE TOMORROW' : `${next.days} DAYS OUT`}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className="meta px-3 py-5 text-faint">NO SCHEDULED OUTFLOW</p>
-            )}
-          </CutPanel>
-        </motion.div>
-
-        {/* composition across live engines */}
-        <motion.div variants={RISE} className="lg:col-span-8">
-          <CutPanel cut="br" cutSize={14} innerClassName="p-3" className="h-full">
-            <SectionHeader
-              code="LOAD"
-              title="Burn Composition — Live Engines"
-              signal="magenta"
-              right={
-                <span className="micro text-faint">
-                  DOMINANT · {summary.categories[0]?.label?.toUpperCase() || '—'}
-                </span>
-              }
-            />
-            {composition.length ? (
-              <div className="px-3 pb-2">
-                <CompositionStrip slices={composition} height={18} />
-                <div className="mt-2 flex items-center gap-2">
-                  {composition.slice(0, 5).map((slice) => (
-                    <span key={slice.category} className={cx('micro inline-flex items-center gap-1.5 border px-1.5 py-0.5', SIGNAL_TEXT[slice.signal])}>
-                      <span aria-hidden="true" className="h-2 w-2" style={{ background: SIGNAL_HEX[slice.signal] }} />
-                      <span className="font-semibold">{slice.code}</span>
-                      <span className="opacity-70 font-normal">
-                        {(slice.share * 100).toFixed(0)}% · {formatMoney(slice.monthly, base)}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="meta px-3 py-5 text-faint">NO LIVE ENGINE DATA YET</p>
-            )}
-          </CutPanel>
-        </motion.div>
-      </div>
-
-      {/* ---------- standby roadmap (renders only while a domain is standby) ---------- */}
-      {standbyEngines.length > 0 && (
-        <motion.div variants={RISE} className="mt-3">
-          <CutPanel cut="tr" cutSize={14} innerClassName="p-2">
-            <SectionHeader
-              code="ROAD"
-              title="Pending Engines"
-              signal="orange"
-              right={<span className="micro text-faint">{standbyEngines.length} IN STANDBY</span>}
-            />
-            <div className="divide-y divide-line">
-              {standbyEngines.map((domain) => {
-                const Icon = domain.icon
+          {recentSpends.length > 0 || cardsData.summary.txnCount > 0 ? (
+            <div className="divide-y divide-line max-h-[300px] overflow-y-auto" data-lenis-prevent>
+              {recentSpends.slice(0, 8).map((spend) => {
+                const meta = SPEND_CATEGORY_META[spend.category]
                 return (
-                  <div key={domain.code} className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface2 md:px-4">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center border border-orange text-orangeink">
-                      <Icon size={17} />
+                  <div key={spend.id} className="flex items-center gap-3 px-3 py-2 transition-colors hover:bg-surface2 md:px-4">
+                    <span className="micro shrink-0 border border-orange bg-orangesoft px-1.5 py-0.5 text-orangeink font-bold">
+                      SPND
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2">
-                        <span className="truncate text-[12.5px] font-medium text-dim">{domain.label}</span>
-                        <span className="micro border border-line2 px-1.5 py-0.5 text-orangeink">{domain.tag}</span>
+                      <span className="truncate text-[12.5px] font-medium text-fg block">
+                        {spend.title}
                       </span>
-                      <span className="meta block truncate text-faint">{domain.manifest}</span>
+                      <span className="micro text-faint">
+                        {formatSignalDate(spend.date)} · {meta.label} · {spend.method.toUpperCase()}
+                      </span>
                     </span>
-                    <Link
-                      to={domain.path}
-                      className="micro shrink-0 border border-line2 px-2 py-1 text-dim transition-colors hover:border-linehard hover:text-fg"
-                    >
-                      VIEW DECK
-                    </Link>
+                    <span className="numeral text-[13px] font-semibold text-fg shrink-0">
+                      -{formatMoney(spend.amount, spend.currency)}
+                    </span>
                   </div>
                 )
               })}
             </div>
-          </CutPanel>
-        </motion.div>
-      )}
-
-      {/* ---------- quick launch ---------- */}
-      <motion.div variants={RISE} className="mt-3">
-        <CutPanel cut="tl" cutSize={14} innerClassName="px-3 py-2 md:px-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="micro text-faint">LAUNCH:</span>
-            {DOMAINS.map((domain) => (
-              <Link
-                key={domain.code}
-                to={domain.path}
-                className="micro inline-flex items-center gap-1.5 border border-line2 px-2 py-1 text-dim transition-colors hover:border-acid hover:text-acidink"
-              >
-                <KeyCap>{domain.key}</KeyCap>
-                <span>{domain.label}</span>
-              </Link>
-            ))}
-            <span className="micro hidden text-faint md:inline">· PRESS 1–6 TO JUMP</span>
-          </div>
+          ) : (
+            <p className="meta px-3 py-5 text-faint">NO RECENT INGESTION RECORDS YET.</p>
+          )}
         </CutPanel>
       </motion.div>
+
     </motion.div>
   )
 }

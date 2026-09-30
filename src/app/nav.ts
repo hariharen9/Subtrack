@@ -66,10 +66,49 @@ export const DOMAINS: Domain[] = [
     tag: 'OS CORE',
   },
   {
+    code: 'SPND',
+    label: 'Daily Spends',
+    path: '/spends',
+    key: '2',
+    blurb: 'Ingestion ledger, variable velocity and discretionary limits',
+    status: 'live',
+    icon: IconSpends,
+    manifest:
+      'A variable-cash ledger for day-to-day spends: category-tagged entries, daily/weekly velocity and a weekly discretionary limiter.',
+    tag: 'ENGINE LIVE',
+    subnav: [
+      { code: 'CORE', label: 'Overview', path: '/spends', key: 'O', icon: IconCore },
+      {
+        code: 'FLOW',
+        label: 'Ledger',
+        path: '/spends/flow',
+        key: 'F',
+        icon: IconFlow,
+        aliases: ['/spendsflow'],
+      },
+      {
+        code: 'DATA',
+        label: 'Insights',
+        path: '/spends/data',
+        key: 'I',
+        icon: IconData,
+        aliases: ['/spendsdata'],
+      },
+      {
+        code: 'PAT',
+        label: 'Patterns',
+        path: '/spends/patterns',
+        key: 'P',
+        icon: IconTime,
+        aliases: ['/spendspatterns'],
+      },
+    ],
+  },
+  {
     code: 'SUBS',
     label: 'Subscriptions',
     path: '/subs',
-    key: '2',
+    key: '3',
     blurb: 'Recurring processes, cycles and burn normalisation',
     status: 'live',
     icon: IconFlow,
@@ -108,7 +147,7 @@ export const DOMAINS: Domain[] = [
     code: 'CRD',
     label: 'Credit Cards',
     path: '/cards',
-    key: '3',
+    key: '4',
     blurb: 'Statement cycles, utilisation and dues',
     status: 'live',
     icon: IconCreditCard,
@@ -137,7 +176,7 @@ export const DOMAINS: Domain[] = [
     code: 'DEBT',
     label: 'Loans & EMIs',
     path: '/loans',
-    key: '4',
+    key: '5',
     blurb: 'Amortization schedules, outstanding debt and repayment progress',
     status: 'live',
     icon: IconDebt,
@@ -159,45 +198,6 @@ export const DOMAINS: Domain[] = [
         path: '/loans/data',
         key: 'I',
         icon: IconData,
-      },
-    ],
-  },
-  {
-    code: 'SPND',
-    label: 'Daily Spends',
-    path: '/spends',
-    key: '5',
-    blurb: 'Ingestion ledger, variable velocity and discretionary limits',
-    status: 'live',
-    icon: IconSpends,
-    manifest:
-      'A variable-cash ledger for day-to-day spends: category-tagged entries, daily/weekly velocity and a weekly discretionary limiter.',
-    tag: 'ENGINE LIVE',
-    subnav: [
-      { code: 'CORE', label: 'Overview', path: '/spends', key: 'O', icon: IconCore },
-      {
-        code: 'FLOW',
-        label: 'Ledger',
-        path: '/spends/flow',
-        key: 'F',
-        icon: IconFlow,
-        aliases: ['/spendsflow'],
-      },
-      {
-        code: 'DATA',
-        label: 'Insights',
-        path: '/spends/data',
-        key: 'I',
-        icon: IconData,
-        aliases: ['/spendsdata'],
-      },
-      {
-        code: 'PAT',
-        label: 'Patterns',
-        path: '/spends/patterns',
-        key: 'P',
-        icon: IconTime,
-        aliases: ['/spendspatterns'],
       },
     ],
   },
@@ -229,7 +229,7 @@ export function domainFor(pathname: string): Domain {
     pathname === '/time' ||
     pathname === '/data'
   ) {
-    return DOMAINS[1]
+    return DOMAINS.find((d) => d.code === 'SUBS') ?? DOMAINS[0]
   }
   // Everything else matches by prefix, skipping the root.
   const match = DOMAINS.find((item) => item.path !== '/' && pathname.startsWith(item.path))

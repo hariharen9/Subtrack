@@ -173,7 +173,9 @@ E:/Projects/Subtrack/
     │   ├── spends.ts              # spend analytics pipeline (daily/weekly/monthly/yearly velocity, limiter, ratio)
     │   └── types.ts              # Domain interfaces, categories, signal maps
     ├── pages/
-    │   ├── MasterCommand.tsx     # "/" — OS cockpit: hero burn, subsystem matrix, next outflow
+    │   ├── MasterCommand.tsx     # "/" — Central OS cockpit: apex burn odometer, domain allocation register,
+    │   │                         #   rapid capture dock, 4-engine cockpits, 14-day cross-domain outflow radar,
+    │   │                         #   50/30/20 budget ratio and live multi-engine ingestion ledger
     │   ├── Overview.tsx          # "/subs" — SUBS overview: burn hero, rail, signal, stream, grid
     │   ├── Flow.tsx              # "/subs/flow" — registry with query bar, filters, densities
     │   ├── ProcessDetail.tsx     # "/subs/flow/:id" — diagnostic board for one subscription
