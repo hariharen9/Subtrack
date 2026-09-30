@@ -1,0 +1,394 @@
+/* ==========================================================================
+   SUBTRACK // MINIMAL ZEN MODE (CLAUDE-INSPIRED DESIGN)
+   A calm, soft-modern, human interface profile activated via html[data-ui="minimal"].
+   Strips industrial cyber-brutalism, chamfer cuts, scanlines, and high-velocity
+   telemetry while retaining 100% of underlying financial mechanics and features.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. COLOR TOKENS: CALM, SOPHISTICATED PALETTE & ZEN ACCENTS
+   -------------------------------------------------------------------------- */
+
+/* Minimal Dark Mode: Warm Graphite & Calm Emerald Default */
+html[data-ui='minimal'][data-theme='dark'] {
+  --c-bg: #131315;
+  --c-bg-2: #18181c;
+  --c-surface: #1e1e22;
+  --c-surface-2: #25252b;
+  --c-surface-3: #2e2e36;
+
+  --c-line: rgba(255, 255, 255, 0.08);
+  --c-line-strong: rgba(255, 255, 255, 0.15);
+  --c-line-hard: rgba(255, 255, 255, 0.24);
+
+  --c-fg: #f5f4f0;
+  --c-fg-dim: rgba(245, 244, 240, 0.68);
+  --c-fg-faint: rgba(245, 244, 240, 0.42);
+
+  /* Calm Emerald / Sage (default financial serenity) */
+  --c-acid: #10b981;
+  --c-acid-ink: #34d399;
+  --c-acid-soft: rgba(16, 185, 129, 0.14);
+  --c-focus: #10b981;
+
+  --c-blue: #3b82f6;
+  --c-blue-ink: #60a5fa;
+  --c-blue-soft: rgba(59, 130, 246, 0.14);
+
+  --c-magenta: #8b5cf6;
+  --c-magenta-ink: #a78bfa;
+  --c-magenta-soft: rgba(139, 92, 246, 0.14);
+
+  --c-orange: #f59e0b;
+  --c-orange-ink: #fbbf24;
+  --c-orange-soft: rgba(245, 158, 11, 0.14);
+
+  --c-red: #ef4444;
+  --c-red-ink: #f87171;
+  --c-red-soft: rgba(239, 68, 68, 0.14);
+
+  --glow-acid: 0 0 0 1px rgba(16, 185, 129, 0.3), 0 4px 16px -4px rgba(16, 185, 129, 0.2);
+  --glow-blue: 0 0 0 1px rgba(59, 130, 246, 0.3), 0 4px 16px -4px rgba(59, 130, 246, 0.2);
+  --glow-soft: 0 4px 20px -4px rgba(0, 0, 0, 0.35);
+  --scan-opacity: 0;
+  --noise-opacity: 0;
+}
+
+/* Minimal Day Mode: Warm Paper Canvas */
+html[data-ui='minimal'][data-theme='day'] {
+  --c-bg: #faf9f5;
+  --c-bg-2: #f3f1ea;
+  --c-surface: #ffffff;
+  --c-surface-2: #f7f6f2;
+  --c-surface-3: #eeebe3;
+
+  --c-line: rgba(0, 0, 0, 0.08);
+  --c-line-strong: rgba(0, 0, 0, 0.15);
+  --c-line-hard: #1e1e20;
+
+  --c-fg: #1e1e20;
+  --c-fg-dim: #5c5b57;
+  --c-fg-faint: #8a8882;
+
+  /* Forest Emerald */
+  --c-acid: #059669;
+  --c-acid-ink: #047857;
+  --c-acid-soft: rgba(5, 150, 105, 0.10);
+  --c-focus: #059669;
+
+  --c-blue: #2563eb;
+  --c-blue-ink: #1d4ed8;
+  --c-blue-soft: rgba(37, 99, 235, 0.09);
+
+  --c-magenta: #7c3aed;
+  --c-magenta-ink: #6d28d9;
+  --c-magenta-soft: rgba(124, 58, 237, 0.09);
+
+  --c-orange: #d97706;
+  --c-orange-ink: #b45309;
+  --c-orange-soft: rgba(217, 119, 6, 0.09);
+
+  --c-red: #dc2626;
+  --c-red-ink: #b91c1c;
+  --c-red-soft: rgba(220, 38, 38, 0.09);
+
+  --glow-acid: 0 0 0 1px rgba(5, 150, 105, 0.25), 0 4px 16px -4px rgba(5, 150, 105, 0.15);
+  --glow-soft: 0 2px 12px -2px rgba(0, 0, 0, 0.06);
+  --scan-opacity: 0;
+  --noise-opacity: 0;
+}
+
+/* ── Zen Accent Overrides ─────────────────────────────────────────────── */
+
+/* 1. Indigo (Linear / Modern Cobalt) */
+html[data-ui='minimal'][data-zen-accent='indigo'][data-theme='dark'] {
+  --c-acid: #6366f1;
+  --c-acid-ink: #818cf8;
+  --c-acid-soft: rgba(99, 102, 241, 0.15);
+  --c-focus: #6366f1;
+  --glow-acid: 0 0 0 1px rgba(99, 102, 241, 0.3), 0 4px 16px -4px rgba(99, 102, 241, 0.2);
+}
+html[data-ui='minimal'][data-zen-accent='indigo'][data-theme='day'] {
+  --c-acid: #4f46e5;
+  --c-acid-ink: #4338ca;
+  --c-acid-soft: rgba(79, 70, 229, 0.10);
+  --c-focus: #4f46e5;
+  --glow-acid: 0 0 0 1px rgba(79, 70, 229, 0.25), 0 4px 16px -4px rgba(79, 70, 229, 0.15);
+}
+
+/* 2. Amber (Warm Honey Minimal) */
+html[data-ui='minimal'][data-zen-accent='amber'][data-theme='dark'] {
+  --c-acid: #f59e0b;
+  --c-acid-ink: #fbbf24;
+  --c-acid-soft: rgba(245, 158, 11, 0.15);
+  --c-focus: #f59e0b;
+  --glow-acid: 0 0 0 1px rgba(245, 158, 11, 0.3), 0 4px 16px -4px rgba(245, 158, 11, 0.2);
+}
+html[data-ui='minimal'][data-zen-accent='amber'][data-theme='day'] {
+  --c-acid: #d97706;
+  --c-acid-ink: #b45309;
+  --c-acid-soft: rgba(217, 119, 6, 0.10);
+  --c-focus: #d97706;
+  --glow-acid: 0 0 0 1px rgba(217, 119, 6, 0.25), 0 4px 16px -4px rgba(217, 119, 6, 0.15);
+}
+
+/* 3. Slate (Pure Monochrome / Apple) */
+html[data-ui='minimal'][data-zen-accent='slate'][data-theme='dark'] {
+  --c-acid: #e4e4e7;
+  --c-acid-ink: #f4f4f5;
+  --c-acid-soft: rgba(228, 228, 231, 0.14);
+  --c-focus: #e4e4e7;
+  --glow-acid: 0 0 0 1px rgba(228, 228, 231, 0.3), 0 4px 16px -4px rgba(228, 228, 231, 0.15);
+}
+html[data-ui='minimal'][data-zen-accent='slate'][data-theme='day'] {
+  --c-acid: #18181b;
+  --c-acid-ink: #09090b;
+  --c-acid-soft: rgba(24, 24, 27, 0.08);
+  --c-focus: #18181b;
+  --glow-acid: 0 0 0 1px rgba(24, 24, 27, 0.25), 0 4px 16px -4px rgba(24, 24, 27, 0.12);
+}
+
+/* 4. Cyan (Cool Mint) */
+html[data-ui='minimal'][data-zen-accent='cyan'][data-theme='dark'] {
+  --c-acid: #06b6d4;
+  --c-acid-ink: #22d3ee;
+  --c-acid-soft: rgba(6, 182, 212, 0.15);
+  --c-focus: #06b6d4;
+  --glow-acid: 0 0 0 1px rgba(6, 182, 212, 0.3), 0 4px 16px -4px rgba(6, 182, 212, 0.2);
+}
+html[data-ui='minimal'][data-zen-accent='cyan'][data-theme='day'] {
+  --c-acid: #0891b2;
+  --c-acid-ink: #0e7490;
+  --c-acid-soft: rgba(8, 145, 178, 0.10);
+  --c-focus: #0891b2;
+  --glow-acid: 0 0 0 1px rgba(8, 145, 178, 0.25), 0 4px 16px -4px rgba(8, 145, 178, 0.15);
+}
+
+/* --------------------------------------------------------------------------
+   2. STRIP AMBIENT NOISE & CRT OVERLAYS
+   -------------------------------------------------------------------------- */
+
+html[data-ui='minimal'] body::before,
+html[data-ui='minimal'] body::after {
+  display: none !important;
+}
+
+html[data-ui='minimal'] .pointer-events-none.fixed.inset-0.z-\[5\] {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. GEOMETRY: REPLACE CHAMFERS WITH SOFT ROUNDED SURFACES
+   -------------------------------------------------------------------------- */
+
+/* Eliminate clip paths on CutPanel and child nodes */
+html[data-ui='minimal'] .cp,
+html[data-ui='minimal'] .cp-frame,
+html[data-ui='minimal'] .cp-in,
+html[data-ui='minimal'] .clip-cut,
+html[data-ui='minimal'] .clip-cut-tr,
+html[data-ui='minimal'] .clip-cut-br,
+html[data-ui='minimal'] .clip-cut-tl,
+html[data-ui='minimal'] .block-cut,
+html[data-ui='minimal'] .panel,
+html[data-ui='minimal'] .panel-2,
+html[data-ui='minimal'] .panel-well {
+  clip-path: none !important;
+  border-radius: 16px !important;
+}
+
+/* Hide rigid brutalist offset shadow block */
+html[data-ui='minimal'] .cp-shadow {
+  display: none !important;
+}
+
+/* Clean, soft modern card frame */
+html[data-ui='minimal'] .cp-frame {
+  background: var(--c-surface) !important;
+  border: 1px solid var(--c-line) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04) !important;
+  transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
+}
+
+html[data-ui='minimal'] .cp-hover:hover .cp-frame {
+  border-color: var(--c-line-strong) !important;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Soften hard border frames */
+html[data-ui='minimal'] .frame-hard {
+  border: 1px solid var(--c-line-strong) !important;
+  border-radius: 16px !important;
+}
+
+html[data-ui='minimal'] .frame-hairline-hard {
+  border: 1px solid var(--c-line) !important;
+  border-radius: 14px !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. TYPOGRAPHY: CALM, HUMAN, READABLE
+   -------------------------------------------------------------------------- */
+
+html[data-ui='minimal'] .micro {
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif) !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+}
+
+html[data-ui='minimal'] .tech-label {
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif) !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+}
+
+html[data-ui='minimal'] .pid {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0.04em !important;
+  font-size: 0.6875rem !important;
+}
+
+/* Hide decorative hash rules (///) */
+html[data-ui='minimal'] .hash-rule {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. CONTROLS, BUTTONS & INPUTS
+   -------------------------------------------------------------------------- */
+
+html[data-ui='minimal'] button,
+html[data-ui='minimal'] .btn,
+html[data-ui='minimal'] input,
+html[data-ui='minimal'] select,
+html[data-ui='minimal'] textarea {
+  border-radius: 10px !important;
+}
+
+html[data-ui='minimal'] .btn {
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+}
+
+/* KeyCap indicators */
+html[data-ui='minimal'] kbd {
+  border-radius: 6px !important;
+  font-size: 0.6875rem !important;
+  padding: 1px 5px !important;
+  border: 1px solid var(--c-line) !important;
+  background: var(--c-surface-2) !important;
+  color: var(--c-fg-dim) !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. NAVIGATION CHROME
+   -------------------------------------------------------------------------- */
+
+/* Navigation Rail (Desktop) */
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] {
+  border-right: 1px solid var(--c-line) !important;
+  background: var(--c-bg) !important;
+}
+
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] a {
+  border-radius: 12px;
+}
+
+/* Active navigation item pill */
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] [layoutid='rail-plate'] {
+  border-radius: 12px !important;
+  background: var(--c-acid-soft) !important;
+  border: 1px solid var(--c-acid) !important;
+}
+
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Rack'] a .text-black {
+  color: var(--c-acid-ink) !important;
+}
+
+/* Header */
+html[data-ui='minimal'] header {
+  border-bottom: 1px solid var(--c-line) !important;
+  background: rgba(var(--c-bg), 0.88) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* In-Domain Sub-Navigation Tabs */
+html[data-ui='minimal'] div[role='navigation'] {
+  border-radius: 14px !important;
+  background: var(--c-surface) !important;
+  border: 1px solid var(--c-line) !important;
+  padding: 6px 8px !important;
+}
+
+html[data-ui='minimal'] div[role='navigation'] a {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+}
+
+html[data-ui='minimal'] div[role='navigation'] span.text-faint.sm\:inline {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. STATUS CHIPS & BADGES
+   -------------------------------------------------------------------------- */
+
+html[data-ui='minimal'] .chip {
+  border-radius: 9999px !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+html[data-ui='minimal'] .led {
+  border-radius: 9999px !important;
+}
+
+/* --------------------------------------------------------------------------
+   8. MOBILE NAVIGATION (CONSOLE)
+   -------------------------------------------------------------------------- */
+
+html[data-ui='minimal'] .fixed.inset-x-0.bottom-0 button[aria-label='Add a subscription'] {
+  border-radius: 9999px !important;
+  clip-path: none !important;
+  border: 1px solid var(--c-acid) !important;
+  box-shadow: 0 4px 14px -2px rgba(224, 108, 83, 0.4) !important;
+}
+
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Console'] {
+  border-top: 1px solid var(--c-line) !important;
+  background: rgba(var(--c-bg), 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Console'] a {
+  border-right: none !important;
+}
+
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Console'] a.bg-acid {
+  background: transparent !important;
+  color: var(--c-acid-ink) !important;
+}
+
+html[data-ui='minimal'] nav[aria-label='Financial OS Primary Console'] span[layoutid='mobile-plate'] {
+  background: var(--c-acid) !important;
+  height: 2px !important;
+  border-radius: 9999px !important;
+}
+
+/* --------------------------------------------------------------------------
+   9. MODALS, SHEETS & DIALOGS
+   -------------------------------------------------------------------------- */
+
+html[data-ui='minimal'] [role='dialog'],
+html[data-ui='minimal'] [role='alertdialog'] {
+  border-radius: 20px !important;
+  clip-path: none !important;
+  border: 1px solid var(--c-line-strong) !important;
+  box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.4) !important;
+}

@@ -35,6 +35,19 @@
                 ? 'day'
                 : 'dark'
           document.documentElement.dataset.theme = mode
+
+          let ui = localStorage.getItem('subtrack.uiMode')
+          let zenAccent = localStorage.getItem('subtrack.zenAccent')
+          if (!ui || !zenAccent) {
+            try {
+              const parsed = JSON.parse(localStorage.getItem('subtrack.ui') || '{}')
+              if (!ui) ui = parsed.state?.uiMode
+              if (!zenAccent) zenAccent = parsed.state?.zenAccent
+            } catch {}
+          }
+          document.documentElement.dataset.ui = ui === 'minimal' ? 'minimal' : 'cyber'
+          document.documentElement.dataset.zenAccent = zenAccent || 'emerald'
+
           document.documentElement.dataset.boot = '1'
         } catch {
           /* storage blocked — dark default is already in the markup */

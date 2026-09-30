@@ -38,11 +38,13 @@ import {
   IconMoon,
   IconPlus,
   IconSearch,
+  IconSparkles,
   IconSpends,
   IconSun,
   IconSys,
   IconTime,
   IconUpload,
+  IconZap,
 } from '@/components/ui/Icons'
 import { burnReadout, copyText, exportJson, openImportDialog } from '@/lib/portability'
 
@@ -62,6 +64,9 @@ export function CommandPalette() {
   const openSpendComposer = useUI((s) => s.openSpendComposer)
   const toggleTheme = useUI((s) => s.toggleTheme)
   const theme = useUI((s) => s.theme)
+  const uiMode = useUI((s) => s.uiMode)
+  const toggleUiMode = useUI((s) => s.toggleUiMode)
+  const setZenAccent = useUI((s) => s.setZenAccent)
   const base = useUI((s) => s.baseCurrency)
 
   const navigate = useNavigate()
@@ -80,6 +85,49 @@ export function CommandPalette() {
 
   const commands = useMemo<Command[]>(
     () => [
+      {
+        id: 'toggle-ui-mode',
+        label: uiMode === 'minimal' ? 'Switch to Cyber Operating System' : 'Switch to Minimal Zen Mode (Claude style)',
+        hint: uiMode === 'minimal' ? 'Terminal HUD, telemetry meters, chamfers' : 'Soft modern cards, serene typography, zero clutter',
+        kbd: 'M',
+        icon: uiMode === 'minimal' ? IconZap : IconSparkles,
+        run: () => toggleUiMode(),
+      },
+      {
+        id: 'zen-accent-emerald',
+        label: 'Zen Accent: Emerald (Calm Sage)',
+        hint: 'Serene forest green accent',
+        icon: IconSparkles,
+        run: () => setZenAccent('emerald'),
+      },
+      {
+        id: 'zen-accent-indigo',
+        label: 'Zen Accent: Indigo (Linear Tech)',
+        hint: 'Deep cobalt tech accent',
+        icon: IconSparkles,
+        run: () => setZenAccent('indigo'),
+      },
+      {
+        id: 'zen-accent-amber',
+        label: 'Zen Accent: Amber (Warm Honey)',
+        hint: 'Warm golden honey accent',
+        icon: IconSparkles,
+        run: () => setZenAccent('amber'),
+      },
+      {
+        id: 'zen-accent-slate',
+        label: 'Zen Accent: Slate (Monochrome)',
+        hint: 'Pure zero-tint monochrome',
+        icon: IconSparkles,
+        run: () => setZenAccent('slate'),
+      },
+      {
+        id: 'zen-accent-cyan',
+        label: 'Zen Accent: Cyan (Cool Mint)',
+        hint: 'Cool mint cyan accent',
+        icon: IconSparkles,
+        run: () => setZenAccent('cyan'),
+      },
       {
         id: 'init-spend',
         label: 'Log daily spend',

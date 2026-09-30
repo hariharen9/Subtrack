@@ -203,7 +203,8 @@ E:/Projects/Subtrack/
     │   ├── tokens.css            # Skin tokens (dark/day) + @theme inline Tailwind bridge
     │   ├── fonts.css             # @font-face for the 4 self-hosted variable woff2 files
     │   ├── base.css              # Reset, background field, focus, scrollbars, reduced motion
-    │   └── components.css        # Panels, chamfers, signals, controls, animations
+    │   ├── components.css        # Panels, chamfers, signals, controls, animations
+    │   └── minimal.css           # Minimal Zen mode: soft modern, calm design with 5 Zen accents (emerald, indigo, amber, slate, cyan)
     ├── App.tsx                   # Router, ThemeSync, BootSequence, statically imported routes
     └── main.tsx                  # Entry point (mounts App, clears #boot)
 ```

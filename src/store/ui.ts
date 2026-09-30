@@ -73,8 +73,14 @@ export interface TerminationState {
   mode: TerminationMode
 }
 
+export type ZenAccent = 'emerald' | 'indigo' | 'amber' | 'slate' | 'cyan'
+
 interface UIState {
   theme: 'dark' | 'day'
+  /** Interface personality: 'cyber' (Brutalist Terminal HUD) or 'minimal' (Calm, Soft Modern Zen / Claude style). */
+  uiMode: 'cyber' | 'minimal'
+  /** Curated accent color profile in Zen / Minimal mode. */
+  zenAccent: ZenAccent
   /** Decorative grid + grain field. */
   field: boolean
   /** Extra restraint on top of the OS reduced-motion setting. */
@@ -94,6 +100,9 @@ interface UIState {
   setBooted: (booted: boolean) => void
   setTheme: (theme: 'dark' | 'day') => void
   toggleTheme: () => void
+  setUiMode: (mode: 'cyber' | 'minimal') => void
+  toggleUiMode: () => void
+  setZenAccent: (accent: ZenAccent) => void
   setField: (on: boolean) => void
   setCalmMode: (on: boolean) => void
   setBaseCurrency: (code: string) => void
@@ -132,6 +141,8 @@ export const useUI = create<UIState>()(
   persist(
     (set, get) => ({
       theme: 'dark',
+      uiMode: 'cyber',
+      zenAccent: 'emerald',
       field: true,
       calmMode: false,
       baseCurrency: BASE_CURRENCY,
@@ -148,6 +159,22 @@ export const useUI = create<UIState>()(
 
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set({ theme: get().theme === 'dark' ? 'day' : 'dark' }),
+      setUiMode: (uiMode) => {
+        set({ uiMode })
+        if (typeof document !== 'undefined') {
+          document.documentElement.dataset.ui = uiMode
+        }
+      },
+      toggleUiMode: () => {
+        const next = get().uiMode === 'cyber' ? 'minimal' : 'cyber'
+        get().setUiMode(next)
+      },
+      setZenAccent: (zenAccent) => {
+        set({ zenAccent })
+        if (typeof document !== 'undefined') {
+          document.documentElement.dataset.zenAccent = zenAccent
+        }
+      },
       setField: (field) => set({ field }),
       setCalmMode: (calmMode) => set({ calmMode }),
       setBaseCurrency: (baseCurrency) => set({ baseCurrency }),
@@ -227,6 +254,8 @@ export const useUI = create<UIState>()(
       version: 1,
       partialize: (state) => ({
         theme: state.theme,
+        uiMode: state.uiMode,
+        zenAccent: state.zenAccent,
         field: state.field,
         calmMode: state.calmMode,
         baseCurrency: state.baseCurrency,

@@ -32,6 +32,7 @@ import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { Led, SIGNAL_HEX, SIGNAL_TEXT, type Signal } from '@/components/ui/Signal'
 import { CompositionStrip } from '@/components/charts/CategoryBlock'
 import { ServiceBadge } from '@/components/brand/ServiceBadge'
+import { SpendBadge } from '@/components/spends/SpendBadge'
 import { CyberButton } from '@/components/ui/CyberButton'
 import {
   IconArrowRight,
@@ -75,6 +76,7 @@ export default function MasterCommand() {
   const debtData = useDebtSystem()
   const cardsData = useCardsSystem()
   const base = useUI((s) => s.baseCurrency)
+  const uiMode = useUI((s) => s.uiMode)
   const openComposer = useUI((s) => s.openComposer)
   const openSpendComposer = useUI((s) => s.openSpendComposer)
   const openLoanComposer = useUI((s) => s.openLoanComposer)
@@ -177,6 +179,291 @@ export default function MasterCommand() {
   }, [summary.incomingWindow, cardsData.ready, cardsData.summary.activeViews, debtData.ready, debtData.summary.views, today])
 
   const nearestOutflow = radarQueue[0]
+
+  if (uiMode === 'minimal') {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8 space-y-6">
+        {/* Clean Header Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-fg">Dashboard</h1>
+            <p className="text-sm text-dim mt-0.5">
+              Unified overview of recurring subscriptions, cards, loans, and day-to-day spends.
+            </p>
+          </div>
+          {/* Quick Action Dock */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openSpendComposer()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-line text-sm font-medium text-fg hover:border-linehard hover:bg-surface-2 transition-all shadow-sm cursor-pointer"
+            >
+              <IconPlus size={14} className="text-acid-ink" />
+              <span>Log Spend</span>
+              <kbd className="ml-1 text-[10px] text-faint">X</kbd>
+            </button>
+            <button
+              onClick={() => openComposer()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-line text-sm font-medium text-fg hover:border-linehard hover:bg-surface-2 transition-all shadow-sm cursor-pointer"
+            >
+              <IconPlus size={14} className="text-acid-ink" />
+              <span>Subscription</span>
+              <kbd className="ml-1 text-[10px] text-faint">N</kbd>
+            </button>
+          </div>
+        </div>
+
+        {/* Hero Spending Card */}
+        <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm relative overflow-hidden">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wider text-dim">
+                Total Monthly Outflow
+              </span>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="text-4xl md:text-5xl font-bold tracking-tight text-fg">
+                  {formatMoney(systemBurn, base)}
+                </span>
+                <span className="text-sm text-dim">/ month</span>
+              </div>
+              <p className="mt-2 text-xs text-faint">
+                Annual run rate: {formatCompact(annualBurn, base)} · Daily burn: ~{formatMoney(dailyDrain, base)}/day
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="rounded-xl border border-line bg-surface-2 px-3.5 py-2.5">
+                <div className="text-[11px] font-medium text-dim">Fixed Commitments</div>
+                <div className="text-base font-semibold text-fg mt-0.5">{formatMoney(fixedBurn, base)}</div>
+                <div className="text-[10px] text-faint mt-0.5">Subscriptions + EMIs</div>
+              </div>
+              <div className="rounded-xl border border-line bg-surface-2 px-3.5 py-2.5">
+                <div className="text-[11px] font-medium text-dim">Variable Spending</div>
+                <div className="text-base font-semibold text-fg mt-0.5">{formatMoney(variableBurn, base)}</div>
+                <div className="text-[10px] text-faint mt-0.5">Spends + Card balances</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Clean Proportional Distribution Bar */}
+          {allocationSlices.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-line/60">
+              <div className="flex items-center justify-between text-xs text-dim mb-2">
+                <span>Monthly Allocation</span>
+                <span>{allocationSlices.length} active engines</span>
+              </div>
+              <div className="h-2.5 w-full flex rounded-full overflow-hidden bg-surface-2 gap-0.5">
+                {allocationSlices.map((slice) => (
+                  <div
+                    key={slice.code}
+                    style={{ width: `${Math.max(slice.share * 100, 2)}%` }}
+                    className={cx(
+                      'h-full transition-all rounded-full',
+                      slice.code === 'SUBS' && 'bg-acid',
+                      slice.code === 'DEBT' && 'bg-blue',
+                      slice.code === 'SPND' && 'bg-orange',
+                      slice.code === 'CRD' && 'bg-magenta',
+                    )}
+                    title={`${slice.label}: ${formatMoney(slice.amount, base)} (${Math.round(slice.share * 100)}%)`}
+                  />
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-4 text-xs">
+                {allocationSlices.map((slice) => (
+                  <div key={slice.code} className="flex items-center gap-1.5">
+                    <span
+                      className={cx(
+                        'w-2 h-2 rounded-full',
+                        slice.code === 'SUBS' && 'bg-acid',
+                        slice.code === 'DEBT' && 'bg-blue',
+                        slice.code === 'SPND' && 'bg-orange',
+                        slice.code === 'CRD' && 'bg-magenta',
+                      )}
+                    />
+                    <span className="text-dim">{slice.label}:</span>
+                    <span className="font-medium text-fg">{formatMoney(slice.amount, base)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 4 Clean Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Subscriptions */}
+          <Link
+            to="/subs"
+            className="group rounded-2xl border border-line bg-surface p-4 shadow-sm hover:border-linehard transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-dim">Subscriptions</span>
+                <span className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center text-dim group-hover:text-fg transition-colors">
+                  <IconFlow size={14} />
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-fg mt-2">{formatMoney(subsMonthly, base)}</div>
+              <p className="text-xs text-dim mt-0.5">{summary.activeCount} active services</p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs text-acid-ink font-medium">
+              <span>View subscriptions</span>
+              <IconArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
+
+          {/* Daily Spends */}
+          <Link
+            to="/spends"
+            className="group rounded-2xl border border-line bg-surface p-4 shadow-sm hover:border-linehard transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-dim">Daily Spends</span>
+                <span className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center text-dim group-hover:text-fg transition-colors">
+                  <IconSpends size={14} />
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-fg mt-2">{formatMoney(spendsMonthly, base)}</div>
+              <p className="text-xs text-dim mt-0.5">{recentSpends.length} expenses logged</p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs text-acid-ink font-medium">
+              <span>View spend ledger</span>
+              <IconArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
+
+          {/* Credit Cards */}
+          <Link
+            to="/cards"
+            className="group rounded-2xl border border-line bg-surface p-4 shadow-sm hover:border-linehard transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-dim">Credit Cards</span>
+                <span className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center text-dim group-hover:text-fg transition-colors">
+                  <IconCreditCard size={14} />
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-fg mt-2">
+                {cardsData.ready ? formatMoney(cardsData.summary.totalOutstanding, base) : '₹0'}
+              </div>
+              <p className="text-xs text-dim mt-0.5">
+                {cardsData.ready ? `${cardsData.summary.views.length} cards · ${(cardsData.summary.totalUtilisation * 100).toFixed(0)}% util.` : '0 cards'}
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs text-acid-ink font-medium">
+              <span>Open card vault</span>
+              <IconArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
+
+          {/* Loans & EMIs */}
+          <Link
+            to="/loans"
+            className="group rounded-2xl border border-line bg-surface p-4 shadow-sm hover:border-linehard transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-dim">Loans & EMIs</span>
+                <span className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center text-dim group-hover:text-fg transition-colors">
+                  <IconDebt size={14} />
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-fg mt-2">{formatMoney(debtMonthly, base)}</div>
+              <p className="text-xs text-dim mt-0.5">
+                {debtData.ready ? `${debtData.summary.activeCount} active liabilities` : '0 loans'}
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs text-acid-ink font-medium">
+              <span>View debt payoff</span>
+              <IconArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
+        </div>
+
+        {/* 2-Column Section: Upcoming Bills + Recent Spends */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Upcoming Bills & Renewals (Next 14 Days) */}
+          <div className="lg:col-span-7 rounded-2xl border border-line bg-surface p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-semibold text-fg">Upcoming Renewals & Bills</h2>
+                <p className="text-xs text-dim">Next 14 days schedule</p>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-2 border border-line text-dim">
+                {radarQueue.length} upcoming
+              </span>
+            </div>
+
+            {radarQueue.length === 0 ? (
+              <div className="py-8 text-center text-sm text-dim">No upcoming bills due in the next 14 days.</div>
+            ) : (
+              <div className="divide-y divide-line/60">
+                {radarQueue.slice(0, 6).map((item) => (
+                  <Link
+                    key={item.id}
+                    to={item.to}
+                    className="flex items-center justify-between py-3 hover:bg-surface-2/50 px-2 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-surface-2 border border-line flex items-center justify-center shrink-0">
+                        {item.engine === 'SUBS' && <ServiceBadge icon={item.icon || 'globe'} color={item.color || '#e06c53'} size="sm" />}
+                        {item.engine === 'CRD' && <IconCreditCard size={16} className="text-magenta" />}
+                        {item.engine === 'DEBT' && <IconDebt size={16} className="text-blue" />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-fg truncate">{item.title}</div>
+                        <div className="text-xs text-dim truncate">{item.subtitle}</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 pl-3">
+                      <div className="text-sm font-semibold text-fg">{formatMoney(item.amount, base)}</div>
+                      <div className="text-xs text-dim">
+                        {item.days === 0 ? 'Today' : item.days === 1 ? 'Tomorrow' : `In ${item.days} days`}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Activity */}
+          <div className="lg:col-span-5 rounded-2xl border border-line bg-surface p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-semibold text-fg">Recent Spends</h2>
+                <p className="text-xs text-dim">Latest discretionary expenses</p>
+              </div>
+              <Link to="/spends/flow" className="text-xs text-acid-ink font-medium hover:underline">
+                View all →
+              </Link>
+            </div>
+
+            {recentSpends.length === 0 ? (
+              <div className="py-8 text-center text-sm text-dim">No spends logged yet.</div>
+            ) : (
+              <div className="divide-y divide-line/60">
+                {recentSpends.slice(0, 6).map((spend) => (
+                  <div key={spend.id} className="flex items-center justify-between py-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <SpendBadge category={spend.category} title={spend.title} size="sm" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-fg truncate">{spend.title}</div>
+                        <div className="text-xs text-dim capitalize">{spend.category} · {spend.date}</div>
+                      </div>
+                    </div>
+                    <div className="text-sm font-semibold text-fg shrink-0 pl-2">
+                      {formatMoney(spend.amount, base)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <motion.div variants={STAGGER} initial="hidden" animate="show" className="px-3 py-4 md:px-5 md:py-5">

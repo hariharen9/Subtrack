@@ -14,7 +14,7 @@ import { formatClock } from '@/lib/date'
 import { domainFor } from '@/app/nav'
 import { useUI } from '@/store/ui'
 import { CyberButton, IconButton } from '@/components/ui/CyberButton'
-import { IconMoon, IconPlus, IconSearch, IconSun } from '@/components/ui/Icons'
+import { IconMoon, IconPlus, IconSearch, IconSparkles, IconSun, IconZap } from '@/components/ui/Icons'
 import { KeyCap } from '@/components/ui/Micro'
 import { Led } from '@/components/ui/Signal'
 import { Wordmark } from '@/components/brand/Wordmark'
@@ -37,6 +37,8 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
   const item = domainFor(pathname)
   const theme = useUI((s) => s.theme)
   const toggleTheme = useUI((s) => s.toggleTheme)
+  const uiMode = useUI((s) => s.uiMode)
+  const toggleUiMode = useUI((s) => s.toggleUiMode)
   const setPaletteOpen = useUI((s) => s.setPaletteOpen)
   const openComposer = useUI((s) => s.openComposer)
   const openSpendComposer = useUI((s) => s.openSpendComposer)
@@ -50,53 +52,56 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
     switch (item.code) {
       case 'SUBS':
         return {
-          label: 'NEW SUBSCRIPTION',
-          shortLabel: '+ NEW SUB',
+          label: uiMode === 'minimal' ? 'New Subscription' : 'NEW SUBSCRIPTION',
+          shortLabel: '+ SUB',
           kbd: 'N',
           onClick: () => openComposer(),
         }
       case 'CRD':
         return {
-          label: 'LOG CARD TXN',
-          shortLabel: '+ LOG TXN',
+          label: uiMode === 'minimal' ? 'Log Card Txn' : 'LOG CARD TXN',
+          shortLabel: '+ TXN',
           kbd: 'C',
           onClick: () => openCardComposer({ mode: 'txn' }),
         }
       case 'DEBT':
         return {
-          label: 'INITIALIZE LOAN',
-          shortLabel: '+ NEW LOAN',
+          label: uiMode === 'minimal' ? 'Initialize Loan' : 'INITIALIZE LOAN',
+          shortLabel: '+ LOAN',
           kbd: 'L',
           onClick: () => openLoanComposer({ mode: 'loan' }),
         }
       case 'SPND':
         return {
-          label: 'LOG SPEND',
-          shortLabel: '+ LOG SPEND',
+          label: uiMode === 'minimal' ? 'Log Daily Spend' : 'LOG SPEND',
+          shortLabel: '+ SPEND',
           kbd: 'X',
           onClick: () => openSpendComposer(),
         }
       case 'CMD':
       default:
         return {
-          label: 'LOG SPEND',
-          shortLabel: '+ LOG SPEND',
+          label: uiMode === 'minimal' ? 'Log Daily Spend' : 'LOG SPEND',
+          shortLabel: '+ SPEND',
           kbd: 'X',
           onClick: () => openSpendComposer(),
         }
     }
-  }, [item.code, openComposer, openCardComposer, openLoanComposer, openSpendComposer])
+  }, [item.code, openComposer, openCardComposer, openLoanComposer, openSpendComposer, uiMode])
 
   const meta = (
     <>
       <span className="micro flex items-center gap-2 whitespace-nowrap">
-        <span className="font-semibold text-fg tracking-wide">{item.label.toUpperCase()}</span>
+        <span className={cx(uiMode === 'minimal' ? 'text-sm font-semibold text-fg tracking-tight' : 'font-semibold text-fg tracking-wide')}>
+          {uiMode === 'minimal' ? item.label : item.label.toUpperCase()}
+        </span>
         <span className="text-linehard">·</span>
         <span className="text-faint">{item.code}</span>
       </span>
       <span
         className={cx(
           'micro flex items-center gap-1.5 whitespace-nowrap',
+          uiMode === 'minimal' ? 'px-2 py-0.5 rounded-full bg-surface-2 border border-line text-dim text-xs' : '',
           standby
             ? 'text-orangeink'
             : status.signal === 'acid'
@@ -106,8 +111,8 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
                 : 'text-blueink',
         )}
       >
-        <Led signal={standby ? 'orange' : status.signal} size="sm" pulse={!standby && status.signal !== 'blue'} />
-        {standby ? 'STANDBY DECK' : status.label}
+        <Led signal={standby ? 'orange' : status.signal} size="sm" pulse={uiMode !== 'minimal' && !standby && status.signal !== 'blue'} />
+        {standby ? 'STANDBY' : uiMode === 'minimal' ? 'Operational' : status.label}
       </span>
       <span className="micro hidden whitespace-nowrap text-faint sm:inline">
         {formatClock(now)}
@@ -132,15 +137,46 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
         <div className="hidden min-w-0 flex-1 items-center gap-4 lg:flex">{meta}</div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          {/* Mode Switcher Button */}
+          <button
+            type="button"
+            onClick={toggleUiMode}
+            className={cx(
+              'flex h-10 items-center gap-1.5 px-2.5 sm:px-3 text-xs font-medium transition-all cursor-pointer select-none',
+              uiMode === 'minimal'
+                ? 'border border-acid/50 bg-acid/10 text-acid-ink hover:bg-acid/20 rounded-full'
+                : 'border border-line2 bg-bg2 text-dim hover:border-linehard hover:text-fg'
+            )}
+            title={uiMode === 'minimal' ? 'Switch to Cyber Terminal Mode (Press M)' : 'Switch to Minimal Zen Mode (Press M)'}
+            aria-label="Toggle Interface Style"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={uiMode}
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.7, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="grid place-items-center"
+              >
+                {uiMode === 'minimal' ? <IconSparkles size={14} className="text-acid-ink" /> : <IconZap size={14} className="text-faint" />}
+              </motion.span>
+            </AnimatePresence>
+            <span className="font-mono text-[10px] tracking-wider uppercase sm:inline">
+              {uiMode === 'minimal' ? 'ZEN' : 'CYBER'}
+            </span>
+            <KeyCap className="hidden lg:inline text-[9px] py-0 px-1">M</KeyCap>
+          </button>
+
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="group hidden h-11 w-[240px] items-center gap-2 border border-line2 bg-bg2 px-3 text-left transition-colors hover:border-linehard xl:flex 2xl:w-[300px]"
+            className="group hidden h-10 w-[200px] items-center gap-2 border border-line2 bg-bg2 px-3 text-left transition-colors hover:border-linehard xl:flex 2xl:w-[260px]"
             aria-label="Open command palette"
           >
             <IconSearch size={14} className="shrink-0 text-faint" />
             <span className="micro flex-1 truncate text-faint group-hover:text-dim">
-              SEARCH FINANCIAL OS...
+              {uiMode === 'minimal' ? 'Search vault...' : 'SEARCH FINANCIAL OS...'}
             </span>
             <KeyCap>⌘K</KeyCap>
           </button>

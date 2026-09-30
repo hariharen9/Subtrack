@@ -41,6 +41,8 @@ import {
   LuReceipt,
   LuLayers,
   LuCopy,
+  LuSparkles,
+  LuFeather,
 } from 'react-icons/lu'
 
 export type IconProps = SVGProps<SVGSVGElement> & {
@@ -117,3 +119,5 @@ export const IconSpends = createIcon(LuReceipt)
 export const IconSubsession = createIcon(LuLayers)
 export const IconCalendar = createIcon(LuCalendarDays)
 export const IconCopy = createIcon(LuCopy)
+export const IconSparkles = createIcon(LuSparkles)
+export const IconFeather = createIcon(LuFeather)

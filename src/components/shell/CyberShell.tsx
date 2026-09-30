@@ -65,6 +65,8 @@ export function CyberShell() {
   const openLoanComposer = useUI((s) => s.openLoanComposer)
   const openCardComposer = useUI((s) => s.openCardComposer)
   const toggleTheme = useUI((s) => s.toggleTheme)
+  const uiMode = useUI((s) => s.uiMode)
+  const toggleUiMode = useUI((s) => s.toggleUiMode)
 
   useHotkeys([
     { key: 'k', mod: true, handler: (event) => { event.preventDefault(); togglePalette() } },
@@ -74,6 +76,7 @@ export function CyberShell() {
     { key: 'l', handler: () => openLoanComposer() },
     { key: 'c', handler: () => openCardComposer({ mode: 'txn' }) },
     { key: 't', handler: () => toggleTheme() },
+    { key: 'm', handler: () => toggleUiMode() },
     ...DOMAINS.map((item) => ({
       key: item.key,
       handler: () => navigate(item.path),
@@ -81,7 +84,7 @@ export function CyberShell() {
   ])
 
   return (
-    <div className={cx('relative min-h-dvh', !field && 'field-off')}>
+    <div className={cx('relative min-h-dvh', (!field || uiMode === 'minimal') && 'field-off')}>
       <a
         href="#main"
         className="micro sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[90] focus:border focus:border-acid focus:bg-surface focus:px-3 focus:py-2 focus:text-fg"
@@ -89,7 +92,7 @@ export function CyberShell() {
         SKIP TO CONTENT
       </a>
 
-      {field && <FieldOverlay />}
+      {field && uiMode !== 'minimal' && <FieldOverlay />}
 
       <NavigationRail activePath={pathname} processCount={summary.active.length} />
 

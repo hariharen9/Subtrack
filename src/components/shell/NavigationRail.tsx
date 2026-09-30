@@ -13,7 +13,7 @@ import { cx } from '@/lib/cx'
 import { useOnline } from '@/hooks/usePlatform'
 import { useUI } from '@/store/ui'
 import { Led } from '@/components/ui/Signal'
-import { IconMoon, IconSun } from '@/components/ui/Icons'
+import { IconMoon, IconSparkles, IconSun, IconZap } from '@/components/ui/Icons'
 import { Mark } from '@/components/brand/Wordmark'
 import { AnimatePresence } from 'motion/react'
 
@@ -27,6 +27,8 @@ export function NavigationRail({
   const online = useOnline()
   const theme = useUI((s) => s.theme)
   const toggleTheme = useUI((s) => s.toggleTheme)
+  const uiMode = useUI((s) => s.uiMode)
+  const toggleUiMode = useUI((s) => s.toggleUiMode)
   const activeDomain = domainFor(activePath)
 
   const isActive = (domain: (typeof DOMAINS)[number]) =>
@@ -113,26 +115,54 @@ export function NavigationRail({
       </ul>
 
       <div className="space-y-2 border-t border-line p-2">
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="flex h-10 w-full items-center justify-center border border-line2 text-dim transition-colors hover:border-linehard hover:text-fg"
-          aria-label={theme === 'dark' ? 'Switch to daylight mode' : 'Switch to night mode'}
-          title={theme === 'dark' ? 'DAYLIGHT MODE' : 'NIGHT MODE'}
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span
-              key={theme}
-              initial={{ rotate: -90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: 90, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="grid place-items-center"
-            >
-              {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
-            </motion.span>
-          </AnimatePresence>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={toggleUiMode}
+            className={cx(
+              'flex h-9 flex-1 items-center justify-center border text-xs transition-colors cursor-pointer',
+              uiMode === 'minimal'
+                ? 'border-acid/60 bg-acid/15 text-acid-ink rounded-lg'
+                : 'border-line2 text-dim hover:border-linehard hover:text-fg'
+            )}
+            aria-label="Toggle Interface Style"
+            title={uiMode === 'minimal' ? 'Switch to Cyber OS Mode (Key M)' : 'Switch to Minimal Zen Mode (Key M)'}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={uiMode}
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.7, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="grid place-items-center"
+              >
+                {uiMode === 'minimal' ? <IconSparkles size={14} className="text-acid-ink" /> : <IconZap size={14} className="text-faint" />}
+              </motion.span>
+            </AnimatePresence>
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex h-9 flex-1 items-center justify-center border border-line2 text-dim transition-colors hover:border-linehard hover:text-fg cursor-pointer"
+            aria-label={theme === 'dark' ? 'Switch to daylight mode' : 'Switch to night mode'}
+            title={theme === 'dark' ? 'DAYLIGHT MODE' : 'NIGHT MODE'}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={theme}
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="grid place-items-center"
+              >
+                {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+              </motion.span>
+            </AnimatePresence>
+          </button>
+        </div>
 
         <dl className="space-y-1 px-0.5 pt-0.5">
           <StatusRow label="OS" value={activeDomain.code} signal="acid" />

@@ -38,6 +38,7 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['5'], label: 'Daily Spends' },
   { keys: ['6'], label: 'System Host' },
   { keys: ['T'], label: 'Toggle night / daylight' },
+  { keys: ['M'], label: 'Toggle Minimal Zen / Cyber OS mode' },
   { keys: ['ESC'], label: 'Close a console, sheet or palette' },
   { keys: ['↑', '↓'], label: 'Move through palette results' },
   { keys: ['←', '→'], label: 'Walk the spending signal / change month' },
@@ -49,6 +50,10 @@ export default function Settings() {
   const payments = usePayments()
   const theme = useUI((s) => s.theme)
   const setTheme = useUI((s) => s.setTheme)
+  const uiMode = useUI((s) => s.uiMode)
+  const setUiMode = useUI((s) => s.setUiMode)
+  const zenAccent = useUI((s) => s.zenAccent)
+  const setZenAccent = useUI((s) => s.setZenAccent)
   const field = useUI((s) => s.field)
   const setField = useUI((s) => s.setField)
   const calmMode = useUI((s) => s.calmMode)
@@ -109,7 +114,73 @@ export default function Settings() {
           <CutPanel cut="tl-br" cutSize={14} innerClassName="p-0">
             <SectionHeader code="UI" title="Appearance" signal="acid" right={<span className="micro text-faint">SKIN</span>} />
             <div className="border-b border-line px-3 py-3 md:px-4">
-              <span className="tech-label">THEME</span>
+              <div className="flex items-center justify-between">
+                <span className="tech-label">INTERFACE PERSONALITY</span>
+                <span className="micro text-acidink">TOGGLE: KEY 'M'</span>
+              </div>
+              <div className="mt-2">
+                <SegmentedControl
+                  ariaLabel="Interface Style"
+                  value={uiMode}
+                  onChange={(value) => setUiMode(value as 'cyber' | 'minimal')}
+                  options={[
+                    { value: 'cyber', label: '⚡ CYBER OPERATING SYSTEM' },
+                    { value: 'minimal', label: '🍃 MINIMAL ZEN // CLAUDE' },
+                  ]}
+                />
+              </div>
+              <p className="meta mt-2 text-faint">
+                {uiMode === 'minimal'
+                  ? 'Minimal Zen: Soft modern cards, human typography, serene tones, and zero visual clutter.'
+                  : 'Cyber OS: Hardware brutalism, monospace telemetry, chamfered cuts, scanlines, and dense industrial instruments.'}
+              </p>
+            </div>
+            {uiMode === 'minimal' && (
+              <div className="border-b border-line px-3 py-3 md:px-4 bg-surface-2/30">
+                <div className="flex items-center justify-between">
+                  <span className="tech-label">ZEN ACCENT COLOR</span>
+                  <span className="micro text-acidink">ACTIVE: {zenAccent.toUpperCase()}</span>
+                </div>
+                <div className="mt-2.5 grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {[
+                    { id: 'emerald', label: 'Emerald', color: '#10b981', desc: 'Calm Sage' },
+                    { id: 'indigo', label: 'Indigo', color: '#6366f1', desc: 'Linear Tech' },
+                    { id: 'amber', label: 'Amber', color: '#f59e0b', desc: 'Warm Honey' },
+                    { id: 'slate', label: 'Slate', color: '#e4e4e7', desc: 'Monochrome' },
+                    { id: 'cyan', label: 'Cyan', color: '#06b6d4', desc: 'Cool Mint' },
+                  ].map((acc) => {
+                    const active = zenAccent === acc.id
+                    return (
+                      <button
+                        key={acc.id}
+                        type="button"
+                        onClick={() => setZenAccent(acc.id as any)}
+                        className={cx(
+                          'flex items-center gap-2 p-2 rounded-xl border text-left transition-all cursor-pointer',
+                          active
+                            ? 'border-acid bg-acid/15 shadow-sm'
+                            : 'border-line bg-surface hover:border-linehard hover:bg-surface-2'
+                        )}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm"
+                          style={{ backgroundColor: acc.color }}
+                        />
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-fg leading-none truncate">{acc.label}</div>
+                          <div className="text-[10px] text-faint leading-none mt-1 truncate">{acc.desc}</div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="meta mt-2 text-faint">
+                  Personalize the accent hue across badges, indicators, and buttons in Zen mode.
+                </p>
+              </div>
+            )}
+            <div className="border-b border-line px-3 py-3 md:px-4">
+              <span className="tech-label">COLOR SKIN</span>
               <div className="mt-2">
                 <SegmentedControl
                   ariaLabel="Theme"

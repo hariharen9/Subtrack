@@ -43,21 +43,29 @@ import { SmoothScroll } from '@/components/shell/SmoothScroll'
  */
 function ThemeSync() {
   const theme = useUI((s) => s.theme)
+  const uiMode = useUI((s) => s.uiMode)
+  const zenAccent = useUI((s) => s.zenAccent)
 
   useEffect(() => {
     const root = document.documentElement
     root.dataset.theme = theme
+    root.dataset.ui = uiMode
+    root.dataset.zenAccent = zenAccent
     delete root.dataset.boot
     try {
       localStorage.setItem('subtrack.theme', theme)
+      localStorage.setItem('subtrack.uiMode', uiMode)
+      localStorage.setItem('subtrack.zenAccent', zenAccent)
     } catch {
       /* private mode — the skin still applies for this session */
     }
     document.querySelectorAll('meta[name="theme-color"]').forEach((node) => {
       node.removeAttribute('media')
-      node.setAttribute('content', theme === 'dark' ? '#050505' : '#F2F1EC')
+      const darkColor = uiMode === 'minimal' ? '#131315' : '#050505'
+      const lightColor = uiMode === 'minimal' ? '#FAF9F5' : '#F2F1EC'
+      node.setAttribute('content', theme === 'dark' ? darkColor : lightColor)
     })
-  }, [theme])
+  }, [theme, uiMode, zenAccent])
 
   return null
 }

@@ -6,6 +6,7 @@
  * domains glow acid, standby domains sit orange until they power on. The burn
  * composition strip runs along the top edge so the chrome stays informative.
  */
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { DOMAINS, domainFor } from '@/app/nav'
@@ -26,6 +27,42 @@ export function MobileNav({
   processCount: number
 }) {
   const openComposer = useUI((s) => s.openComposer)
+  const openSpendComposer = useUI((s) => s.openSpendComposer)
+  const openCardComposer = useUI((s) => s.openCardComposer)
+  const openLoanComposer = useUI((s) => s.openLoanComposer)
+
+  const domain = domainFor(activePath)
+
+  const action = useMemo(() => {
+    switch (domain.code) {
+      case 'SUBS':
+        return {
+          label: 'Add subscription',
+          onClick: () => openComposer(),
+        }
+      case 'CRD':
+        return {
+          label: 'Log card transaction',
+          onClick: () => openCardComposer({ mode: 'txn' }),
+        }
+      case 'DEBT':
+        return {
+          label: 'Initialize loan',
+          onClick: () => openLoanComposer({ mode: 'loan' }),
+        }
+      case 'SPND':
+        return {
+          label: 'Log daily spend',
+          onClick: () => openSpendComposer(),
+        }
+      case 'CMD':
+      default:
+        return {
+          label: 'Log daily spend',
+          onClick: () => openSpendComposer(),
+        }
+    }
+  }, [domain.code, openComposer, openCardComposer, openLoanComposer, openSpendComposer])
 
   const isActive = (path: string) =>
     path === '/' ? activePath === '/' : domainFor(activePath).code === domainFor(path).code
@@ -39,12 +76,13 @@ export function MobileNav({
       <div className="pointer-events-none absolute inset-x-0 bottom-full flex justify-end px-3 pb-3">
         <motion.button
           type="button"
-          onClick={() => openComposer()}
+          onClick={action.onClick}
           whileTap={{ scale: 0.94, y: 2 }}
           transition={{ type: 'spring', stiffness: 620, damping: 34 }}
-          className="clip-cut-tl pointer-events-auto grid h-12 w-12 place-items-center border-b-2 border-r-2 border-black bg-acid text-black focus-visible:outline-none"
+          className="clip-cut-tl pointer-events-auto grid h-12 w-12 place-items-center border-b-2 border-r-2 border-black bg-acid text-black focus-visible:outline-none cursor-pointer"
           style={{ ['--_cut' as string]: '10px' }}
-          aria-label="Add a subscription"
+          aria-label={action.label}
+          title={action.label}
         >
           <IconPlus size={19} />
         </motion.button>
