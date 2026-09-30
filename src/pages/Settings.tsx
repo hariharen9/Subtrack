@@ -24,6 +24,7 @@ import { SectionHeader, KeyCap, HashRule } from '@/components/ui/Micro'
 import { Led } from '@/components/ui/Signal'
 import { ArmedButton, CyberSelect, SegmentedControl, ToggleSwitch } from '@/components/ui/Controls'
 import { IconDownload, IconUpload, IconBolt, IconMoon, IconSun } from '@/components/ui/Icons'
+import { CategoryManager } from '@/components/settings/CategoryManager'
 import { cx } from '@/lib/cx'
 
 const SHORTCUTS: { keys: string[]; label: string }[] = [
@@ -218,6 +219,9 @@ export default function Settings() {
             </div>
           </CutPanel>
 
+          {/* Custom Taxonomy & Categories Manager */}
+          <CategoryManager />
+
           {/* horizon */}
           <CutPanel cut="tl" cutSize={14} innerClassName="p-0">
             <SectionHeader code="HOR" title="Incoming horizon" signal="orange" />
@@ -261,29 +265,9 @@ export default function Settings() {
               </p>
             </div>
           </CutPanel>
-
-          {/* shortcuts */}
-          <CutPanel cut="none" cutSize={0} innerClassName="p-0">
-            <SectionHeader code="KEY" title="Keyboard" signal="blue" />
-            <ul className="divide-y divide-line">
-              {SHORTCUTS.map((entry) => (
-                <li
-                  key={entry.label}
-                  className="flex items-center justify-between gap-4 px-3 py-2 md:px-4"
-                >
-                  <span className="text-[12.5px] text-dim">{entry.label}</span>
-                  <span className="flex shrink-0 gap-1">
-                    {entry.keys.map((key) => (
-                      <KeyCap key={key}>{key}</KeyCap>
-                    ))}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CutPanel>
         </div>
 
-        {/* Right Column: FX Currency, Local Volume, Danger Zone */}
+        {/* Right Column: FX Currency, Local Volume, Keyboard, Danger Zone */}
         <div className="flex flex-col gap-3">
           {/* aggregation */}
           <CutPanel cut="br" cutSize={14} innerClassName="p-0">
@@ -410,6 +394,26 @@ export default function Settings() {
                 Import replaces the local volume after a confirmation — export first if you are unsure.
               </p>
             </div>
+          </CutPanel>
+
+          {/* shortcuts */}
+          <CutPanel cut="none" cutSize={0} innerClassName="p-0">
+            <SectionHeader code="KEY" title="Keyboard" signal="blue" />
+            <ul className="divide-y divide-line">
+              {SHORTCUTS.map((entry) => (
+                <li
+                  key={entry.label}
+                  className="flex items-center justify-between gap-4 px-3 py-2 md:px-4"
+                >
+                  <span className="text-[12.5px] text-dim">{entry.label}</span>
+                  <span className="flex shrink-0 gap-1">
+                    {entry.keys.map((key) => (
+                      <KeyCap key={key}>{key}</KeyCap>
+                    ))}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </CutPanel>
 
           {/* danger zone */}

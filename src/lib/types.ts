@@ -17,6 +17,7 @@ export type Category =
   | 'education'
   | 'shopping'
   | 'other'
+  | (string & {})
 
 export type BillingCycle = 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom'
 
@@ -88,47 +89,84 @@ export interface AppSettings {
   horizonDays: number
 }
 
-export const CATEGORIES: { id: Category; label: string; code: string }[] = [
-  { id: 'ai', label: 'AI & Intelligence', code: 'AI' },
-  { id: 'entertainment', label: 'Entertainment', code: 'ENT' },
-  { id: 'productivity', label: 'Productivity', code: 'PRD' },
-  { id: 'cloud', label: 'Cloud', code: 'CLD' },
-  { id: 'music', label: 'Music', code: 'MUS' },
-  { id: 'fitness', label: 'Fitness', code: 'FIT' },
-  { id: 'education', label: 'Education', code: 'EDU' },
-  { id: 'shopping', label: 'Shopping', code: 'SHP' },
-  { id: 'other', label: 'Other', code: 'OTH' },
+export interface CategoryMeta {
+  id: string
+  label: string
+  code: string
+  signal: 'acid' | 'blue' | 'magenta' | 'orange' | 'red'
+}
+
+export const DEFAULT_CATEGORIES: CategoryMeta[] = [
+  { id: 'ai', label: 'AI & Intelligence', code: 'AI', signal: 'acid' },
+  { id: 'entertainment', label: 'Entertainment', code: 'ENT', signal: 'magenta' },
+  { id: 'productivity', label: 'Productivity', code: 'PRD', signal: 'blue' },
+  { id: 'cloud', label: 'Cloud', code: 'CLD', signal: 'blue' },
+  { id: 'music', label: 'Music', code: 'MUS', signal: 'orange' },
+  { id: 'fitness', label: 'Fitness', code: 'FIT', signal: 'red' },
+  { id: 'education', label: 'Education', code: 'EDU', signal: 'magenta' },
+  { id: 'shopping', label: 'Shopping', code: 'SHP', signal: 'orange' },
+  { id: 'other', label: 'Other', code: 'OTH', signal: 'acid' },
 ]
 
-export const CATEGORY_LABEL: Record<Category, string> = CATEGORIES.reduce(
-  (acc, c) => {
-    acc[c.id] = c.label
-    return acc
+export const CATEGORIES: CategoryMeta[] = DEFAULT_CATEGORIES
+
+let activeSubCategories: CategoryMeta[] = DEFAULT_CATEGORIES
+
+export function setActiveSubCategories(list: CategoryMeta[]): void {
+  if (Array.isArray(list) && list.length > 0) {
+    activeSubCategories = list
+  }
+}
+
+export function getActiveSubCategories(): CategoryMeta[] {
+  return activeSubCategories
+}
+
+export function getCategoryMeta(id: string, customList?: CategoryMeta[]): CategoryMeta {
+  const list = customList ?? activeSubCategories ?? DEFAULT_CATEGORIES
+  const found = list.find((c) => c.id === id)
+  if (found) return found
+  return { id, label: id.charAt(0).toUpperCase() + id.slice(1), code: id.slice(0, 3).toUpperCase(), signal: 'blue' }
+}
+
+export function getCategoryLabel(id: string, customList?: CategoryMeta[]): string {
+  return getCategoryMeta(id, customList).label
+}
+
+export function getCategorySignal(id: string, customList?: CategoryMeta[]): 'acid' | 'blue' | 'magenta' | 'orange' | 'red' {
+  return getCategoryMeta(id, customList).signal
+}
+
+export const CATEGORY_LABEL: Record<string, string> = new Proxy(
+  DEFAULT_CATEGORIES.reduce((acc, c) => ({ ...acc, [c.id]: c.label }), {} as Record<string, string>),
+  {
+    get: (_target, prop: string) => {
+      if (typeof prop !== 'string') return ''
+      return getCategoryLabel(prop)
+    },
   },
-  {} as Record<Category, string>,
 )
 
-export const CATEGORY_CODE: Record<Category, string> = CATEGORIES.reduce(
-  (acc, c) => {
-    acc[c.id] = c.code
-    return acc
+export const CATEGORY_CODE: Record<string, string> = new Proxy(
+  DEFAULT_CATEGORIES.reduce((acc, c) => ({ ...acc, [c.id]: c.code }), {} as Record<string, string>),
+  {
+    get: (_target, prop: string) => {
+      if (typeof prop !== 'string') return ''
+      return getCategoryMeta(prop).code
+    },
   },
-  {} as Record<Category, string>,
 )
 
 /** Category → signal colour token name. Used by charts and chips. */
-export const CATEGORY_SIGNAL: Record<Category, 'acid' | 'blue' | 'magenta' | 'orange' | 'red'> =
+export const CATEGORY_SIGNAL: Record<string, 'acid' | 'blue' | 'magenta' | 'orange' | 'red'> = new Proxy(
+  DEFAULT_CATEGORIES.reduce((acc, c) => ({ ...acc, [c.id]: c.signal }), {} as Record<string, 'acid' | 'blue' | 'magenta' | 'orange' | 'red'>),
   {
-    ai: 'acid',
-    entertainment: 'magenta',
-    productivity: 'blue',
-    cloud: 'blue',
-    music: 'orange',
-    fitness: 'red',
-    education: 'magenta',
-    shopping: 'orange',
-    other: 'acid',
-  }
+    get: (_target, prop: string) => {
+      if (typeof prop !== 'string') return 'blue'
+      return getCategorySignal(prop)
+    },
+  },
+)
 
 export const CYCLE_LABEL: Record<BillingCycle, string> = {
   weekly: 'Weekly',
@@ -159,6 +197,7 @@ export type SpendCategory =
   | 'education'
   | 'personal'
   | 'other'
+  | (string & {})
 
 /** A single day-to-day expense. Denormalised enough to survive on its own. */
 export interface Spend {
@@ -178,7 +217,7 @@ export interface Spend {
 
 /** Display + signal metadata for a spend category. */
 export interface SpendCategoryMeta {
-  id: SpendCategory
+  id: string
   label: string
   code: string
   signal: 'acid' | 'blue' | 'magenta' | 'orange' | 'red'
@@ -186,7 +225,7 @@ export interface SpendCategoryMeta {
   discretionary: boolean
 }
 
-export const SPEND_CATEGORIES: SpendCategoryMeta[] = [
+export const DEFAULT_SPEND_CATEGORIES: SpendCategoryMeta[] = [
   { id: 'food', label: 'Food & Dining', code: 'FNB', signal: 'orange', discretionary: true },
   { id: 'transport', label: 'Transport', code: 'TRN', signal: 'blue', discretionary: false },
   { id: 'groceries', label: 'Groceries', code: 'GRC', signal: 'acid', discretionary: false },
@@ -200,26 +239,55 @@ export const SPEND_CATEGORIES: SpendCategoryMeta[] = [
   { id: 'other', label: 'Other', code: 'OTH', signal: 'blue', discretionary: true },
 ]
 
-export const SPEND_CATEGORY_META: Record<SpendCategory, SpendCategoryMeta> =
-  Object.fromEntries(SPEND_CATEGORIES.map((c) => [c.id, c])) as Record<
-    SpendCategory,
-    SpendCategoryMeta
-  >
+export const SPEND_CATEGORIES: SpendCategoryMeta[] = DEFAULT_SPEND_CATEGORIES
 
-export const SPEND_CATEGORY_LABEL: Record<SpendCategory, string> = SPEND_CATEGORIES.reduce(
-  (acc, c) => {
-    acc[c.id] = c.label
-    return acc
+let activeSpendCategories: SpendCategoryMeta[] = DEFAULT_SPEND_CATEGORIES
+
+export function setActiveSpendCategories(list: SpendCategoryMeta[]): void {
+  if (Array.isArray(list) && list.length > 0) {
+    activeSpendCategories = list
+  }
+}
+
+export function getActiveSpendCategories(): SpendCategoryMeta[] {
+  return activeSpendCategories
+}
+
+export function getSpendCategoryMeta(id: string, customList?: SpendCategoryMeta[]): SpendCategoryMeta {
+  const list = customList ?? activeSpendCategories ?? DEFAULT_SPEND_CATEGORIES
+  const found = list.find((c) => c.id === id)
+  if (found) return found
+  return { id, label: id.charAt(0).toUpperCase() + id.slice(1), code: id.slice(0, 3).toUpperCase(), signal: 'blue', discretionary: true }
+}
+
+export const SPEND_CATEGORY_META: Record<string, SpendCategoryMeta> = new Proxy(
+  Object.fromEntries(DEFAULT_SPEND_CATEGORIES.map((c) => [c.id, c])) as Record<string, SpendCategoryMeta>,
+  {
+    get: (_target, prop: string) => {
+      if (typeof prop !== 'string') return DEFAULT_SPEND_CATEGORIES[0]
+      return getSpendCategoryMeta(prop)
+    },
   },
-  {} as Record<SpendCategory, string>,
 )
 
-export const SPEND_CATEGORY_CODE: Record<SpendCategory, string> = SPEND_CATEGORIES.reduce(
-  (acc, c) => {
-    acc[c.id] = c.code
-    return acc
+export const SPEND_CATEGORY_LABEL: Record<string, string> = new Proxy(
+  DEFAULT_SPEND_CATEGORIES.reduce((acc, c) => ({ ...acc, [c.id]: c.label }), {} as Record<string, string>),
+  {
+    get: (_target, prop: string) => {
+      if (typeof prop !== 'string') return ''
+      return getSpendCategoryMeta(prop).label
+    },
   },
-  {} as Record<SpendCategory, string>,
+)
+
+export const SPEND_CATEGORY_CODE: Record<string, string> = new Proxy(
+  DEFAULT_SPEND_CATEGORIES.reduce((acc, c) => ({ ...acc, [c.id]: c.code }), {} as Record<string, string>),
+  {
+    get: (_target, prop: string) => {
+      if (typeof prop !== 'string') return ''
+      return getSpendCategoryMeta(prop).code
+    },
+  },
 )
 
 export const SPEND_METHOD_LABEL: Record<SpendMethod, string> = {

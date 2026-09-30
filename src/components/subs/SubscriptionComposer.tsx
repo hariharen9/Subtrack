@@ -95,6 +95,7 @@ export function SubscriptionComposer() {
   const closeComposer = useUI((s) => s.closeComposer)
   const pushToast = useUI((s) => s.pushToast)
   const base = useUI((s) => s.baseCurrency)
+  const subCategories = useUI((s) => s.subCategories)
   const compact = useIsCompact()
   const navigate = useNavigate()
   const subscriptions = useSubscriptions()
@@ -601,7 +602,7 @@ export function SubscriptionComposer() {
                       <div className="grid gap-3 md:grid-cols-[1.5fr_1fr]">
                         <FieldShell label="CATEGORY" code="TAG">
                           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                            {CATEGORIES.map((category) => {
+                            {subCategories.map((category) => {
                               const isSelected = draft.category === category.id
                               return (
                                 <button

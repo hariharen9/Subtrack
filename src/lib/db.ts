@@ -355,6 +355,22 @@ export async function purgeSubscription(id: string): Promise<void> {
   })
 }
 
+/** Reassign subscriptions and payments from an old category to a fallback category. */
+export async function migrateSubCategory(fromCategory: string, toCategory: string = 'other'): Promise<void> {
+  await db.transaction('rw', db.subscriptions, db.payments, async () => {
+    await db.subscriptions.where('category').equals(fromCategory).modify({ category: toCategory, updatedAt: nowStamp() })
+    await db.payments.where('category').equals(fromCategory).modify({ category: toCategory })
+  })
+}
+
+/** Reassign daily spends and card transactions from an old category to a fallback category. */
+export async function migrateSpendCategory(fromCategory: string, toCategory: string = 'other'): Promise<void> {
+  await db.transaction('rw', db.spends, db.cardTransactions, async () => {
+    await db.spends.where('category').equals(fromCategory).modify({ category: toCategory, updatedAt: nowStamp() })
+    await db.cardTransactions.where('category').equals(fromCategory).modify({ category: toCategory, updatedAt: nowStamp() })
+  })
+}
+
 
 /* ----------------------------------------------------------------- spends --- */
 

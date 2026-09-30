@@ -38,7 +38,6 @@ import { useState, useEffect } from 'react'
 import { CyberButton } from '@/components/ui/CyberButton'
 import { FieldShell } from '@/components/ui/Controls'
 import { symbolOf } from '@/lib/money'
-import { SPEND_CATEGORIES } from '@/lib/types'
 
 const STAGGER = {
   hidden: {},
@@ -78,6 +77,7 @@ export default function SpendPatterns() {
   const spends = useSpends()
   const limit = useWeeklyLimit()
   const base = useUI((s) => s.baseCurrency)
+  const spendCategories = useUI((s) => s.spendCategories)
   const pushToast = useUI((s) => s.pushToast)
   const openSpendComposer = useUI((s) => s.openSpendComposer)
   const today = todayISO()
@@ -634,7 +634,7 @@ export default function SpendPatterns() {
               <div className="mt-3 pt-2 border-t border-line">
                 <span className="micro text-faint">WANTS VS NEEDS</span>
                 <div className="mt-1.5 flex flex-wrap gap-1">
-                  {SPEND_CATEGORIES.map((c) => (
+                  {spendCategories.map((c) => (
                     <span key={c.id} className={cx('micro border px-1.5 py-0.5 text-[9px]', c.discretionary ? 'border-orange/50 text-orangeink' : 'border-line2 text-faint')}>
                       {c.label}
                     </span>

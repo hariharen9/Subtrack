@@ -15,7 +15,7 @@ import { viewOf } from '@/lib/analytics'
 import { searchSubscriptions } from '@/lib/fuzzy'
 import { formatMoney } from '@/lib/money'
 import { todayISO } from '@/lib/date'
-import { CATEGORIES, CATEGORY_LABEL, type Category, type ProcessStatus } from '@/lib/types'
+import { CATEGORY_LABEL, type Category, type ProcessStatus } from '@/lib/types'
 import { CutPanel } from '@/components/ui/CutPanel'
 import { CyberButton } from '@/components/ui/CyberButton'
 import { DataStrip } from '@/components/ui/DataStrip'
@@ -46,6 +46,7 @@ export default function Flow() {
   const { summary } = useSystem()
   const subscriptions = useSubscriptions()
   const base = useUI((s) => s.baseCurrency)
+  const subCategories = useUI((s) => s.subCategories)
   const openComposer = useUI((s) => s.openComposer)
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState('')
@@ -223,7 +224,7 @@ export default function Flow() {
             >
               ALL CATEGORIES
             </button>
-            {CATEGORIES.map((entry) => (
+            {subCategories.map((entry) => (
               <button
                 key={entry.id}
                 type="button"

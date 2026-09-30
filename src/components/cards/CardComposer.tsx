@@ -12,7 +12,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
-  SPEND_CATEGORIES,
   SPEND_CATEGORY_META,
   CARD_TXN_TYPE_LABEL,
   type SpendCategory,
@@ -195,6 +194,7 @@ export function CardComposer() {
   const close = useUI((s) => s.closeCardComposer)
   const pushToast = useUI((s) => s.pushToast)
   const base = useUI((s) => s.baseCurrency)
+  const spendCategories = useUI((s) => s.spendCategories)
   const compact = useIsCompact()
   const cards = useCreditCards()
   const txns = useCardTransactions()
@@ -669,7 +669,7 @@ export function CardComposer() {
                         <div className="mt-3">
                           <FieldShell label="SPEND CATEGORY" code="CATEGORY" hint="Maps transaction into category mix & rewards engine">
                             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
-                              {SPEND_CATEGORIES.map((c) => {
+                              {spendCategories.map((c) => {
                                 const isSelected = txnForm.category === c.id
                                 return (
                                   <button

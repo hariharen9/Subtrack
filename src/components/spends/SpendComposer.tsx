@@ -85,6 +85,7 @@ export function SpendComposer() {
   const close = useUI((s) => s.closeSpendComposer)
   const pushToast = useUI((s) => s.pushToast)
   const base = useUI((s) => s.baseCurrency)
+  const spendCategories = useUI((s) => s.spendCategories)
   const compact = useIsCompact()
 
   const spends = useSpends()
@@ -130,10 +131,10 @@ export function SpendComposer() {
       window.setTimeout(() => amountRef.current?.focus(), 50)
       return
     }
-    const preset = SPEND_CATEGORIES.find((c) => c.id === composer.presetCategory)
-    setDraft({ ...emptyDraft(base), category: preset?.id ?? 'food' })
+    const preset = spendCategories.find((c) => c.id === composer.presetCategory)
+    setDraft({ ...emptyDraft(base), category: preset?.id ?? spendCategories[0]?.id ?? 'food' })
     window.setTimeout(() => titleRef.current?.focus(), 50)
-  }, [composer.open, composer.editId, composer.presetCategory, editing, base])
+  }, [composer.open, composer.editId, composer.presetCategory, editing, base, spendCategories])
 
   const amount = Number.parseFloat(draft.amount.replace(/,/g, '')) || 0
   const amountInBase = amount
@@ -473,7 +474,7 @@ export function SpendComposer() {
                       </div>
                       <FieldShell label="CATEGORY" code="SIGNAL" hint="Wants (lifestyle spends) count against your weekly budget.">
                         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
-                          {SPEND_CATEGORIES.map((category) => {
+                          {spendCategories.map((category) => {
                             const isSelected = draft.category === category.id
                             return (
                               <button
@@ -498,10 +499,10 @@ export function SpendComposer() {
                             )
                           })}
                         </div>
-                        <p className={cx('micro mt-2', SIGNAL_TEXT[SPEND_CATEGORIES.find((c) => c.id === draft.category)?.signal ?? 'blue'])}>
-                          {SPEND_CATEGORIES.find((c) => c.id === draft.category)?.label?.toUpperCase()}
+                        <p className={cx('micro mt-2', SIGNAL_TEXT[spendCategories.find((c) => c.id === draft.category)?.signal ?? 'blue'])}>
+                          {spendCategories.find((c) => c.id === draft.category)?.label?.toUpperCase()}
                           {' · '}
-                          {SPEND_CATEGORIES.find((c) => c.id === draft.category)?.discretionary
+                          {spendCategories.find((c) => c.id === draft.category)?.discretionary
                             ? 'WANT (COUNTS TOWARD WEEKLY BUDGET)'
                             : 'NEED (ESSENTIAL LIVING EXPENSE)'}
                         </p>

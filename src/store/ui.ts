@@ -9,6 +9,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { BASE_CURRENCY } from '@/lib/money'
+import {
+  type CategoryMeta,
+  type SpendCategoryMeta,
+  DEFAULT_CATEGORIES,
+  DEFAULT_SPEND_CATEGORIES,
+  setActiveSubCategories,
+  setActiveSpendCategories,
+} from '@/lib/types'
+import { migrateSubCategory, migrateSpendCategory } from '@/lib/db'
 
 export type ToastKind = 'ok' | 'info' | 'warn' | 'alert' | 'busy'
 
@@ -95,6 +104,9 @@ interface UIState {
   termination: TerminationState
   /** False until the local volume has been opened and seeded. */
   booted: boolean
+  /** Dynamic categories configurable by the user */
+  subCategories: CategoryMeta[]
+  spendCategories: SpendCategoryMeta[]
   setBooted: (booted: boolean) => void
   setTheme: (theme: 'dark' | 'day') => void
   toggleTheme: () => void
@@ -130,6 +142,17 @@ interface UIState {
   closeLoanComposer: () => void
   openTermination: (subId: string, mode: TerminationMode) => void
   closeTermination: () => void
+  // Category management
+  addSubCategory: (category: CategoryMeta) => void
+  updateSubCategory: (id: string, patch: Partial<CategoryMeta>) => void
+  deleteSubCategory: (id: string, fallbackId?: string) => Promise<void>
+  reorderSubCategories: (categories: CategoryMeta[]) => void
+  resetSubCategories: () => void
+  addSpendCategory: (category: SpendCategoryMeta) => void
+  updateSpendCategory: (id: string, patch: Partial<SpendCategoryMeta>) => void
+  deleteSpendCategory: (id: string, fallbackId?: string) => Promise<void>
+  reorderSpendCategories: (categories: SpendCategoryMeta[]) => void
+  resetSpendCategories: () => void
 }
 
 let toastSeq = 0
@@ -151,6 +174,8 @@ export const useUI = create<UIState>()(
       loanComposer: { open: false, mode: 'loan', editLoanId: null, paymentLoanId: null },
       termination: { open: false, subId: null, mode: 'terminate' },
       booted: false,
+      subCategories: DEFAULT_CATEGORIES,
+      spendCategories: DEFAULT_SPEND_CATEGORIES,
       setBooted: (booted) => set({ booted }),
 
       setTheme: (theme) => set({ theme }),
@@ -243,10 +268,65 @@ export const useUI = create<UIState>()(
       openTermination: (subId, mode) => set({ termination: { open: true, subId, mode } }),
       closeTermination: () =>
         set({ termination: { open: false, subId: null, mode: 'terminate' } }),
+
+      // Category management actions
+      addSubCategory: (category) => {
+        const current = get().subCategories
+        if (current.some((c) => c.id === category.id)) return
+        const next = [...current, category]
+        setActiveSubCategories(next)
+        set({ subCategories: next })
+      },
+      updateSubCategory: (id, patch) => {
+        const next = get().subCategories.map((c) => (c.id === id ? { ...c, ...patch } : c))
+        setActiveSubCategories(next)
+        set({ subCategories: next })
+      },
+      deleteSubCategory: async (id, fallbackId = 'other') => {
+        const next = get().subCategories.filter((c) => c.id !== id)
+        await migrateSubCategory(id, fallbackId)
+        setActiveSubCategories(next)
+        set({ subCategories: next })
+      },
+      reorderSubCategories: (categories) => {
+        setActiveSubCategories(categories)
+        set({ subCategories: categories })
+      },
+      resetSubCategories: () => {
+        setActiveSubCategories(DEFAULT_CATEGORIES)
+        set({ subCategories: DEFAULT_CATEGORIES })
+      },
+
+      addSpendCategory: (category) => {
+        const current = get().spendCategories
+        if (current.some((c) => c.id === category.id)) return
+        const next = [...current, category]
+        setActiveSpendCategories(next)
+        set({ spendCategories: next })
+      },
+      updateSpendCategory: (id, patch) => {
+        const next = get().spendCategories.map((c) => (c.id === id ? { ...c, ...patch } : c))
+        setActiveSpendCategories(next)
+        set({ spendCategories: next })
+      },
+      deleteSpendCategory: async (id, fallbackId = 'other') => {
+        const next = get().spendCategories.filter((c) => c.id !== id)
+        await migrateSpendCategory(id, fallbackId)
+        setActiveSpendCategories(next)
+        set({ spendCategories: next })
+      },
+      reorderSpendCategories: (categories) => {
+        setActiveSpendCategories(categories)
+        set({ spendCategories: categories })
+      },
+      resetSpendCategories: () => {
+        setActiveSpendCategories(DEFAULT_SPEND_CATEGORIES)
+        set({ spendCategories: DEFAULT_SPEND_CATEGORIES })
+      },
     }),
     {
       name: 'subtrack.ui',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         theme: state.theme,
         uiMode: state.uiMode,
@@ -254,10 +334,34 @@ export const useUI = create<UIState>()(
         field: state.field,
         baseCurrency: state.baseCurrency,
         horizonDays: state.horizonDays,
+        subCategories: state.subCategories,
+        spendCategories: state.spendCategories,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.subCategories?.length) {
+          setActiveSubCategories(state.subCategories)
+        }
+        if (state?.spendCategories?.length) {
+          setActiveSpendCategories(state.spendCategories)
+        }
+      },
     },
   ),
 )
+
+// Initialize active categories on file evaluation
+if (typeof window !== 'undefined') {
+  try {
+    const raw = localStorage.getItem('subtrack.ui')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (parsed?.state?.subCategories) setActiveSubCategories(parsed.state.subCategories)
+      if (parsed?.state?.spendCategories) setActiveSpendCategories(parsed.state.spendCategories)
+    }
+  } catch {
+    // ignore
+  }
+}
 
 /** Standalone helper for non-React call sites (db flows, hotkeys). */
 export function announce(toast: Omit<SystemToast, 'id'>): string {

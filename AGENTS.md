@@ -101,6 +101,8 @@ E:/Projects/Subtrack/
     │   │   ├── BurnRail.tsx      # BurnSegments, BurnRail, BurnEdge — segmented load register
     │   │   ├── CategoryBlock.tsx # CategoryBar, CategoryDistribution, CompositionStrip, RadialGauge
     │   │   └── SpendingSignal.tsx# SVG signal trace: grid, crosshair, forecast region, a11y table
+    │   ├── settings/
+    │   │   └── CategoryManager.tsx # Complete custom categories management console (add, edit, reorder, delete & migrate)
     │   ├── shell/
     │   │   ├── CommandPalette.tsx# Ctrl/⌘+K query engine (domains, subscriptions, cards, spends)
     │   │   ├── CyberShell.tsx    # RouteStage: DomainFrame + smooth motion content well,
@@ -317,7 +319,7 @@ export interface Payment {
 }
 ```
 
-#### `Category` — 9 discrete semantic domains
+#### `Category` & Dynamic Taxonomy
 ```typescript
 export type Category =
   | 'ai'             // AI & Intelligence (ChatGPT, Claude, Gemini, Cursor, Perplexity)
@@ -329,14 +331,14 @@ export type Category =
   | 'education'      // Learning & Reading (Coursera Plus, Duolingo, Medium, Substack)
   | 'shopping'       // Delivery & Memberships (Amazon Prime, Swiggy One, Zomato Gold)
   | 'other'          // Security & Utilities (1Password, Bitwarden, NordVPN, Proton)
+  | (string & {})    // User-configured custom category IDs
 ```
 
-`CATEGORIES` (in `types.ts`) carries `{ id, label, code }`:
-`AI` · `ENT` · `PRD` · `CLD` · `MUS` · `FIT` · `EDU` · `SHP` · `OTH`.
-
-Each category maps to a semantic signal colour via `CATEGORY_SIGNAL`:
-`ai → acid` · `entertainment → magenta` · `productivity → blue` · `cloud → blue` ·
-`music → orange` · `fitness → red` · `education → magenta` · `shopping → orange` · `other → acid`.
+Categories are fully user-customisable website-wide via `CategoryManager` in Settings:
+- **`subCategories: CategoryMeta[]`** and **`spendCategories: SpendCategoryMeta[]`** in `useUI` store (persisted in `localStorage`).
+- **Dynamic Proxy Resolution**: `CATEGORY_LABEL`, `CATEGORY_CODE`, `CATEGORY_SIGNAL`, `SPEND_CATEGORY_META`, `SPEND_CATEGORY_LABEL`, and `SPEND_CATEGORY_CODE` use JavaScript Proxies backed by active category lists to resolve custom categories seamlessly with zero breaking changes.
+- **Safe Migration on Deletion**: `migrateSubCategory(oldCat, fallbackCat)` and `migrateSpendCategory(oldCat, fallbackCat)` in `src/lib/db.ts` reassign existing subscriptions, payments, spends, and credit card transactions to the chosen fallback before removal.
+- **Reordering**: Users can rearrange category priority (Move Up / Move Down) website-wide across all composers, filters, and charts.
 
 `CYCLE_LABEL` / `CYCLE_SHORT` provide human (`Weekly`) and telemetry (`WK`) forms.
 

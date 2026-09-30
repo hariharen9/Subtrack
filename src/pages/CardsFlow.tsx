@@ -11,7 +11,7 @@ import { useCreditCards, useCardTransactions } from '@/hooks/useCards'
 import { useUI } from '@/store/ui'
 import { convert, formatMoney } from '@/lib/money'
 import { formatSignalDate, todayISO, addDaysISO } from '@/lib/date'
-import { SPEND_CATEGORIES, SPEND_CATEGORY_META, CARD_TXN_TYPE_LABEL, type SpendCategory, type CardTransaction, type CardTxnType } from '@/lib/types'
+import { SPEND_CATEGORY_META, CARD_TXN_TYPE_LABEL, type SpendCategory, type CardTransaction, type CardTxnType } from '@/lib/types'
 import { deleteCardTransaction } from '@/lib/db'
 import { downloadFile } from '@/lib/portability'
 import { CutPanel } from '@/components/ui/CutPanel'
@@ -58,6 +58,7 @@ export default function CardsFlow() {
   const txns = useCardTransactions()
   const openCardComposer = useUI((s) => s.openCardComposer)
   const base = useUI((s) => s.baseCurrency)
+  const spendCategories = useUI((s) => s.spendCategories)
 
   const [query, setQuery] = useState('')
   const [cardFilter, setCardFilter] = useState<string>('all')
@@ -161,7 +162,7 @@ export default function CardsFlow() {
           <div className="mt-1.5 flex flex-wrap items-center gap-1">
             <span className="micro text-[9px] text-faint">CAT:</span>
             <button type="button" onClick={() => setCatFilter('all')} className={cx('micro border px-1.5 py-0.5 transition-colors', catFilter === 'all' ? 'border-acid bg-acid text-black font-semibold' : 'border-line2 text-dim hover:text-fg')}>ALL</button>
-            {SPEND_CATEGORIES.map((c) => (
+            {spendCategories.map((c) => (
               <button key={c.id} type="button" onClick={() => setCatFilter(c.id)} className={cx('micro border px-1.5 py-0.5 transition-colors', catFilter === c.id ? 'border-fg bg-fg text-bg font-semibold' : 'border-line2 text-dim hover:text-fg')}>{c.label}</button>
             ))}
             <span className="ml-2 micro text-[9px] text-faint">RANGE:</span>

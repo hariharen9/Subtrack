@@ -8,7 +8,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import {
-  SPEND_CATEGORIES,
   SPEND_CATEGORY_LABEL,
   SPEND_METHOD_LABEL,
   type SpendCategory,
@@ -56,6 +55,7 @@ const RANGE_OPTIONS: { id: SpendRangePreset; label: string; short: string }[] = 
 export default function SpendFlow() {
   const spends = useSpends()
   const base = useUI((s) => s.baseCurrency)
+  const spendCategories = useUI((s) => s.spendCategories)
   const openSpendComposer = useUI((s) => s.openSpendComposer)
 
   const [query, setQuery] = useState('')
@@ -265,7 +265,7 @@ export default function SpendFlow() {
               >
                 ALL SECTORS
               </button>
-              {SPEND_CATEGORIES.map((cat) => {
+              {spendCategories.map((cat) => {
                 const isActive = category === cat.id
                 return (
                   <button
