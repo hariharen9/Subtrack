@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // PAYMENT MATRIX (TIME)
+ * SPENDSTATE // PAYMENT MATRIX (TIME)
  *
  * A calendar that shows the future flow of money. Six weeks of hard cells, each
  * carrying the day's charges as coloured markers and a category composition

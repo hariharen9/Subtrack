@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // MASTER COMMAND COCKPIT
+ * SPENDSTATE // MASTER COMMAND COCKPIT
  *
  * The Financial OS Central Command. Rolls every live domain engine (Subscriptions,
  * Credit Cards, Loans & EMIs, Daily Spends) into an apex command dashboard:

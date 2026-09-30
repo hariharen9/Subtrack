@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SYSTEM ANALYTICS
+ * SPENDSTATE // SYSTEM ANALYTICS
  *
  * Everything the interface claims is derived here from real rows: burn is a
  * normalised run-rate, the signal series is the recorded ledger (past) joined

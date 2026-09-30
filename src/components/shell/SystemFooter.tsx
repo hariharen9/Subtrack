@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SYSTEM FOOTER
+ * SPENDSTATE // SYSTEM FOOTER
  *
  * Streamlined system footer: clear local-first status, essential metrics,
  * and minimalist build reference without visual clutter.

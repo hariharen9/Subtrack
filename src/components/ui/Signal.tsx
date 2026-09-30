@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SIGNAL LANGUAGE
+ * SPENDSTATE // SIGNAL LANGUAGE
  *
  * Five signals, each with one meaning across the whole system:
  *   acid    → healthy / running / primary action

@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "SUBTRACK — Financial Operating System",
-  "short_name": "SUBTRACK",
+  "name": "SPENDSTATE — Financial Operating System",
+  "short_name": "SPENDSTATE",
   "description": "Every subscription you run, monitored as a financial process. Local-first: your data never leaves this device.",
   "start_url": "/",
   "scope": "/",

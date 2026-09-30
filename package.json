@@ -1,9 +1,9 @@
 {
-  "name": "subtrack",
+  "name": "spendstate",
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "description": "SUBTRACK — a financial operating system for the subscriptions you run. Local-first, offline-capable PWA.",
+  "description": "SPENDSTATE — a financial operating system for the subscriptions you run. Local-first, offline-capable PWA.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

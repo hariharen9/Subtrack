@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CREDIT CARD ANALYTICS
+ * SPENDSTATE // CREDIT CARD ANALYTICS
  *
  * Statement cycles, utilization, dues, and summaries — all derived from raw
  * rows. A statement period runs from one billing day to the day before the

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPENDS DATA HOOKS
+ * SPENDSTATE // SPENDS DATA HOOKS
  *
  * Reactive subscriptions to the spends store plus a memoised summary pipeline.
  * Mirrors useSystem so the Spends cockpit never touches Dexie directly, and the

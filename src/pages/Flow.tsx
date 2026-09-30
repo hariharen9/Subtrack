@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // FLOW (SUBSCRIPTIONS)
+ * SPENDSTATE // FLOW (SUBSCRIPTIONS)
  *
  * Every process the user runs, with a query bar that speaks the same language as
  * the command palette, status filters, sorting, and two densities: the command

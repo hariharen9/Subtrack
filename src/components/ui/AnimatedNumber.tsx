@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // ANIMATED NUMBER
+ * SPENDSTATE // ANIMATED NUMBER
  *
  * Numbers in a financial console should feel like they are being metered, not
  * printed. The value springs toward its target and renders through a MotionValue

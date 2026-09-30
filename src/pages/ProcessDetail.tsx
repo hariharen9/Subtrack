@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // PROCESS DIAGNOSTIC
+ * SPENDSTATE // PROCESS DIAGNOSTIC
  *
  * Opening a process should feel like entering a diagnostic panel, not loading a
  * record page: identity, economics, schedule, ledger, per-process signal and the

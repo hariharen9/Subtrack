@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DEBT ANALYTICS
+ * SPENDSTATE // DEBT ANALYTICS
  *
  * Pure functions over (loans, loanPayments, baseCurrency, today) — nothing
  * stored, nothing guessed. Every metric is derived from real rows.

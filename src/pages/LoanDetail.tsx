@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // LOAN DIAGNOSTIC
+ * SPENDSTATE // LOAN DIAGNOSTIC
  *
  * Per-loan diagnostic board — identity, economics, amortization schedule,
  * payment history, and interest breakdown.

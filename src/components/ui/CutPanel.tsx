@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CUT PANEL
+ * SPENDSTATE // CUT PANEL
  *
  * The signature container: a hard-edged surface with an asymmetric chamfer and,
  * optionally, a solid offset block behind it. clip-path also clips box-shadow,
@@ -22,7 +22,7 @@ const CUT_CLASS: Record<CutCorner, string> = {
 
 export interface CutPanelProps {
   children: ReactNode
-  /** Which corner is cropped. The default crop reads as the SUBTRACK mark. */
+  /** Which corner is cropped. The default crop reads as the SPENDSTATE mark. */
   cut?: CutCorner
   /** Crop depth in px. */
   cutSize?: number

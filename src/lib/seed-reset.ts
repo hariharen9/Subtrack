@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DEMO RESET
+ * SPENDSTATE // DEMO RESET
  *
  * Re-seeding orchestration lives here rather than in `db.ts` so the store never
  * has to import the seed modules back — that would close a module cycle

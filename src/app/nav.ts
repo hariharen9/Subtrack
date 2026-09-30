@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // FINANCIAL OS NAVIGATION MODEL
+ * SPENDSTATE // FINANCIAL OS NAVIGATION MODEL
  *
  * The Financial Operating System is a shell around independent domain engines.
  * The top-level rack holds the domains; each domain optionally declares its own
@@ -113,7 +113,7 @@ export const DOMAINS: Domain[] = [
     status: 'live',
     icon: IconFlow,
     manifest:
-      'The Subtrack engine. Treats recurring services as deterministic background processes with anchor-based renewal cycles.',
+      'The SpendState engine. Treats recurring services as deterministic background processes with anchor-based renewal cycles.',
     tag: 'ENGINE LIVE',
     subnav: [
       { code: 'CORE', label: 'Overview', path: '/subs', key: 'O', icon: IconCore },

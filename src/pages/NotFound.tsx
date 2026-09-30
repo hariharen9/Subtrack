@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // NOT FOUND
+ * SPENDSTATE // NOT FOUND
  * An unknown route is a system state, and it says so in the same voice.
  */
 import { Link } from 'react-router-dom'

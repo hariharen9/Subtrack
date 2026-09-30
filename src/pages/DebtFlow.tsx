@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DEBT FLOW (LOAN REGISTRY)
+ * SPENDSTATE // DEBT FLOW (LOAN REGISTRY)
  *
  * Full loan registry with search, type filters, and sort.
  */

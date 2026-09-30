@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DATE ENGINE
+ * SPENDSTATE // DATE ENGINE
  *
  * All dates in this system are plain ISO calendar days (YYYY-MM-DD) with no
  * time component and no timezone. Arithmetic runs on UTC internally so DST can

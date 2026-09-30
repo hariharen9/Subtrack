@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // PROCESS AUTHORING CONSOLE
+ * SPENDSTATE // PROCESS AUTHORING CONSOLE
  *
  * The INITIALIZE SUBSCRIPTION flow. Selecting a service pre-fills glyph, accent,
  * category and the cycle people actually buy, so the happy path stays

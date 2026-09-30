@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPEND CALENDAR
+ * SPENDSTATE // SPEND CALENDAR
  *
  * A month grid showing daily spend intensity — the spend equivalent of the
  * subscription PaymentMatrix. Each cell carries the day's spend total as a

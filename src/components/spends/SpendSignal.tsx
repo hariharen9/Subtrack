@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPEND SIGNAL TRACE
+ * SPENDSTATE // SPEND SIGNAL TRACE
  *
  * A daily spend signal trace — the wire-graph equivalent of the subscription
  * SpendingSignal. Draws hard segments over an instrument grid with square data

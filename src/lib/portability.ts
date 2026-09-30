@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // PORTABILITY
+ * SPENDSTATE // PORTABILITY
  *
  * Export and import are first-class because the data is yours and lives only
  * here. JSON is the canonical snapshot; CSV is offered for spreadsheets.
@@ -34,7 +34,7 @@ export async function exportJson(): Promise<void> {
     horizonDays: settings.horizonDays,
   })
   const stamp = new Date().toISOString().slice(0, 10)
-  downloadFile(`subtrack-snapshot-${stamp}.json`, JSON.stringify(snapshot, null, 2), 'application/json')
+  downloadFile(`spendstate-snapshot-${stamp}.json`, JSON.stringify(snapshot, null, 2), 'application/json')
   useUI.getState().pushToast(TOAST_VERBS.info('EXPORT COMPLETE', `${snapshot.subscriptions.length} subscriptions · ${snapshot.spends?.length ?? 0} spends written to file`))
 }
 
@@ -86,7 +86,7 @@ export function toSpendsCsv(spends: import('./types').Spend[]): string {
 export function exportSpendsCsv(spends: import('./types').Spend[]): void {
   const csv = toSpendsCsv(spends)
   const stamp = new Date().toISOString().slice(0, 10)
-  downloadFile(`subtrack-spends-${stamp}.csv`, csv, 'text/csv')
+  downloadFile(`spendstate-spends-${stamp}.csv`, csv, 'text/csv')
   useUI.getState().pushToast(TOAST_VERBS.info('CSV EXPORT COMPLETE', `${spends.length} transactions exported`))
 }
 
@@ -166,7 +166,7 @@ export function burnReadout(
   count: number,
 ): string {
   return [
-    'SUBTRACK // MONTHLY BURN READOUT',
+    'SPENDSTATE // MONTHLY BURN READOUT',
     `MONTHLY BURN   ${formatMoney(monthly, base)}`,
     `PROJECTED LOAD ${formatMoney(annual, base)}`,
     `ACTIVE         ${count} SUBSCRIPTIONS`,

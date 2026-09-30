@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPENDS ANALYTICS
+ * SPENDSTATE // SPENDS ANALYTICS
  *
  * Daily spends are the variable half of the ledger — money that leaves through
  * a merchant, not a schedule. Everything here is derived from real rows: today's

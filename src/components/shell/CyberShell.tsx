@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CYBER SHELL
+ * SPENDSTATE // CYBER SHELL
  *
  * The frame everything runs inside: navigation rack, instrument header, the
  * in-domain chrome strip, content well, mobile console and the persistent

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SERVICE GLYPHS
+ * SPENDSTATE // SERVICE GLYPHS
  *
  * Official real brand icons from react-icons (SimpleIcons, FontAwesome, RemixIcon,
  * Tabler Icons) with comprehensive brand resolution and sharp vector presentation.

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPEND PATTERNS (FORENSIC ENGINE)
+ * SPENDSTATE // SPEND PATTERNS (FORENSIC ENGINE)
  *
  * The forensic analysis module — not another chart page, but a pattern
  * recognition engine that finds the shapes hiding in your spending data:

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CARDS DATA (INSIGHTS)
+ * SPENDSTATE // CARDS DATA (INSIGHTS)
  *
  * Card analytics as one instrument cluster: a unified hero (outstanding
  * odometer + utilisation scale + cycle readouts), a combined activity chart

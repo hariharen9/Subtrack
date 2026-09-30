@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // LENIS SMOOTH SCROLL
+ * SPENDSTATE // LENIS SMOOTH SCROLL
  *
  * Global smooth scroll controller powered by Lenis. Respects prefers-reduced-motion,
  * auto-resets on route transitions, and cooperates seamlessly with nested

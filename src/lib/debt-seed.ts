@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DEBT SEED
+ * SPENDSTATE // DEBT SEED
  *
  * Demo loan dataset — 5 loans (4 active, 1 paid off) with reconstructed
  * payment histories. Realistic Indian pricing and rates.

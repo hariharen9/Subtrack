@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // FIELD OVERLAY
+ * SPENDSTATE // FIELD OVERLAY
  *
  * The exposed structure layer: viewfinder brackets, an edge coordinate scale
  * and a brand stamp. Deterministic, static, pointer-transparent — visual noise
@@ -41,7 +41,7 @@ export function FieldOverlay() {
           <div className="absolute bottom-4 right-6 flex items-center gap-2">
             <span className="block h-[2px] w-6 bg-acid/60" />
             <span className="font-mono text-[7px] tracking-[0.3em] text-faint">
-              SUBTRACK // OS-1.0 // {stamp}
+              SPENDSTATE // OS-1.0 // {stamp}
             </span>
           </div>
         </>

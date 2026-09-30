@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPENDS (CORE)
+ * SPENDSTATE // SPENDS (CORE)
  *
  * The Daily Spends flight deck — the full instrumentation board for the
  * variable half of the ledger. Mirrors the Subscriptions Overview richness:

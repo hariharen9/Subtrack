@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DEBT CURVE
+ * SPENDSTATE // DEBT CURVE
  *
  * The amortization curve — an SVG trace showing balance decay over time with
  * gradient fill, principal/interest split area, and interactive crosshair.

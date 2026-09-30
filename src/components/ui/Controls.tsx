@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CONTROL PARTS
+ * SPENDSTATE // CONTROL PARTS
  *
  * Custom controls only — no native select, no native date input. They all share
  * the same skeleton: hard border, mono label, square active plate, full keyboard

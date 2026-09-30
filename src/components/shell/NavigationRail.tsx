@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // FINANCIAL OS NAVIGATION RAIL
+ * SPENDSTATE // FINANCIAL OS NAVIGATION RAIL
  *
  * Desktop only. A compact vertical rack of the OS domains: tiny monospace code,
  * icon, keyboard shortcut, and an active plate that slides between cells with
@@ -42,7 +42,7 @@ export function NavigationRail({
       <Link
         to="/"
         className="flex h-[68px] items-center justify-center border-b border-line transition-colors hover:bg-surface2"
-        aria-label="SUBTRACK Financial OS overview"
+        aria-label="SPENDSTATE Financial OS overview"
       >
         <Mark animated />
       </Link>

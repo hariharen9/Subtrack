@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SEED DATA
+ * SPENDSTATE // SEED DATA
  *
  * Seventeen realistic Indian processes (15 active, 1 suspended, 1 terminated)
  * with pricing people actually pay, staggered ages and a derived payment

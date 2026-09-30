@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SERVICE CATALOG
+ * SPENDSTATE // SERVICE CATALOG
  *
  * Known services, with realistic Indian pricing. Picking one from the console
  * pre-fills glyph, accent, category and the cycle people actually buy — so the

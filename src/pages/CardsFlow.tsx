@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CARDS FLOW (TRANSACTION REGISTRY)
+ * SPENDSTATE // CARDS FLOW (TRANSACTION REGISTRY)
  *
  * Every card transaction in one registry: search, card filter, type filter,
  * category filter, date-range presets, sort, a selection readout, CSV export,
@@ -116,7 +116,7 @@ export default function CardsFlow() {
       const card = cardById.get(t.cardId)
       return [t.date, card ? `${card.name} ··${card.last4}` : t.cardId, t.title, t.type, t.category, t.amount, t.currency, t.rewards, t.notes].map(esc).join(',')
     })
-    downloadFile(`subtrack-cards-${todayISO()}.csv`, [header.join(','), ...rows].join('\n'), 'text/csv')
+    downloadFile(`spendstate-cards-${todayISO()}.csv`, [header.join(','), ...rows].join('\n'), 'text/csv')
   }
 
   return (

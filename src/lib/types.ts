@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DOMAIN TYPES
+ * SPENDSTATE // DOMAIN TYPES
  *
  * The vocabulary of the system:
  *   a subscription is a PROCESS, money is the RESOURCE, a renewal is an EVENT.

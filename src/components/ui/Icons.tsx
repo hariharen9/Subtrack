@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // ICON SYSTEM
+ * SPENDSTATE // ICON SYSTEM
  *
  * Built with Lucide vector icons (via react-icons/lu) for crisp, professional,
  * pixel-aligned geometry, consistent stroke weights, and hardware-aesthetic precision.

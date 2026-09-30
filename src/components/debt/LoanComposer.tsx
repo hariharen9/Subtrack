@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // LOAN COMPOSER
+ * SPENDSTATE // LOAN COMPOSER
  *
  * Two consoles in one panel — matching the SubscriptionComposer design language:
  *   LOAN mode    — add or edit a loan, auto-computes EMI, live interest preview

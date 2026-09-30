@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // OVERVIEW (CORE)
+ * SPENDSTATE // OVERVIEW (CORE)
  *
  * The command centre. One enormous number, one load register, the incoming
  * stream and the running processes — arranged as an asymmetric instrumentation

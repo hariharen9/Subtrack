@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPEND DIAGNOSTIC
+ * SPENDSTATE // SPEND DIAGNOSTIC
  *
  * Opening a spend should feel like inspecting a transaction record on a
  * diagnostic panel: identity, economics, merchant context, related transactions

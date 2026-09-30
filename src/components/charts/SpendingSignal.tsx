@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPENDING SIGNAL
+ * SPENDSTATE // SPENDING SIGNAL
  *
  * The burn monitor. Not a charting-library line: a signal trace drawn as hard
  * segments over an instrument grid, with square data points, a hatched forecast

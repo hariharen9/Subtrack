@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SYSTEM ANALYTICS (DATA)
+ * SPENDSTATE // SYSTEM ANALYTICS (DATA)
  *
  * Where the burn comes from and how it is shaped: headline readouts, the
  * composition strip, category blocks, three radial instruments and a long-form

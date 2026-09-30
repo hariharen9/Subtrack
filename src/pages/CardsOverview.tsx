@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CARDS (CORE)
+ * SPENDSTATE // CARDS (CORE)
  *
  * The Credit Card cockpit. Total outstanding, utilisation gauge, upcoming due,
  * the card stack, cycle telemetry, category mix and recent card activity.

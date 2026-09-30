@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CARD VISUAL
+ * SPENDSTATE // CARD VISUAL
  *
  * A hardware-inspired credit card face — issuer, network mark, masked number,
  * utilisation fill. Pure CSS/SVG, no images. Reads like the real thing in the

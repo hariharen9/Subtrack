@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // INCOMING STREAM
+ * SPENDSTATE // INCOMING STREAM
  *
  * The next 30 days of money leaving the system, as a signal stream: a continuous
  * connector, one node per scheduled day, grouped charges and a running cumulative

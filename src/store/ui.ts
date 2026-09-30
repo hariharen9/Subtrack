@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // UI STATE
+ * SPENDSTATE // UI STATE
  *
  * Preferences are instant and synchronous (localStorage) so the console opens
  * with the right skin and currency already applied; financial data lives in
@@ -325,7 +325,7 @@ export const useUI = create<UIState>()(
       },
     }),
     {
-      name: 'subtrack.ui',
+      name: 'spendstate.ui',
       version: 2,
       partialize: (state) => ({
         theme: state.theme,
@@ -352,7 +352,7 @@ export const useUI = create<UIState>()(
 // Initialize active categories on file evaluation
 if (typeof window !== 'undefined') {
   try {
-    const raw = localStorage.getItem('subtrack.ui')
+    const raw = localStorage.getItem('spendstate.ui')
     if (raw) {
       const parsed = JSON.parse(raw)
       if (parsed?.state?.subCategories) setActiveSubCategories(parsed.state.subCategories)

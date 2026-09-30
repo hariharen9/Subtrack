@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // TERMINATION CONSOLE (GLOBAL)
+ * SPENDSTATE // TERMINATION CONSOLE (GLOBAL)
  *
  * Lives beside the authoring console as a shell-level overlay, so a termination
  * can be armed from anywhere — the process panel, the archive rail or the

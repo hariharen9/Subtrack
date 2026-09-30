@@ -1,4 +1,4 @@
-# SUBTRACK // FINANCIAL OPERATING SYSTEM `v0.0.1`
+# SPENDSTATE // FINANCIAL OPERATING SYSTEM `v0.0.1`
 
 ```
   ____  _   _ ____ _____ ____      _    ____ _  __
@@ -9,11 +9,11 @@
  // LOCAL-FIRST · OFFLINE-READY · FINANCIAL OPERATING SYSTEM
 ```
 
-**Subtrack is a deterministic, local-first Financial Operating System — a shell of independent financial engines, the first of which (Subscriptions) is fully live.**
+**SpendState is a deterministic, local-first Financial Operating System — a shell of independent financial engines, the first of which (Subscriptions) is fully live.**
 
 The shell treats every financial engine as a domain with its own cockpit. Subscriptions — already live — treats each recurring service as an **active background process** running on your personal financial volume:
 - **Subscriptions are Processes**: Each service is an active background process with an identity (`SUB-XXXXX`), status (`active`, `suspended`, `terminated`), and cycle interval.
-- **Money is Resource Consumption**: Charges represent compute/resource cycles. Subtrack normalizes all billing schedules into **Burn Rate** (daily, monthly, annual).
+- **Money is Resource Consumption**: Charges represent compute/resource cycles. SpendState normalizes all billing schedules into **Burn Rate** (daily, monthly, annual).
 - **Renewals are Scheduled Events**: Future billing dates are derived deterministically as `anchor + k × interval` — no calendar day drift.
 - **Your Device is the Host Volume**: Zero telemetry, zero cloud databases, zero accounts. 100% offline-first IndexedDB storage via Dexie.js. Credit Cards, Loans & EMIs, and Daily Spends are queued behind it.
 
@@ -30,7 +30,7 @@ pnpm icons            # regenerate PWA vector icons and textures
 ```
 
 > [!TIP]
-> On first boot, Subtrack automatically seeds a realistic dataset of 17 subscriptions (15 active, 1 suspended, 1 terminated) with a reconstructed transaction ledger so you can explore the analytics immediately.
+> On first boot, SpendState automatically seeds a realistic dataset of 17 subscriptions (15 active, 1 suspended, 1 terminated) with a reconstructed transaction ledger so you can explore the analytics immediately.
 
 ---
 
@@ -41,7 +41,7 @@ The application is a **Financial Operating System shell** around independent dom
 | Domain | Route | Status | Purpose & Capabilities |
 | :--- | :--- | :--- | :--- |
 | **`CMD`** Master Command | `/` | **Live** | The OS cockpit: Total System Burn roll-up, per-engine burn tags, subsystem status matrix (LIVE/STANDBY), next critical outflow, and burn composition across live engines. |
-| **`SUBS`** Subscriptions | `/subs` | **Live** | The Subtrack engine — monthly burn hero, segmented load rail, spending signal, category breakdown, concentration gauges, 30-day incoming stream. |
+| **`SUBS`** Subscriptions | `/subs` | **Live** | The SpendState engine — monthly burn hero, segmented load rail, spending signal, category breakdown, concentration gauges, 30-day incoming stream. |
 | — Registry | `/subs/flow` | Live | Searchable subscription index with fuzzy query parsing and multi-density grid/list views. |
 | — Process Diagnostic | `/subs/flow/:id` | Live | Per-process execution history, renewal projection, schedule controls, and termination console. |
 | — Payment Matrix | `/subs/time` | Live | 6-week daily cashflow grid, 13-month calendar horizon rail, and day inspector. |
@@ -72,7 +72,7 @@ The OS shell is live today with the Subscriptions engine running inside it. The 
 
 ```
 +-----------------------------------------------------------------------------------+
-|                        SUBTRACK // FUTURE SYSTEM TOPOLOGY                         |
+|                        SPENDSTATE // FUTURE SYSTEM TOPOLOGY                         |
 |                                                                                   |
 |  +-----------------------------------------------------------------------------+  |
 |  |                           CORE CASHFLOW ENGINES                             |  |
@@ -153,8 +153,8 @@ src/
 
 - **Strict TypeScript**: 100% strict type safety (`npm run typecheck`).
 - **Zero Remote Dependencies**: Self-hosted variable fonts, SVG glyphs, offline FX tables.
-- **Living Architectural Manual**: See [AGENTS.md](file:///e:/Projects/Subtrack/AGENTS.md) for full architectural documentation and invariant guidelines.
+- **Living Architectural Manual**: See [AGENTS.md](file:///e:/Projects/SpendState/AGENTS.md) for full architectural documentation and invariant guidelines.
 
 ---
 
-**SUBTRACK** — *Take control of what drains your capital.*
+**SPENDSTATE** — *Take control of what drains your capital.*

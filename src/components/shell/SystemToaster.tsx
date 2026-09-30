@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SYSTEM LOG (TOASTS)
+ * SPENDSTATE // SYSTEM LOG (TOASTS)
  *
  * Feedback is written like a console log, not a notification: PROCESS UPDATED,
  * TERMINATING PROCESS..., PROCESS TERMINATED. Errors stay until dismissed;

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPEND INSTRUMENTS
+ * SPENDSTATE // SPEND INSTRUMENTS
  *
  * Visual instruments for the Spends subsystem:
  * 1. SpendCategoryComposition — sector strip + interactive breakdown

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // UPDATE PROMPT (PWA)
+ * SPENDSTATE // UPDATE PROMPT (PWA)
  *
  * The service worker registers itself and, when a new build lands, the console
  * offers a deliberate reload instead of swapping the app underneath the user.
@@ -57,7 +57,7 @@ export function UpdatePrompt() {
               <p className="meta mt-1 text-dim">
                 {needRefresh
                   ? 'A newer build is cached. Reload to run it.'
-                  : 'SUBTRACK will open without a network connection.'}
+                  : 'SPENDSTATE will open without a network connection.'}
               </p>
               <div className="mt-2.5 flex items-center gap-2">
                 {needRefresh && (

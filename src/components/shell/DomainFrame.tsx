@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DOMAIN FRAME
+ * SPENDSTATE // DOMAIN FRAME
  *
  * In-domain cockpit sub-navigation strip (e.g. CORE / FLOW / TIME / DATA).
  * Rendered cleanly when a domain declares sub-navigation modules.

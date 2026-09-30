@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CARD COMPOSER
+ * SPENDSTATE // CARD COMPOSER
  *
  * Two consoles in one panel — matching the Subscription & Loan design language:
  *   CARD mode — add or edit a credit card, limits, APR, billing/due cycle days

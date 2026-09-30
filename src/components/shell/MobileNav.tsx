@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // FINANCIAL OS MOBILE CONSOLE
+ * SPENDSTATE // FINANCIAL OS MOBILE CONSOLE
  *
  * Mobile is not a shrunken desktop: it gets its own control console. Six domain
  * cells across the bottom, each with a code, an icon and a status light — live

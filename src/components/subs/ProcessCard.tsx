@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // PROCESS MODULE
+ * SPENDSTATE // PROCESS MODULE
  *
  * A subscription rendered as a running process: identity header with a status
  * light, the price as a large numeral, its share of total burn, the next

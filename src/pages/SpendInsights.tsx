@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPENDS DATA (INSIGHTS & TELEMETRY)
+ * SPENDSTATE // SPENDS DATA (INSIGHTS & TELEMETRY)
  *
  * Deep financial telemetry for daily spends — the full instrumentation board.
  * Headline stat blocks, month-end projection, needs-vs-wants ratio, category

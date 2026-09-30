@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // FINANCIAL OPERATING SYSTEM APP
+ * SPENDSTATE // FINANCIAL OPERATING SYSTEM APP
  *
  * Router, skin synchronisation and boot sequencing for the Financial OS Shell.
  * All domain and module pages are loaded directly for zero-latency 0ms navigation,
@@ -53,9 +53,9 @@ function ThemeSync() {
     root.dataset.zenAccent = zenAccent
     delete root.dataset.boot
     try {
-      localStorage.setItem('subtrack.theme', theme)
-      localStorage.setItem('subtrack.uiMode', uiMode)
-      localStorage.setItem('subtrack.zenAccent', zenAccent)
+      localStorage.setItem('spendstate.theme', theme)
+      localStorage.setItem('spendstate.uiMode', uiMode)
+      localStorage.setItem('spendstate.zenAccent', zenAccent)
     } catch {
       /* private mode — the skin still applies for this session */
     }
@@ -121,7 +121,7 @@ export default function App() {
             {/* [01] Master Command — the OS cockpit */}
             <Route index element={<MasterCommand />} />
 
-            {/* [02] Subscriptions subsystem (Subtrack engine) */}
+            {/* [02] Subscriptions subsystem (SpendState engine) */}
             <Route path="subs" element={<Overview />} />
             <Route path="subs/flow" element={<Flow />} />
             <Route path="subs/flow/:id" element={<ProcessDetail />} />

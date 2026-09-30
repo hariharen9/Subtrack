@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CATEGORY MANAGER (SETTINGS)
+ * SPENDSTATE // CATEGORY MANAGER (SETTINGS)
  *
  * Full-featured website-wide custom taxonomy management:
  * - Subscriptions & Daily Spends categories

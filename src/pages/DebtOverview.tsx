@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DEBT OVERVIEW
+ * SPENDSTATE // DEBT OVERVIEW
  *
  * The debt cockpit — total outstanding with donut, progress, readouts,
  * loan grid, debt-free timeline, and interest analysis. Clean and focused.

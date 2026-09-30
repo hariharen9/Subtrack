@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DEBT INSIGHTS
+ * SPENDSTATE // DEBT INSIGHTS
  *
  * Deep debt analytics — type distribution, interest analysis, amortization
  * projections, and a comprehensive statistics table.

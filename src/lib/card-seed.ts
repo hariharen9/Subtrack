@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CARD SEED
+ * SPENDSTATE // CARD SEED
  *
  * Demo credit card dataset — 3 cards with realistic transactions spanning
  * the last 60 days: purchases, payments, a fee and rewards.

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SYSTEM NOTES
+ * SPENDSTATE // SYSTEM NOTES
  *
  * Automatic observations derived from the ledger — concentration, category
  * momentum, dormancy, load clusters, new processes, overdue cycles. They are

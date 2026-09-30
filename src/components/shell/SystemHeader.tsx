@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SYSTEM HEADER
+ * SPENDSTATE // SYSTEM HEADER
  *
  * The persistent instrument bar. On desktop it prints the whole system state in
  * one line — page, status, last update, link — with the query field and the
@@ -130,7 +130,7 @@ export function SystemHeader({ summary }: { summary: SystemSummary }) {
     <header className="sticky top-0 z-40 border-b-2 border-linehard bg-bg/90 backdrop-blur-[3px]">
       <div className="safe-t" />
       <div className="flex items-center gap-3 px-3 py-2 md:px-5">
-        <Link to="/" className="shrink-0 lg:hidden" aria-label="SUBTRACK overview">
+        <Link to="/" className="shrink-0 lg:hidden" aria-label="SPENDSTATE overview">
           <Wordmark compact />
         </Link>
 

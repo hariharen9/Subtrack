@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CYCLE ENGINE
+ * SPENDSTATE // CYCLE ENGINE
  *
  * The economics of a process: how often it charges, what that costs per month,
  * and every date it will fire. Occurrences are always computed as

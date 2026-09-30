@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPEND COMPOSER
+ * SPENDSTATE // SPEND COMPOSER
  *
  * The high-performance LOG SPEND console. Everything a day-to-day expense needs
  * up front: instant 1-click presets, dynamic recent merchant suggestions,

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // COMMAND PALETTE
+ * SPENDSTATE // COMMAND PALETTE
  *
  * ⌘K / CTRL+K opens the query engine. One field does two jobs: it filters the
  * command set and it queries the process index with the fuzzy engine (name,

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPENDS FLOW (LEDGER REGISTRY)
+ * SPENDSTATE // SPENDS FLOW (LEDGER REGISTRY)
  *
  * The full daily-spend registry: every transaction in reverse-chronological
  * day groups, with live search across title/notes/amounts, date range presets,

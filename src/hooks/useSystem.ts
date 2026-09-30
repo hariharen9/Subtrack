@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DATA HOOKS
+ * SPENDSTATE // DATA HOOKS
  *
  * One subscription to the local store, everything derived in one memoised
  * pass. Views never query Dexie directly and never recompute analytics.

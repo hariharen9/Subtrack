@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DEBT HOOKS
+ * SPENDSTATE // DEBT HOOKS
  *
  * Reactive subscriptions to the loans store plus memoised analytics pipeline.
  * Mirrors useSystem so the Debt cockpit never touches Dexie directly.

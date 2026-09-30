@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // LOCAL STORE (IndexedDB via Dexie)
+ * SPENDSTATE // LOCAL STORE (IndexedDB via Dexie)
  *
  * Local-first by construction: no backend, no auth, no remote database. The
  * app is fully functional offline and the data layer is written so a sync
@@ -31,12 +31,12 @@ import { occurrenceAt, occurrencesBetween } from './cycle'
 import { nowStamp, todayISO } from './date'
 import { newId } from './id'
 
-export const DB_NAME = 'subtrack'
+export const DB_NAME = 'spendstate'
 
 /** Newest Dexie schema version declared below — surfaced in the System Host. */
 export const DB_SCHEMA_VERSION = 4
 
-class SubTrackDB extends Dexie {
+class SpendStateDB extends Dexie {
   subscriptions!: Table<Subscription, string>
   payments!: Table<Payment, string>
   spends!: Table<Spend, string>
@@ -67,7 +67,7 @@ class SubTrackDB extends Dexie {
   }
 }
 
-export const db = new SubTrackDB()
+export const db = new SpendStateDB()
 
 const META_SEEDED = 'seeded'
 const META_SCHEMA = 'schema'
@@ -653,7 +653,7 @@ export function resetSpendsSeed(): void {
 /* ------------------------------------------------------- portability ------ */
 
 export interface Snapshot {
-  app: 'subtrack'
+  app: 'spendstate'
   version: 1
   exportedAt: string
   settings: AppSettings
@@ -677,7 +677,7 @@ export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
     db.cardTransactions.toArray(),
   ])
   return {
-    app: 'subtrack',
+    app: 'spendstate',
     version: 1,
     exportedAt: nowStamp(),
     settings,
@@ -706,8 +706,10 @@ export async function importSnapshot(
   snapshot: Snapshot,
   mode: 'replace' | 'merge' = 'replace',
 ): Promise<ImportReport> {
-  if (snapshot.app !== 'subtrack' || !Array.isArray(snapshot.subscriptions)) {
-    throw new Error('Not a SUBTRACK snapshot')
+  // Accept snapshots exported under the legacy "subtrack" brand as well.
+  const app = snapshot.app as string
+  if ((app !== 'spendstate' && app !== 'subtrack') || !Array.isArray(snapshot.subscriptions)) {
+    throw new Error('Not a SPENDSTATE snapshot')
   }
   const subscriptions = snapshot.subscriptions
   const payments = Array.isArray(snapshot.payments) ? snapshot.payments : []

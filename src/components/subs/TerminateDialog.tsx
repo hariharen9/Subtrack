@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // TERMINATION CONSOLE
+ * SPENDSTATE // TERMINATION CONSOLE
  *
  * The confirmation is designed, not a browser dialog, and it explains the
  * consequence in plain language before anything happens: what stops, what is

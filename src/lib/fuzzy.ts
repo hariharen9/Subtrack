@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // QUERY ENGINE
+ * SPENDSTATE // QUERY ENGINE
  *
  * Global search behaves like a system query, not a text filter: terms can be a
  * name, a category, a cycle, a status, an amount (`>500`, `<200`, `649`) or a

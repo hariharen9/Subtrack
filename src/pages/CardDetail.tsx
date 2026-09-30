@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CARD DIAGNOSTIC
+ * SPENDSTATE // CARD DIAGNOSTIC
  *
  * Per-card board: the card face, a control rail (pay / freeze / close / delete),
  * statement history with settlement state, credit economics (min due, carry

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CREDIT CARD HOOKS
+ * SPENDSTATE // CREDIT CARD HOOKS
  *
  * Reactive subscriptions to the cards store plus memoised analytics pipeline.
  * Mirrors useSystem/useSpends so views never touch Dexie directly.

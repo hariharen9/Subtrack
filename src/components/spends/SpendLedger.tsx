@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPEND LEDGER
+ * SPENDSTATE // SPEND LEDGER
  *
  * The raw day-to-day record: reverse-chronological day groups, each row showing
  * the merchant line with real brand / semantic hardware icons, payment method,

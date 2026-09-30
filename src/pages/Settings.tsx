@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SETTINGS (SYS)
+ * SPENDSTATE // SETTINGS (SYS)
  *
  * The control room: skin, currency, horizons, local volume operations, shortcut
  * reference and the destructive corner. Every switch explains itself, every
@@ -72,7 +72,7 @@ export default function Settings() {
 
   const doExportCsv = () => {
     const csv = toCsv(payments, nameById)
-    downloadFile(`subtrack-ledger-${todayISO()}.csv`, csv, 'text/csv')
+    downloadFile(`spendstate-ledger-${todayISO()}.csv`, csv, 'text/csv')
     pushToast(TOAST_VERBS.info('LEDGER EXPORTED', `${payments.length} rows written as CSV`))
   }
   const spends = useSpends()
@@ -90,7 +90,7 @@ export default function Settings() {
           .map(esc)
           .join(','),
       )
-    downloadFile(`subtrack-spends-${todayISO()}.csv`, [header, ...rows].join('\n'), 'text/csv')
+    downloadFile(`spendstate-spends-${todayISO()}.csv`, [header, ...rows].join('\n'), 'text/csv')
     pushToast(TOAST_VERBS.info('SPENDS EXPORTED', `${spends.length} rows written as CSV`))
   }
 
@@ -480,7 +480,7 @@ export default function Settings() {
                   <span className="micro text-acidink">ABOUT THIS SYSTEM</span>
                 </div>
                 <h2 className="numeral mt-2.5 text-[clamp(1.4rem,4vw,2rem)] text-fg">
-                  SUBTRACK // FINANCIAL OS 1.0
+                  SPENDSTATE // FINANCIAL OS 1.0
                 </h2>
                 <p className="mt-3 text-[13px] leading-relaxed text-dim">
                   A subscription tracker with one job: show where the money goes every month. It

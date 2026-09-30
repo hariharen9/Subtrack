@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SERVICE BADGE
+ * SPENDSTATE // SERVICE BADGE
  *
  * The container that gives every process a visual identity without turning the
  * grid into a rainbow: a hairline box, a monochrome mark, a brand signal strip

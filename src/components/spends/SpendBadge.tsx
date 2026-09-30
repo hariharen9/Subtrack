@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SPEND BADGE & GLYPH RESOLVER
+ * SPENDSTATE // SPEND BADGE & GLYPH RESOLVER
  *
  * Visual identity for day-to-day spends: resolves merchant names to official
  * brand glyphs (Zomato, Swiggy, Uber, Amazon, etc.) or renders semantic
