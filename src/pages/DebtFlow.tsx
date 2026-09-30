@@ -14,6 +14,8 @@ import { SectionHeader } from '@/components/ui/Micro'
 import { EmptyState } from '@/components/ui/Skeleton'
 import { Led, SIGNAL_TEXT } from '@/components/ui/Signal'
 import { IconSearch, IconClose } from '@/components/ui/Icons'
+import { CyberButton } from '@/components/ui/CyberButton'
+import { useUI } from '@/store/ui'
 import { cx } from '@/lib/cx'
 
 const STAGGER = { hidden: {}, show: { transition: { staggerChildren: 0.04, delayChildren: 0.03 } } }
@@ -23,6 +25,7 @@ type SortOrder = 'principal' | 'emi' | 'rate' | 'name'
 
 export default function DebtFlow() {
   const loans = useLoans()
+  const openLoanComposer = useUI((s) => s.openLoanComposer)
 
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | LoanType>('all')
@@ -74,6 +77,7 @@ export default function DebtFlow() {
               <option value="rate">RATE</option>
               <option value="name">NAME</option>
             </select>
+            <CyberButton variant="solid" size="sm" onClick={() => openLoanComposer()}>+ ADD LOAN</CyberButton>
           </div>
 
           {/* Filters — compact single row */}
@@ -102,26 +106,36 @@ export default function DebtFlow() {
                 const meta = LOAN_TYPE_META[loan.loanType]
                 const isPaidOff = loan.status === 'paid_off'
                 return (
-                  <Link key={loan.id} to={`/loans/flow/${loan.id}`} className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-surface2 md:px-4">
-                    <span className={cx('flex h-9 w-9 shrink-0 items-center justify-center border', isPaidOff ? 'border-acid text-acidink' : `border-${meta.signal} ${SIGNAL_TEXT[meta.signal]}`)}>
-                      <Led signal={isPaidOff ? 'acid' : meta.signal} size="sm" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2">
-                        <span className="truncate text-[13px] font-semibold text-fg">{loan.name}</span>
-                        <span className={cx('micro', SIGNAL_TEXT[meta.signal])}>{meta.code}</span>
+                  <div key={loan.id} className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-surface2 md:px-4">
+                    <Link to={`/loans/flow/${loan.id}`} className="flex flex-1 items-center gap-3 min-w-0 focus-visible:outline-none">
+                      <span className={cx('flex h-9 w-9 shrink-0 items-center justify-center border', isPaidOff ? 'border-acid text-acidink' : `border-${meta.signal} ${SIGNAL_TEXT[meta.signal]}`)}>
+                        <Led signal={isPaidOff ? 'acid' : meta.signal} size="sm" />
                       </span>
-                      <span className="micro block truncate text-faint">
-                        {loan.lender} · {loan.interestRate}% · {loan.tenureMonths} MO · EMI {formatMoney(loan.emi, loan.currency)}
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-[13px] font-semibold text-fg">{loan.name}</span>
+                          <span className={cx('micro', SIGNAL_TEXT[meta.signal])}>{meta.code}</span>
+                        </span>
+                        <span className="micro block truncate text-faint">
+                          {loan.lender} · {loan.interestRate}% · {loan.tenureMonths} MO · EMI {formatMoney(loan.emi, loan.currency)}
+                        </span>
                       </span>
-                    </span>
-                    <span className="shrink-0 text-right">
-                      <span className="numeral block text-[14px] font-bold text-fg">{formatCompact(loan.principal, loan.currency)}</span>
-                      <span className={cx('micro', isPaidOff ? 'text-acidink' : 'text-faint')}>
-                        {isPaidOff ? 'PAID OFF' : loan.status.toUpperCase()}
+                      <span className="shrink-0 text-right">
+                        <span className="numeral block text-[14px] font-bold text-fg">{formatCompact(loan.principal, loan.currency)}</span>
+                        <span className={cx('micro', isPaidOff ? 'text-acidink' : 'text-faint')}>
+                          {isPaidOff ? 'PAID OFF' : loan.status.toUpperCase()}
+                        </span>
                       </span>
-                    </span>
-                  </Link>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => openLoanComposer({ mode: 'loan', editLoanId: loan.id })}
+                      className="micro shrink-0 border border-line2 px-2 py-1 text-dim opacity-0 transition-all group-hover:opacity-100 hover:border-acid hover:text-acidink"
+                      aria-label={`Edit ${loan.name}`}
+                    >
+                      EDIT
+                    </button>
+                  </div>
                 )
               })}
             </div>

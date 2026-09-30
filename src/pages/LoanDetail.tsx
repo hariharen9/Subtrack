@@ -19,6 +19,7 @@ import { SectionHeader } from '@/components/ui/Micro'
 import { EmptyState } from '@/components/ui/Skeleton'
 import { Led, SIGNAL_TEXT } from '@/components/ui/Signal'
 import { AmortizationCurve, EMISplitDonut } from '@/components/charts/DebtCurve'
+import { CyberButton } from '@/components/ui/CyberButton'
 import { IconChevronLeft } from '@/components/ui/Icons'
 import { cx } from '@/lib/cx'
 
@@ -39,6 +40,7 @@ export default function LoanDetail() {
   )
 
   const schedule = useMemo(() => loan ? amortize(loan) : [], [loan])
+  const openLoanComposer = useUI((s) => s.openLoanComposer)
 
   if (!loan || !view) {
     return (
@@ -55,9 +57,29 @@ export default function LoanDetail() {
     <motion.div variants={STAGGER} initial="hidden" animate="show" className="px-3 py-4 md:px-5 md:py-5">
       {/* Back */}
       <motion.div variants={RISE}>
-        <Link to="/loans/flow" className="micro inline-flex items-center gap-1 text-dim transition-colors hover:text-acidink">
-          <IconChevronLeft size={12} /> BACK TO REGISTRY
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link to="/loans/flow" className="micro inline-flex items-center gap-1 text-dim transition-colors hover:text-acidink">
+            <IconChevronLeft size={12} /> BACK TO REGISTRY
+          </Link>
+          <div className="flex items-center gap-2">
+            {!isPaidOff && (
+              <CyberButton
+                variant="ink"
+                size="sm"
+                onClick={() => openLoanComposer({ mode: 'payment', paymentLoanId: loan.id })}
+              >
+                RECORD EMI
+              </CyberButton>
+            )}
+            <CyberButton
+              variant="ghost"
+              size="sm"
+              onClick={() => openLoanComposer({ mode: 'loan', editLoanId: loan.id })}
+            >
+              EDIT
+            </CyberButton>
+          </div>
+        </div>
       </motion.div>
 
       {/* Identity header */}

@@ -19,6 +19,7 @@ import { DataStrip } from '@/components/ui/DataStrip'
 import { EmptyState, BootScreen } from '@/components/ui/Skeleton'
 import { Led, SIGNAL_TEXT } from '@/components/ui/Signal'
 import { EMISplitDonut, DebtCompositionRail } from '@/components/charts/DebtCurve'
+import { CyberButton } from '@/components/ui/CyberButton'
 import { cx } from '@/lib/cx'
 
 const STAGGER = { hidden: {}, show: { transition: { staggerChildren: 0.05, delayChildren: 0.04 } } }
@@ -28,6 +29,7 @@ export default function DebtOverview() {
   const { summary, ready } = useDebtSystem()
   const base = useUI((s) => s.baseCurrency)
   const booted = useUI((s) => s.booted)
+  const openLoanComposer = useUI((s) => s.openLoanComposer)
   const hero = useMemo(() => splitMoney(summary.totalOutstanding, base), [summary.totalOutstanding, base])
 
   const emiSplit = useMemo(() => {
@@ -42,7 +44,16 @@ export default function DebtOverview() {
   }, [summary.activeViews])
 
   if (!booted) return <div className="px-3 py-6 md:px-5"><BootScreen label="LOADING DEBT VOLUME" /></div>
-  if (!ready) return <div className="px-3 py-6 md:px-5"><EmptyState code="NO LOANS TRACKED" title="NO DEBT ON THIS VOLUME." description="Track your loans, EMIs, and credit card balances. Add your first loan to see amortization schedules and debt-free projections." /></div>
+  if (!ready) return (
+    <div className="px-3 py-6 md:px-5">
+      <EmptyState
+        code="NO LOANS TRACKED"
+        title="NO DEBT ON THIS VOLUME."
+        description="Track your loans, EMIs, and credit card balances. Add your first loan to see amortization schedules and debt-free projections."
+        action={{ label: 'ADD LOAN', onClick: () => openLoanComposer() }}
+      />
+    </div>
+  )
 
   return (
     <motion.div variants={STAGGER} initial="hidden" animate="show" className="px-3 py-4 md:px-5 md:py-5">
@@ -53,7 +64,10 @@ export default function DebtOverview() {
             <span className="text-linehard">·</span>
             <span>{summary.paidOffViews.length} PAID OFF</span>
           </span>
-          <span className="micro hidden sm:inline text-faint">{formatMoney(summary.monthlyBurden, base)}/MO EMI BURDEN</span>
+          <span className="flex items-center gap-2">
+            <span className="micro hidden sm:inline text-faint">{formatMoney(summary.monthlyBurden, base)}/MO EMI BURDEN</span>
+            <CyberButton variant="ink" size="sm" onClick={() => openLoanComposer()}>+ ADD LOAN</CyberButton>
+          </span>
         </div>
       </motion.div>
 

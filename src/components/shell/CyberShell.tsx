@@ -25,6 +25,7 @@ import { UpdatePrompt } from './UpdatePrompt'
 import { SubscriptionComposer } from '@/components/subs/SubscriptionComposer'
 import { SpendComposer } from '@/components/spends/SpendComposer'
 import { CardComposer } from '@/components/cards/CardComposer'
+import { LoanComposer } from '@/components/debt/LoanComposer'
 import { TerminationConsole } from '@/components/subs/TerminationConsole'
 import { BootScreen } from '@/components/ui/Skeleton'
 
@@ -61,6 +62,7 @@ export function CyberShell() {
   const setPaletteOpen = useUI((s) => s.setPaletteOpen)
   const openComposer = useUI((s) => s.openComposer)
   const openSpendComposer = useUI((s) => s.openSpendComposer)
+  const openLoanComposer = useUI((s) => s.openLoanComposer)
   const toggleTheme = useUI((s) => s.toggleTheme)
 
   useHotkeys([
@@ -68,6 +70,7 @@ export function CyberShell() {
     { key: '/', handler: (event) => { event.preventDefault(); setPaletteOpen(true) } },
     { key: 'n', handler: () => openComposer() },
     { key: 'x', handler: () => openSpendComposer() },
+    { key: 'l', handler: () => openLoanComposer() },
     { key: 't', handler: () => toggleTheme() },
     ...DOMAINS.map((item) => ({
       key: item.key,
@@ -116,6 +119,7 @@ export function CyberShell() {
       <SubscriptionComposer />
       <SpendComposer />
       <CardComposer />
+      <LoanComposer />
       <TerminationConsole />
       <UpdatePrompt />
     </div>

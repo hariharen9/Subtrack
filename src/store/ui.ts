@@ -57,6 +57,16 @@ export interface CardComposerState {
   presetAmount: number | null
 }
 
+export interface LoanComposerState {
+  open: boolean
+  /** 'loan' = add/edit a loan; 'payment' = record an EMI payment. */
+  mode: 'loan' | 'payment'
+  /** Loan being edited (loan mode). */
+  editLoanId: string | null
+  /** Loan to record a payment against (payment mode). */
+  paymentLoanId: string | null
+}
+
 export interface TerminationState {
   open: boolean
   subId: string | null
@@ -77,6 +87,7 @@ interface UIState {
   composer: ComposerState
   spendComposer: SpendComposerState
   cardComposer: CardComposerState
+  loanComposer: LoanComposerState
   termination: TerminationState
   /** False until the local volume has been opened and seeded. */
   booted: boolean
@@ -105,6 +116,12 @@ interface UIState {
     presetAmount?: number
   }) => void
   closeCardComposer: () => void
+  openLoanComposer: (options?: {
+    mode?: 'loan' | 'payment'
+    editLoanId?: string
+    paymentLoanId?: string
+  }) => void
+  closeLoanComposer: () => void
   openTermination: (subId: string, mode: TerminationMode) => void
   closeTermination: () => void
 }
@@ -124,6 +141,7 @@ export const useUI = create<UIState>()(
       composer: { open: false, editId: null, presetServiceId: null },
       spendComposer: { open: false, editId: null, presetCategory: null },
       cardComposer: { open: false, mode: 'card', editCardId: null, presetCardId: null, editTxnId: null, presetType: null, presetAmount: null },
+      loanComposer: { open: false, mode: 'loan', editLoanId: null, paymentLoanId: null },
       termination: { open: false, subId: null, mode: 'terminate' },
       booted: false,
       setBooted: (booted) => set({ booted }),
@@ -189,6 +207,17 @@ export const useUI = create<UIState>()(
             presetAmount: null,
           },
         }),
+      openLoanComposer: (options) =>
+        set({
+          loanComposer: {
+            open: true,
+            mode: options?.mode ?? 'loan',
+            editLoanId: options?.editLoanId ?? null,
+            paymentLoanId: options?.paymentLoanId ?? null,
+          },
+        }),
+      closeLoanComposer: () =>
+        set({ loanComposer: { open: false, mode: 'loan', editLoanId: null, paymentLoanId: null } }),
       openTermination: (subId, mode) => set({ termination: { open: true, subId, mode } }),
       closeTermination: () =>
         set({ termination: { open: false, subId: null, mode: 'terminate' } }),
@@ -251,6 +280,31 @@ export const TOAST_VERBS = {
   cycle: (name: string, detail: string) => ({
     kind: 'ok' as ToastKind,
     label: 'CYCLE EXECUTED ✓',
+    text: `${name} · ${detail}`,
+  }),
+  loanAdded: (name: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'LOAN INITIALIZED',
+    text: `${name} · ${detail}`,
+  }),
+  loanUpdated: (name: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'LOAN UPDATED',
+    text: `${name} · record written`,
+  }),
+  loanPaidOff: (name: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'LOAN PAID OFF ✓',
+    text: `${name} · marked as closed`,
+  }),
+  loanDeleted: (name: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'LOAN DELETED',
+    text: `${name} and its payment history erased`,
+  }),
+  emiLogged: (name: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'EMI RECORDED ✓',
     text: `${name} · ${detail}`,
   }),
   info: (label: string, text?: string) => ({ kind: 'info' as ToastKind, label, text }),
