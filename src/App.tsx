@@ -6,7 +6,7 @@
  * full offline reliability on mobile PWAs, and zero route-transition blanking.
  */
 import { useEffect } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { MotionConfig } from 'motion/react'
 import { CyberShell } from '@/components/shell/CyberShell'
 import MasterCommand from '@/pages/MasterCommand'
@@ -25,7 +25,6 @@ import SpendFlow from '@/pages/SpendFlow'
 import SpendInsights from '@/pages/SpendInsights'
 import SpendDetail from '@/pages/SpendDetail'
 import SpendPatterns from '@/pages/SpendPatterns'
-import SpendLimits from '@/pages/SpendLimits'
 import DebtOverview from '@/pages/DebtOverview'
 import DebtFlow from '@/pages/DebtFlow'
 import LoanDetail from '@/pages/LoanDetail'
@@ -61,6 +60,15 @@ function ThemeSync() {
   }, [theme])
 
   return null
+}
+
+/**
+ * Legacy alias redirect that keeps the query string, so a deep link such as
+ * `/flow?action=init` still reaches its canonical route with the flag intact.
+ */
+function LegacyRedirect({ to }: { to: string }) {
+  const { search } = useLocation()
+  return <Navigate to={`${to}${search}`} replace />
 }
 
 /** Opens the local volume, seeds the demo dataset on first run, then idles. */
@@ -114,10 +122,10 @@ export default function App() {
 
             {/* Legacy subscription aliases. flow/:id renders directly so the id
                 is preserved; parameterless routes redirect to canonical /subs/* */}
-            <Route path="flow" element={<Navigate to="/subs/flow" replace />} />
+            <Route path="flow" element={<LegacyRedirect to="/subs/flow" />} />
             <Route path="flow/:id" element={<ProcessDetail />} />
-            <Route path="time" element={<Navigate to="/subs/time" replace />} />
-            <Route path="data" element={<Navigate to="/subs/data" replace />} />
+            <Route path="time" element={<LegacyRedirect to="/subs/time" />} />
+            <Route path="data" element={<LegacyRedirect to="/subs/data" />} />
 
             {/* [03] Credit Cards engine */}
             <Route path="cards" element={<CardsOverview />} />
@@ -137,7 +145,6 @@ export default function App() {
             <Route path="spends/flow/:id" element={<SpendDetail />} />
             <Route path="spends/data" element={<SpendInsights />} />
             <Route path="spends/patterns" element={<SpendPatterns />} />
-            <Route path="spends/limits" element={<SpendLimits />} />
 
             {/* [06] System Host */}
             <Route path="sys" element={<Settings />} />

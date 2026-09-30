@@ -39,7 +39,7 @@
       "name": "Initialize subscription",
       "short_name": "Initialize",
       "description": "Open the new-process console",
-      "url": "/flow?action=init",
+      "url": "/subs/flow?action=init",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {

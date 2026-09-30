@@ -24,7 +24,6 @@ export function MobileNav({
   activePath: string
   views: SubscriptionView[]
   processCount: number
-  chargesThisMonth?: number
 }) {
   const openComposer = useUI((s) => s.openComposer)
 

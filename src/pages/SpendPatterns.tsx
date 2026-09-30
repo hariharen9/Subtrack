@@ -82,11 +82,16 @@ export default function SpendPatterns() {
   const openSpendComposer = useUI((s) => s.openSpendComposer)
   const today = todayISO()
 
+  // The cap may be stored in a currency the user has since switched away from,
+  // so normalise it to base for display and comparisons.
+  const limitBase = limit ? convert(limit.amount, limit.currency, base) : 0
+
   // Limiter state (inline)
   const [limitAmount, setLimitAmount] = useState<string>('')
   const [limitBusy, setLimitBusy] = useState(false)
   useEffect(() => {
-    if (limit?.amount && limitAmount === '') setLimitAmount(String(limit.amount))
+    if (limit?.amount && limitAmount === '') setLimitAmount(String(Math.round(limitBase)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [limit])
   const limitParsed = Number.parseFloat(limitAmount.replace(/,/g, '')) || 0
 
@@ -257,10 +262,10 @@ export default function SpendPatterns() {
     if (limit?.amount && limit.amount > 0) {
       const weekSpends = spends.filter((s) => s.date >= addDaysISO(today, -weekdayIndexMon(today)))
       const weekWants = weekSpends.filter((s) => SPEND_CATEGORY_META[s.category]?.discretionary).reduce((sum, s) => sum + convert(s.amount, s.currency, base), 0)
-      score += weekWants <= limit.amount ? 10 : -10
+      score += weekWants <= limitBase ? 10 : -10
     }
     return Math.max(0, Math.min(100, score))
-  }, [spends, base, today, anomalies, recurring, limit])
+  }, [spends, base, today, anomalies, recurring, limit, limitBase])
 
   const disciplineSignal = discipline >= 75 ? 'acid' : discipline >= 50 ? 'blue' : discipline >= 30 ? 'orange' : 'red'
 
@@ -623,7 +628,7 @@ export default function SpendPatterns() {
             <div className="border border-line bg-bg2 p-3">
               <span className="micro text-faint">CURRENT ENVELOPE</span>
               <div className="mt-2 space-y-2">
-                <div className="flex items-center justify-between"><span className="meta text-dim">Weekly Cap</span><span className="numeral text-[15px] text-fg">{limit?.amount ? formatMoney(limit.amount, base) : '—'}</span></div>
+                <div className="flex items-center justify-between"><span className="meta text-dim">Weekly Cap</span><span className="numeral text-[15px] text-fg">{limit?.amount ? formatMoney(limitBase, base) : '—'}</span></div>
                 <div className="flex items-center justify-between"><span className="meta text-dim">Status</span><span className={cx('micro flex items-center gap-1', limit?.amount ? 'text-acidink' : 'text-faint')}><Led signal={limit?.amount ? 'acid' : 'blue'} size="sm" />{limit?.amount ? 'ACTIVE' : 'UNSET'}</span></div>
               </div>
               <div className="mt-3 pt-2 border-t border-line">

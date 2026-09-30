@@ -21,6 +21,7 @@ import { SectionHeader } from '@/components/ui/Micro'
 import { Led, SIGNAL_TEXT, SIGNAL_HEX } from '@/components/ui/Signal'
 import { EmptyState } from '@/components/ui/Skeleton'
 import { DataStrip } from '@/components/ui/DataStrip'
+import { RadialGauge } from '@/components/charts/CategoryBlock'
 import { SpendBadge } from '@/components/spends/SpendBadge'
 import { SpendSignal } from '@/components/spends/SpendSignal'
 import { spendSeries } from '@/lib/spends'
@@ -85,51 +86,6 @@ function StatBlock({
 }
 
 /** Small radial gauge — SVG arc with percentage in the center. */
-function RadialGauge({
-  value,
-  label,
-  caption,
-  signal,
-  size = 100,
-}: {
-  value: number
-  label: string
-  caption: string
-  signal: 'acid' | 'blue' | 'magenta' | 'orange' | 'red'
-  size?: number
-}) {
-  const r = 38
-  const circumference = 2 * Math.PI * r
-  const angle = Math.min(1, value) * circumference
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <svg width={size} height={size} viewBox="0 0 100 100" className="-rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--c-line)" strokeWidth="8" />
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
-          fill="none"
-          stroke={`var(--c-${signal})`}
-          strokeWidth="8"
-          strokeLinecap="butt"
-          strokeDasharray={`${angle} ${circumference}`}
-          className="transition-all duration-500"
-        />
-      </svg>
-      <div className="absolute flex flex-col items-center justify-center" style={{ width: size, height: size }}>
-        <span className={cx('numeral text-[18px] font-bold', SIGNAL_TEXT[signal])}>
-          {Math.round(value * 100)}%
-        </span>
-      </div>
-      <div className="text-center">
-        <span className="micro block font-semibold text-fg">{label}</span>
-        <span className="micro block text-[9px] text-faint">{caption}</span>
-      </div>
-    </div>
-  )
-}
-
 export default function SpendInsights() {
   const insights = useSpendInsights()
   const spends = useSpends()

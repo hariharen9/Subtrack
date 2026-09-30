@@ -5,9 +5,9 @@
  * Subscriptions engine's instrument panel, Master Command is the whole machine:
  * it rolls every domain engine into one Net Burn, one Runway and one
  * Next-Critical-Transaction readout, and shows the live/standby health of each
- * subsystem. Today only the Subscriptions engine is live; the standby decks
- * (CRD, DEBT, SPND) appear here as dark modules awaiting their core, so when an
- * engine ships it flows into this roll-up automatically.
+ * subsystem. Every engine (SUBS, CRD, DEBT, SPND) is live today, so the matrix
+ * reports their telemetry directly; any future domain that ships as standby
+ * flows into the same roll-up automatically.
  */
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
@@ -49,6 +49,15 @@ function domainTelemetry(
   cardsData: CardsData,
 ): { signal: Signal; primary: string; secondary: string; to: string } {
   switch (domain.code) {
+    case 'CMD': {
+      const live = DOMAINS.filter((d) => d.status === 'live').length
+      return {
+        signal: 'acid' as Signal,
+        primary: 'ONLINE',
+        secondary: `${live}/${DOMAINS.length} ENGINES · OS CORE`,
+        to: '/',
+      }
+    }
     case 'SUBS':
       return {
         signal: summary.activeCount ? (summary.overdue.length ? 'orange' : 'acid') : 'blue',
@@ -128,6 +137,48 @@ function cardsTelemetry(
   }
 }
 
+/** Engines that contribute a monthly figure to the OS roll-up. */
+const BURN_ENGINES = new Set(['SUBS', 'SPND', 'DEBT', 'CRD'])
+
+/** Numeric monthly figure each engine contributes (0 for non-burn or unready). */
+function engineMonthly(
+  domain: (typeof DOMAINS)[number],
+  summary: SystemSummary,
+  spendsData: SpendsData,
+  debtData: DebtData,
+  cardsData: CardsData,
+): number {
+  switch (domain.code) {
+    case 'SUBS':
+      return summary.monthlyBurn
+    case 'SPND':
+      return spendsData.summary.monthTotal
+    case 'DEBT':
+      return debtData.ready ? debtData.summary.monthlyBurden : 0
+    case 'CRD':
+      return cardsData.ready ? cardsData.summary.carryInterestMonthly : 0
+    default:
+      return 0
+  }
+}
+
+/** Display form of an engine's monthly figure for the roll-up chips. */
+function engineRunRate(
+  domain: (typeof DOMAINS)[number],
+  summary: SystemSummary,
+  spendsData: SpendsData,
+  debtData: DebtData,
+  cardsData: CardsData,
+  base: string,
+): { value: string; active: boolean } {
+  if (!BURN_ENGINES.has(domain.code)) return { value: '—', active: false }
+  if ((domain.code === 'DEBT' && !debtData.ready) || (domain.code === 'CRD' && !cardsData.ready)) {
+    return { value: '—', active: false }
+  }
+  const amount = engineMonthly(domain, summary, spendsData, debtData, cardsData)
+  return { value: formatMoney(amount, base), active: amount > 0 }
+}
+
 export default function MasterCommand() {
   const { summary } = useSystem()
   const spendsData = useSpendsSystem()
@@ -137,17 +188,25 @@ export default function MasterCommand() {
   const series = useSignalSeries('cash', 3, 1)
   const now = summary.today
 
-  const hero = useMemo(() => splitMoney(summary.monthlyBurn, base), [summary.monthlyBurn, base])
+  // Total system burn = the sum of every live engine's monthly figure, so the
+  // hero equals the sum of the chips shown below it.
+  const systemBurn = useMemo(
+    () =>
+      DOMAINS.reduce(
+        (sum, domain) => sum + engineMonthly(domain, summary, spendsData, debtData, cardsData),
+        0,
+      ),
+    [summary, spendsData, debtData, cardsData],
+  )
+  const hero = useMemo(() => splitMoney(systemBurn, base), [systemBurn, base])
   const next = summary.nextPayment
   const spendMonthTotal = spendsData.summary.monthTotal
 
-  // Projected engines contribute 0 until they ship, so the roll-up is honest.
   const standbyEngines = DOMAINS.filter((d) => d.status === 'standby')
   const engineCount = DOMAINS.filter((d) => d.status === 'live').length
 
-  // Runway: how long the cash out is "covered" — real subs burn only for now.
-  const dailyBurn = summary.dailyBurn
-  const coveredBurn = summary.thisMonthCash > 0 ? summary.thisMonthCash : summary.monthlyBurn
+  const dailyBurn = systemBurn / 30.4375
+  const coveredBurn = summary.thisMonthCash > 0 ? summary.thisMonthCash : systemBurn
 
   /** Composition across live engines (subs only today). */
   const composition = summary.categories
@@ -174,7 +233,7 @@ export default function MasterCommand() {
           items={[
             { label: 'OS MODULE', value: 'MASTER COMMAND' },
             { label: 'ENGINES ONLINE', value: `${engineCount}/${DOMAINS.length}`, signal: 'acid' },
-            { label: 'MONTHLY RUNWAY', value: formatMoney(summary.monthlyBurn, base), signal: 'acid' },
+            { label: 'TOTAL MONTHLY BURN', value: formatMoney(systemBurn, base), signal: 'acid' },
             {
               label: 'ANNUAL COMMITMENT',
               value: formatMoney(summary.annualLoad, base),
@@ -197,7 +256,7 @@ export default function MasterCommand() {
               <span className="numeral mt-1 text-[clamp(1.7rem,5vw,3rem)] text-dim">{hero.symbol}</span>
               <span className="numeral text-hero text-fg">
                 <AnimatedNumber
-                  value={summary.monthlyBurn}
+                  value={systemBurn}
                   format={(value) => splitMoney(value, base).value}
                   stiffness={120}
                   damping={26}
@@ -208,26 +267,19 @@ export default function MasterCommand() {
             {/* run-rate roll-up by engine */}
             <div className="mt-3 flex flex-wrap gap-x-2 gap-y-1">
               {DOMAINS.map((domain) => {
-                const isSubs = domain.code === 'SUBS'
-                const isSpnd = domain.code === 'SPND'
-                const spndValue = isSpnd ? spendsData.summary.monthTotal : 0
+                const run = engineRunRate(domain, summary, spendsData, debtData, cardsData, base)
+                const live = domain.status === 'live'
                 return (
                   <span
                     key={domain.code}
                     className={cx(
                       'micro inline-flex items-center gap-1.5 border px-1.5 py-1',
-                      isSubs ? 'border-acid bg-acidsoft' : isSpnd ? 'border-orange bg-orangesoft' : 'border-line bg-surface2',
+                      run.active ? 'border-acid bg-acidsoft' : 'border-line bg-surface2',
                     )}
                   >
-                    <Led
-                      signal={isSubs ? 'acid' : 'orange'}
-                      size="sm"
-                      pulse={(isSubs && summary.activeCount > 0) || (isSpnd && spndValue > 0)}
-                    />
-                    <span className={cx('font-semibold', isSubs || isSpnd ? 'text-fg' : 'text-faint')}>{domain.code}</span>
-                    <span className={cx(isSubs ? 'text-acidink' : isSpnd ? 'text-orangeink' : 'text-faint')}>
-                      {isSubs ? formatMoney(summary.monthlyBurn, base) : isSpnd ? formatMoney(spndValue, base) : '0.00'}
-                    </span>
+                    <Led signal={run.active ? 'acid' : 'blue'} size="sm" pulse={run.active} />
+                    <span className={cx('font-semibold', live ? 'text-fg' : 'text-faint')}>{domain.code}</span>
+                    <span className={cx(run.active ? 'text-acidink' : 'text-faint')}>{run.value}</span>
                   </span>
                 )
               })}
@@ -240,14 +292,14 @@ export default function MasterCommand() {
                   summary.runRateDelta > 0 ? 'text-orangeink' : summary.runRateDelta < 0 ? 'text-acidink' : 'text-faint',
                 )}
               >
-                {formatPercent(summary.runRateDelta, 1)} VS PREVIOUS CYCLE
+                SUBSCRIPTIONS {formatPercent(summary.runRateDelta, 1)} VS PREV
               </span>
               <span className="micro text-faint">
                 {formatMoney(dailyBurn, base)} DRAIN DAILY
               </span>
               {spendMonthTotal > 0 && (
                 <span className="micro text-orangeink">
-                  {formatMoney(spendMonthTotal, base)} VARIABLE BURN
+                  INCL. {formatMoney(spendMonthTotal, base)} VARIABLE SPEND
                 </span>
               )}
               <span className="micro text-faint">
@@ -386,42 +438,44 @@ export default function MasterCommand() {
         </motion.div>
       </div>
 
-      {/* ---------- standby roadmap ---------- */}
-      <motion.div variants={RISE} className="mt-3">
-        <CutPanel cut="tr" cutSize={14} innerClassName="p-2">
-          <SectionHeader
-            code="ROAD"
-            title="Pending Engines"
-            signal="orange"
-            right={<span className="micro text-faint">{standbyEngines.length} IN STANDBY</span>}
-          />
-          <div className="divide-y divide-line">
-            {standbyEngines.map((domain) => {
-              const Icon = domain.icon
-              return (
-                <div key={domain.code} className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface2 md:px-4">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center border border-orange text-orangeink">
-                    <Icon size={17} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                      <span className="truncate text-[12.5px] font-medium text-dim">{domain.label}</span>
-                      <span className="micro border border-line2 px-1.5 py-0.5 text-orangeink">{domain.tag}</span>
+      {/* ---------- standby roadmap (renders only while a domain is standby) ---------- */}
+      {standbyEngines.length > 0 && (
+        <motion.div variants={RISE} className="mt-3">
+          <CutPanel cut="tr" cutSize={14} innerClassName="p-2">
+            <SectionHeader
+              code="ROAD"
+              title="Pending Engines"
+              signal="orange"
+              right={<span className="micro text-faint">{standbyEngines.length} IN STANDBY</span>}
+            />
+            <div className="divide-y divide-line">
+              {standbyEngines.map((domain) => {
+                const Icon = domain.icon
+                return (
+                  <div key={domain.code} className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-surface2 md:px-4">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center border border-orange text-orangeink">
+                      <Icon size={17} />
                     </span>
-                    <span className="meta block truncate text-faint">{domain.manifest}</span>
-                  </span>
-                  <Link
-                    to={domain.path}
-                    className="micro shrink-0 border border-line2 px-2 py-1 text-dim transition-colors hover:border-linehard hover:text-fg"
-                  >
-                    VIEW DECK
-                  </Link>
-                </div>
-              )
-            })}
-          </div>
-        </CutPanel>
-      </motion.div>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="truncate text-[12.5px] font-medium text-dim">{domain.label}</span>
+                        <span className="micro border border-line2 px-1.5 py-0.5 text-orangeink">{domain.tag}</span>
+                      </span>
+                      <span className="meta block truncate text-faint">{domain.manifest}</span>
+                    </span>
+                    <Link
+                      to={domain.path}
+                      className="micro shrink-0 border border-line2 px-2 py-1 text-dim transition-colors hover:border-linehard hover:text-fg"
+                    >
+                      VIEW DECK
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
+          </CutPanel>
+        </motion.div>
+      )}
 
       {/* ---------- quick launch ---------- */}
       <motion.div variants={RISE} className="mt-3">

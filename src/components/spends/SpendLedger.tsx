@@ -13,7 +13,7 @@ import {
   SPEND_CATEGORY_META,
   SPEND_METHOD_LABEL,
 } from '@/lib/types'
-import { formatMoney } from '@/lib/money'
+import { formatMoney, convert } from '@/lib/money'
 import { formatSignalDate, todayISO } from '@/lib/date'
 import { createSpend, deleteSpend } from '@/lib/db'
 import { TOAST_VERBS, useUI } from '@/store/ui'
@@ -151,7 +151,7 @@ export function SpendLedger({
   return (
     <div className="divide-y divide-line">
       {groups.map((group) => {
-        const dayTotal = group.spends.reduce((sum, spend) => sum + spend.amount, 0)
+        const dayTotal = group.spends.reduce((sum, spend) => sum + convert(spend.amount, spend.currency, base), 0)
         return (
           <section key={group.date}>
             <div className="flex items-center justify-between gap-3 border-b border-line bg-bg2 px-3 py-1.5 md:px-4">

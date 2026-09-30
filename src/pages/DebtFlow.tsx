@@ -19,7 +19,7 @@ import { cx } from '@/lib/cx'
 const STAGGER = { hidden: {}, show: { transition: { staggerChildren: 0.04, delayChildren: 0.03 } } }
 const RISE = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 420, damping: 34 } } }
 
-type SortOrder = 'outstanding' | 'emi' | 'rate' | 'name' | 'progress'
+type SortOrder = 'principal' | 'emi' | 'rate' | 'name'
 
 export default function DebtFlow() {
   const loans = useLoans()
@@ -27,7 +27,7 @@ export default function DebtFlow() {
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | LoanType>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | LoanStatus>('all')
-  const [sort, setSort] = useState<SortOrder>('outstanding')
+  const [sort, setSort] = useState<SortOrder>('principal')
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -42,17 +42,16 @@ export default function DebtFlow() {
         return true
       })
       .sort((a, b) => {
-        if (sort === 'outstanding') return b.principal - a.principal
+        if (sort === 'principal') return b.principal - a.principal
         if (sort === 'emi') return b.emi - a.emi
         if (sort === 'rate') return b.interestRate - a.interestRate
         if (sort === 'name') return a.name.localeCompare(b.name)
-        if (sort === 'progress') return 0 // needs payments data
         return 0
       })
   }, [loans, query, typeFilter, statusFilter, sort])
 
   const hasFilters = query || typeFilter !== 'all' || statusFilter !== 'all'
-  const clearFilters = () => { setQuery(''); setTypeFilter('all'); setStatusFilter('all'); setSort('outstanding') }
+  const clearFilters = () => { setQuery(''); setTypeFilter('all'); setStatusFilter('all'); setSort('principal') }
 
   return (
     <motion.div variants={STAGGER} initial="hidden" animate="show" className="px-3 py-4 md:px-5 md:py-5">
@@ -69,8 +68,8 @@ export default function DebtFlow() {
               <input className="w-32 bg-transparent py-1.5 font-mono text-[11px] outline-none placeholder:text-faint" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..." autoComplete="off" spellCheck={false} />
               {query && <button type="button" onClick={() => setQuery('')} className="text-faint hover:text-fg"><IconClose size={11} /></button>}
             </div>
-            <select value={sort} onChange={(e) => setSort(e.target.value as SortOrder)} className="micro border border-line2 bg-bg2 px-1.5 py-1.5 font-mono text-fg outline-none focus:border-acid">
-              <option value="outstanding">OUTSTANDING</option>
+            <select value={sort} onChange={(e) => setSort(e.target.value as SortOrder)} aria-label="Sort loans" className="micro border border-line2 bg-bg2 px-1.5 py-1.5 font-mono text-fg outline-none focus:border-acid">
+              <option value="principal">PRINCIPAL</option>
               <option value="emi">EMI</option>
               <option value="rate">RATE</option>
               <option value="name">NAME</option>

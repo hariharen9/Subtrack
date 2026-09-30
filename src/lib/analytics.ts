@@ -110,8 +110,9 @@ export interface SystemSummary {
   prevMonthCash: number
   nextPayment: ProcessEvent | null
   incoming7: ProcessEvent[]
-  incoming30: ProcessEvent[]
-  incoming30Total: number
+  /** Scheduled charges inside the configured horizon (default 30 days). */
+  incomingWindow: ProcessEvent[]
+  incomingWindowTotal: number
   overdue: ProcessEvent[]
   categories: CategorySlice[]
   concentration: { count: number; share: number }
@@ -302,6 +303,7 @@ export function summarize(
   payments: Payment[],
   base: string,
   today: string = todayISO(),
+  horizonDays = 30,
 ): SystemSummary {
   const active = subs.filter((s) => s.status === 'active')
   const suspended = subs.filter((s) => s.status === 'suspended')
@@ -334,12 +336,12 @@ export function summarize(
   const runRateDelta = percentChange(rawBurn, prevBurn)
   const cashDelta = percentChange(thisMonthCash, prevMonthCash)
 
-  const events = incomingStream(subs, base, today, 30)
+  const events = incomingStream(subs, base, today, horizonDays)
   const overdue = overdueStream(subs, base, today)
   const forward = events.filter((event) => !event.overdue)
   const incoming7 = forward.filter((event) => event.days <= 7)
-  const incoming30 = forward
-  const incoming30Total = forward.reduce((sum, event) => sum + event.baseAmount, 0)
+  const incomingWindow = forward
+  const incomingWindowTotal = forward.reduce((sum, event) => sum + event.baseAmount, 0)
 
   const categoryMap = new Map<Category, CategorySlice>()
   for (const view of views) {
@@ -394,8 +396,8 @@ export function summarize(
     prevMonthCash,
     nextPayment: forward[0] ?? null,
     incoming7,
-    incoming30,
-    incoming30Total,
+    incomingWindow,
+    incomingWindowTotal,
     overdue,
     categories,
     concentration,

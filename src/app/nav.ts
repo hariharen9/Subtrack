@@ -197,7 +197,7 @@ export const DOMAINS: Domain[] = [
         path: '/spends/patterns',
         key: 'P',
         icon: IconTime,
-        aliases: ['/spendspatterns', '/spends/limits', '/spendslimits'],
+        aliases: ['/spendspatterns'],
       },
     ],
   },

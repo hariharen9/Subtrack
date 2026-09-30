@@ -108,6 +108,9 @@ export function openImportDialog(): void {
         ui.setBaseCurrency(parsed.settings.baseCurrency)
         ui.setTheme(parsed.settings.theme)
         ui.setHorizonDays(parsed.settings.horizonDays)
+        // Older snapshots may omit these — only apply when present.
+        if (typeof parsed.settings.field === 'boolean') ui.setField(parsed.settings.field)
+        if (typeof parsed.settings.calmMode === 'boolean') ui.setCalmMode(parsed.settings.calmMode)
       }
       useUI
         .getState()

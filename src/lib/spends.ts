@@ -430,14 +430,18 @@ export function summarizeSpends(
   const series = spendSeries(spends, base, today, 28)
   const monthHighDay = [...series].sort((a, b) => b.amount - a.amount)[0] ?? null
 
-  // Effective limit converted to base currency.
+  // The stored limit may be in a currency the user has since switched away
+  // from, so convert it to base rather than silently disarming the limiter.
+  const limitBase = limit ? convert(limit.amount, limit.currency, base) : 0
   let weekUtilisation = 0
+  let weekUtilisationRaw = 0
   let weekRemaining = 0
-  const hasLimit =
-    limit && limit.amount > 0 && limit.currency === base
-  if (hasLimit && limit) {
-    weekUtilisation = limit.amount > 0 ? Math.min(1, weekDiscretionary / limit.amount) : 0
-    weekRemaining = Math.max(0, limit.amount - weekDiscretionary)
+  if (limit && limitBase > 0) {
+    weekUtilisationRaw = weekDiscretionary / limitBase
+    // Exported ratio is capped for gauges; the raw value feeds the notes so an
+    // over-cap week still reads as "exceeded" rather than a flat 100%.
+    weekUtilisation = Math.min(1, weekUtilisationRaw)
+    weekRemaining = Math.max(0, limitBase - weekDiscretionary)
   }
 
   return {
@@ -468,7 +472,7 @@ export function summarizeSpends(
       weekTotal,
       weekDiscretionary,
       limit,
-      weekUtilisation,
+      weekUtilisationRaw,
       categories,
     ),
   }
@@ -663,12 +667,12 @@ function buildSpendNotes(
   const notes: SpendSystemNote[] = []
 
   if (limit && limit.amount > 0) {
-    if (weekUtilisation > 1) {
+    if (weekUtilisation >= 1) {
       notes.push({
         id: 'limit-broken',
         label: 'LIMITER EXCEEDED',
         signal: 'red',
-        text: `Discretionary spend is ${formatDelta(weekUtilisation * 100)} over the weekly cap. Slow discretionary categories this week.`,
+        text: `Discretionary spend has reached ${formatDelta(weekUtilisation * 100)} of the weekly cap — pause discretionary categories this week.`,
       })
     } else if (weekUtilisation >= DISCRETIONARY_THRESHOLD) {
       notes.push({

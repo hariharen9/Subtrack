@@ -160,3 +160,8 @@ export async function ensureDebtSeeded(): Promise<void> {
   })()
   return debtSeedOnce
 }
+
+/** Clears the one-shot guard so a demo reset can re-seed loans. */
+export function resetDebtSeed(): void {
+  debtSeedOnce = null
+}

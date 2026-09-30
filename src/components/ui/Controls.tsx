@@ -248,9 +248,6 @@ export function ToggleSwitch({
             checked ? 'left-[30px] bg-acid' : 'left-[2px] bg-line2',
           )}
         />
-        <span className="micro absolute right-1.5 top-1/2 -translate-y-1/2 text-[7px] text-faint">
-          {checked ? '' : ''}
-        </span>
       </button>
     </div>
   )

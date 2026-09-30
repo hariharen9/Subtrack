@@ -18,13 +18,26 @@ const STATUSES: ProcessStatus[] = ['active', 'suspended', 'terminated']
 export interface QueryIntent {
   raw: string
   terms: string[]
-  amount?: { op: '>' | '<' | '='; value: number }
+  amount?: { op: '>' | '<' | '>=' | '<=' | '='; value: number }
   cycles: BillingCycle[]
   categories: Category[]
   statuses: ProcessStatus[]
   months: string[]
   days: number[]
   years: number[]
+}
+
+/** Shared amount predicate so subscriptions and spends filter identically. */
+function matchesAmount(
+  amount: number,
+  filter: NonNullable<QueryIntent['amount']>,
+): boolean {
+  const { op, value } = filter
+  if (op === '>') return amount > value
+  if (op === '<') return amount < value
+  if (op === '>=') return amount >= value
+  if (op === '<=') return amount <= value
+  return Math.abs(amount - value) <= 0.5
 }
 
 function toMonthIndex(word: string): number | null {
@@ -48,8 +61,7 @@ export function parseQuery(raw: string): QueryIntent {
   for (const token of raw.trim().toLowerCase().split(/\s+/).filter(Boolean)) {
     const amount = token.match(/^(>=|<=|>|<|=)?(\d+(?:\.\d+)?)$/)
     if (amount) {
-      const raw = amount[1] ?? '='
-      const op: '>' | '<' | '=' = raw.startsWith('>') ? '>' : raw.startsWith('<') ? '<' : '='
+      const op = (amount[1] ?? '=') as '>' | '<' | '>=' | '<=' | '='
       intent.amount = { op, value: Number(amount[2]) }
       continue
     }
@@ -178,12 +190,7 @@ export function searchSubscriptions(
     const day = parseISO(sub.nextBillingDate).d
     const monthKey = sub.nextBillingDate.slice(0, 7)
 
-    if (intent.amount) {
-      const { op, value } = intent.amount
-      if (op === '>' && !(sub.price > value)) continue
-      if (op === '<' && !(sub.price < value)) continue
-      if (op === '=' && Math.abs(sub.price - value) > 0.5) continue
-    }
+    if (intent.amount && !matchesAmount(sub.price, intent.amount)) continue
 
     if (intent.months.length) {
       const ok = intent.months.some((m) =>
@@ -268,12 +275,7 @@ export function searchSpends(
       if (!intent.categories.some((c) => cat.startsWith(c))) continue
     }
 
-    if (intent.amount) {
-      const { op, value } = intent.amount
-      if (op === '>' && !(spend.amount > value)) continue
-      if (op === '<' && !(spend.amount < value)) continue
-      if (op === '=' && Math.abs(spend.amount - value) > 0.5) continue
-    }
+    if (intent.amount && !matchesAmount(spend.amount, intent.amount)) continue
 
     const monthKey = spend.date.slice(0, 7)
     if (intent.months.length) {

@@ -10,7 +10,6 @@ import { db } from '@/lib/db'
 import type { Payment, Subscription } from '@/lib/types'
 import {
   buildSignalSeries,
-  incomingStream,
   matrixFor,
   summarize,
   type SeriesPoint,
@@ -52,11 +51,12 @@ export function useSystem(): SystemData {
   const subs = useSubscriptions()
   const payments = usePayments()
   const base = useUI((s) => s.baseCurrency)
+  const horizonDays = useUI((s) => s.horizonDays)
   const today = todayISO()
 
   const summary = useMemo(
-    () => summarize(subs, payments, base, today),
-    [subs, payments, base, today],
+    () => summarize(subs, payments, base, today, horizonDays),
+    [subs, payments, base, today, horizonDays],
   )
 
   return { summary, ready: subs.length > 0 || payments.length > 0 }
@@ -75,13 +75,6 @@ export function useSignalSeries(
     () => buildSignalSeries(subs, payments, base, today, mode, back, forward),
     [subs, payments, base, today, mode, back, forward],
   )
-}
-
-export function useIncomingStream(days: number) {
-  const subs = useSubscriptions()
-  const base = useUI((s) => s.baseCurrency)
-  const today = todayISO()
-  return useMemo(() => incomingStream(subs, base, today, days), [subs, base, today, days])
 }
 
 /** Payment events for a whole month, keyed by ISO day. */

@@ -27,7 +27,7 @@ export default function NotFound() {
       />
       <p className="micro mt-4 text-faint">
         KNOWN MODULES:{' '}
-        {['/', '/flow', '/time', '/data', '/sys'].map((path, index) => (
+        {['/', '/subs', '/cards', '/loans', '/spends', '/sys'].map((path, index) => (
           <span key={path}>
             {index > 0 && <span className="text-linehard"> · </span>}
             <Link to={path} className="text-dim transition-colors hover:text-acidink">

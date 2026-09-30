@@ -4,8 +4,7 @@
  * Visual instruments for the Spends subsystem:
  * 1. SpendCategoryComposition — sector strip + interactive breakdown
  * 2. SpendVelocity — multi-timeframe velocity bar chart (Daily 7d/14d/28d/90d,
- *    Weekly, Monthly, Yearly) with deliberate 1.2s dwell delay hover popovers portaled as true overlays
- * 3. LimiterGauge — circular weekly budget cap gauge
+ *    Weekly, Monthly, Yearly) with deliberate 350ms dwell delay hover popovers portaled as true overlays
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -21,7 +20,7 @@ import type { Spend } from '@/lib/types'
 import { SPEND_CATEGORY_META } from '@/lib/types'
 import { formatMoney } from '@/lib/money'
 import { cx } from '@/lib/cx'
-import { SIGNAL_HEX, SIGNAL_TEXT, Led, type Signal } from '@/components/ui/Signal'
+import { SIGNAL_HEX, SIGNAL_TEXT, Led } from '@/components/ui/Signal'
 import { SpendBadge } from './SpendBadge'
 
 export function SpendCategoryComposition({
@@ -269,7 +268,7 @@ export function SpendVelocity({
         )}
       </div>
 
-      {/* True Screen-Level Overlay Portal Tooltip (Appears after 1.2s dwell) */}
+      {/* True Screen-Level Overlay Portal Tooltip (Appears after 350ms dwell) */}
       {typeof document !== 'undefined' &&
         createPortal(
           <AnimatePresence>
@@ -536,66 +535,4 @@ export function SpendVelocity({
   )
 }
 
-/** Small weekly-limiter gauge using the existing signal language. */
-export function LimiterGauge({
-  utilisation,
-  remaining,
-  hasLimit,
-  signal,
-  base,
-}: {
-  utilisation: number
-  remaining: number
-  hasLimit: boolean
-  signal: Signal
-  base: string
-}) {
-  const pct = Math.min(100, utilisation * 100)
-  const angle = -90 + (pct / 100) * 360
-  return (
-    <div className="flex items-center gap-4 p-3">
-      <div className="relative h-24 w-24 shrink-0">
-        <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--c-line)" strokeWidth="10" />
-          <circle
-            cx="50"
-            cy="50"
-            r="42"
-            fill="none"
-            stroke={SIGNAL_HEX[signal]}
-            strokeWidth="10"
-            strokeLinecap="square"
-            strokeDasharray={`${angle} 360`}
-          />
-        </svg>
-        <span className="absolute inset-0 grid place-items-center">
-          <span className={cx('numeral text-[18px]', SIGNAL_TEXT[signal])}>{Math.round(pct)}%</span>
-        </span>
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <span className={cx('micro', SIGNAL_TEXT[signal])}>WEEKLY BUDGET CAP (WANTS)</span>
-        {hasLimit ? (
-          <>
-            <span className="numeral text-[20px] text-fg">{formatMoney(remaining, base)}</span>
-            <span className="micro text-faint">REMAINING THIS WEEK</span>
-          </>
-        ) : (
-          <span className="meta text-faint">NO LIMIT SET — SET ONE TO ARM THE LIMITER.</span>
-        )}
-        {utilisation >= 1 ? (
-          <span className="micro text-redink flex items-center gap-1">
-            <Led signal="red" size="sm" pulse /> CAP EXCEEDED
-          </span>
-        ) : utilisation >= 0.72 ? (
-          <span className="micro text-orangeink flex items-center gap-1">
-            <Led signal="orange" size="sm" pulse /> NEARING CAP
-          </span>
-        ) : utilisation > 0 ? (
-          <span className="micro text-acidink flex items-center gap-1">
-            <Led signal="acid" size="sm" /> WITHIN ENVELOPE
-          </span>
-        ) : null}
-      </div>
-    </div>
-  )
-}
+

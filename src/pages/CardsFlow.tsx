@@ -136,8 +136,8 @@ export default function CardsFlow() {
             <select value={sort} onChange={(e) => setSort(e.target.value as SortOrder)} className="micro border border-line2 bg-bg2 px-1.5 py-1.5 font-mono text-fg outline-none focus:border-acid" aria-label="Sort">
               <option value="newest">NEWEST</option>
               <option value="oldest">OLDEST</option>
-              <option value="amount_desc">₹ HIGH</option>
-              <option value="amount_asc">₹ LOW</option>
+              <option value="amount_desc">AMOUNT HIGH</option>
+              <option value="amount_asc">AMOUNT LOW</option>
             </select>
             <CyberButton variant="ink" size="sm" leading={<IconDownload size={12} />} onClick={doExport}>CSV</CyberButton>
             <CyberButton variant="solid" size="sm" leading={<IconPlus size={12} />} onClick={() => openCardComposer({ mode: 'txn' })}>LOG TXN</CyberButton>

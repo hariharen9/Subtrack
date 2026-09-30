@@ -68,7 +68,6 @@ export function CyberShell() {
     { key: '/', handler: (event) => { event.preventDefault(); setPaletteOpen(true) } },
     { key: 'n', handler: () => openComposer() },
     { key: 'x', handler: () => openSpendComposer() },
-    { key: 'e', handler: () => openSpendComposer() },
     { key: 't', handler: () => toggleTheme() },
     ...DOMAINS.map((item) => ({
       key: item.key,
@@ -110,7 +109,6 @@ export function CyberShell() {
         activePath={pathname}
         views={summary.views}
         processCount={summary.active.length}
-        chargesThisMonth={summary.incoming30.length}
       />
 
       <SystemToaster />

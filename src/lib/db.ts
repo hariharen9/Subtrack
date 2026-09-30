@@ -33,6 +33,9 @@ import { newId } from './id'
 
 export const DB_NAME = 'subtrack'
 
+/** Newest Dexie schema version declared below — surfaced in the System Host. */
+export const DB_SCHEMA_VERSION = 4
+
 class SubTrackDB extends Dexie {
   subscriptions!: Table<Subscription, string>
   payments!: Table<Payment, string>
@@ -69,6 +72,8 @@ export const db = new SubTrackDB()
 const META_SEEDED = 'seeded'
 const META_SCHEMA = 'schema'
 const META_SPENDS_SEEDED = 'spends.seeded'
+const META_DEBT_SEEDED = 'debt.seeded'
+const META_CARDS_SEEDED = 'cards.seeded'
 
 /* ------------------------------------------------------------------ boot --- */
 
@@ -619,11 +624,14 @@ export async function wipeAll(): Promise<void> {
   })
 }
 
-export async function resetToSeed(): Promise<void> {
-  await wipeAll()
-  await seedDatabase()
+/** Re-arms the one-shot boot guards so a demo reset can re-run every seed.
+ *  The orchestration itself lives in `seed-reset.ts` to avoid a module cycle. */
+export function resetSubscriptionSeed(): void {
+  seedOnce = null
+}
+
+export function resetSpendsSeed(): void {
   spendsSeedOnce = null
-  await ensureSpendsSeeded()
 }
 
 /* ------------------------------------------------------- portability ------ */
@@ -710,7 +718,12 @@ export async function importSnapshot(
     if (loanPayments.length) await db.loanPayments.bulkPut(loanPayments)
     if (creditCards.length) await db.creditCards.bulkPut(creditCards)
     if (cardTransactions.length) await db.cardTransactions.bulkPut(cardTransactions)
+    // Mark every demo generator as satisfied so a later boot can never inject
+    // demo rows on top of restored data.
     await db.meta.put({ key: META_SEEDED, value: nowStamp() })
+    await db.meta.put({ key: META_SPENDS_SEEDED, value: nowStamp() })
+    await db.meta.put({ key: META_DEBT_SEEDED, value: nowStamp() })
+    await db.meta.put({ key: META_CARDS_SEEDED, value: nowStamp() })
   })
 
   return {

@@ -121,10 +121,12 @@ export function statementFor(
     .reduce((s, t) => s + conv(t), 0)
   const paidTotal = payments + paidAfterClose
 
+  // `due` already nets out payments made inside the statement window, so
+  // settlement is decided purely by what was credited after the close.
   let status: StatementStatus
   if (spend <= 0.005 && payments <= 0.005) status = 'empty'
-  else if (due <= 0.005 || paidTotal >= due - 0.005) status = 'paid'
-  else if (today > dueDate) status = paidTotal > 0.005 ? 'partial' : 'unpaid'
+  else if (due <= 0.005 || paidAfterClose >= due - 0.005) status = 'paid'
+  else if (today > dueDate) status = paidAfterClose > 0.005 ? 'partial' : 'unpaid'
   else status = 'current'
 
   return {
@@ -229,6 +231,7 @@ export function monthlyCardSeries(
       point.fees += amt
       point.spend += amt
     } else if (t.type === 'payment') point.payments += amt
+    else if (t.type === 'refund' || t.type === 'reward') point.spend -= amt
     if (t.type !== 'payment') point.rewards += t.rewards
   }
   return keys.map((key) => byKey.get(key) as CardMonthPoint)
@@ -356,7 +359,9 @@ export function viewOfCard(
   const dueDate = upcomingDueDate(card, today)
   const daysToDue = Math.max(0, diffDays(dueDate, today))
 
-  const cycleTxns = txns.filter((t) => t.date >= cycleStart)
+  // The open cycle runs [cycleStart, nextBilling) — future-dated rows belong to
+  // a later cycle and must not inflate "this cycle".
+  const cycleTxns = txns.filter((t) => t.date >= cycleStart && t.date < nextBilling)
   const sumType = (list: CardTransaction[], type: CardTxnType) =>
     list.filter((t) => t.type === type).reduce((s, t) => s + convert(t.amount, t.currency, base), 0)
 

@@ -16,7 +16,7 @@ import {
 } from '@/lib/types'
 import { useSpends } from '@/hooks/useSpends'
 import { useUI } from '@/store/ui'
-import { formatMoney } from '@/lib/money'
+import { formatMoney, convert } from '@/lib/money'
 import { exportSpendsCsv } from '@/lib/portability'
 import {
   filterSpendsByRange,
@@ -92,7 +92,10 @@ export default function SpendFlow() {
   }, [spends, query, range, category, method, sort])
 
   const groups = useMemo(() => spendLedger(filtered), [filtered])
-  const total = useMemo(() => filtered.reduce((sum, spend) => sum + spend.amount, 0), [filtered])
+  const total = useMemo(
+    () => filtered.reduce((sum, spend) => sum + convert(spend.amount, spend.currency, base), 0),
+    [filtered, base],
+  )
 
   const hasFilters = query !== '' || range !== 'all' || category !== 'all' || method !== 'all'
   const clearFilters = () => {

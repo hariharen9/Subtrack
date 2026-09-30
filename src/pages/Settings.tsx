@@ -12,7 +12,8 @@ import { useSpends } from '@/hooks/useSpends'
 import { useUI, TOAST_VERBS } from '@/store/ui'
 import { CURRENCIES, formatMoney, convert } from '@/lib/money'
 import { downloadFile } from '@/lib/portability'
-import { resetToSeed, wipeAll, reconcileSchedules } from '@/lib/db'
+import { wipeAll, reconcileSchedules, DB_SCHEMA_VERSION } from '@/lib/db'
+import { resetToSeed } from '@/lib/seed-reset'
 import { exportJson, openImportDialog, toCsv } from '@/lib/portability'
 import { pidOf, traceOf } from '@/lib/id'
 import { todayISO } from '@/lib/date'
@@ -32,8 +33,8 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['X'], label: 'Log a daily spend' },
   { keys: ['1'], label: 'Master Command' },
   { keys: ['2'], label: 'Subscriptions' },
-  { keys: ['3'], label: 'Credit Cards (standby)' },
-  { keys: ['4'], label: 'Loans & EMIs (standby)' },
+  { keys: ['3'], label: 'Credit Cards' },
+  { keys: ['4'], label: 'Loans & EMIs' },
   { keys: ['5'], label: 'Daily Spends' },
   { keys: ['6'], label: 'System Host' },
   { keys: ['T'], label: 'Toggle night / daylight' },
@@ -242,7 +243,7 @@ export default function Settings() {
               />
               <p className="meta mt-2.5 text-faint">
                 Controls the incoming stream on the overview. Currently showing{' '}
-                {summary.incoming30.length} scheduled events inside {horizonDays} days.
+                {summary.incomingWindow.length} scheduled events inside {horizonDays} days.
               </p>
 
               <HashRule label="SCHEDULE REPAIR" className="my-3" />
@@ -285,7 +286,7 @@ export default function Settings() {
                 { label: 'Charges', value: String(payments.length) },
                 { label: 'Spends', value: String(spends.length) },
                 { label: 'Oldest record', value: oldest ?? '—' },
-                { label: 'Schema', value: 'V2' },
+                { label: 'Schema', value: `V${DB_SCHEMA_VERSION}` },
                 { label: 'Trace', value: traceOf(todayISO()) },
               ]}
             />
@@ -431,7 +432,7 @@ export default function Settings() {
                 {[
                   ['Creator', <a key="creator" href="https://hariharen.site" target="_blank" rel="noreferrer" className="underline decoration-linehard underline-offset-2 transition-colors hover:text-acidink">Hariharen</a>],
                   ['Build', '1.0.0'],
-                  ['Schema', 'V1'],
+                  ['Schema', `V${DB_SCHEMA_VERSION}`],
                   ['Storage', 'IndexedDB'],
                   ['Runtime', 'Offline PWA'],
                   ['Display', 'Space Grotesk'],

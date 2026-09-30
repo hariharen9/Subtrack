@@ -156,3 +156,8 @@ export async function ensureCardsSeeded(): Promise<void> {
   })()
   return cardSeedOnce
 }
+
+/** Clears the one-shot guard so a demo reset can re-seed cards. */
+export function resetCardsSeed(): void {
+  cardSeedOnce = null
+}

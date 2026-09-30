@@ -31,7 +31,7 @@ Subtrack treats personal recurring finances not as passive spreadsheets, but as 
 |  +-----------------------------------------------------------------------------+  |
 |  |                          DOMAIN ENGINES (data-driven)                      |  |
 |  |  +------------+  +------------+  +------------+  +------------+            |  |
-|  |  |MASTER CMD  |  | SUBSCRIPT- |  | STANDBY    |  | SYSTEM HOST|            |  |
+|  |  |MASTER CMD  |  | SUBSCRIPT- |  | ALL LIVE   |  | SYSTEM HOST|            |  |
 |  |  | (/ Master) |  | IONS /subs |  | /cards     |  | /sys       |            |  |
 |  |  |            |  |  /subs/…   |  | /loans     |  |            |            |  |
 |  |  |            |  |  (SUBS tabs)|  | /spends    |  |            |            |  |
@@ -50,8 +50,8 @@ Subtrack treats personal recurring finances not as passive spreadsheets, but as 
 |                                        |                                          |
 |  +-----------------------------------------------------------------------------+  |
 |  |                           LOCAL STORAGE ENGINE                              |  |
-|  |                    IndexedDB / Dexie.js (Schema V2, db "subtrack")          |  |
-|  |           [subscriptions]  [payments]  [spends]  [meta]                    |  |
+|  |                    IndexedDB / Dexie.js (Schema V4, db "subtrack")          |  |
+|  |        [subscriptions] [payments] [spends] [loans] [cards] [meta]          |  |
 |  +-----------------------------------------------------------------------------+  |
 +-----------------------------------------------------------------------------------+
 ```
@@ -122,7 +122,7 @@ E:/Projects/Subtrack/
     │   ├── spends/
     │   │   ├── SpendBadge.tsx    # Brand glyph & category icon resolver for transactions
     │   │   ├── SpendComposer.tsx # Quick-capture modal with presets, merchant hints, and batch mode
-    │   │   ├── SpendInstruments.tsx # SpendVelocity (multi-timeframe + cyber hovercards) & LimiterGauge
+    │   │   ├── SpendInstruments.tsx # SpendVelocity (multi-timeframe + cyber hovercards)
     │   │   └── SpendLedger.tsx   # Transaction list with SpendBadge, clone, delete, and filtering
     │   ├── subs/
     │   │   ├── IncomingStream.tsx# Forward-only renewal stream (DayGroups) + IncomingRail
@@ -153,17 +153,20 @@ E:/Projects/Subtrack/
     │   ├── analytics.ts          # summarize(), viewOf(), series, streams, matrix, notes
     │   ├── cards.ts              # card analytics: cycles, statements, min due, carry cost,
     │   │                         #   monthly series, rewards, notes
-    │   ├── card-seed.ts          # 3-card demo dataset + 60-day transaction ledger
+    │   ├── card-seed.ts          # 3-card demo dataset + recent transaction ledger
     │   ├── catalog.ts            # 62 service presets with Indian pricing + tiers
     │   ├── cx.ts                 # Class name joiner
     │   ├── cycle.ts              # Cycle economics + anchor-based occurrence generation
     │   ├── date.ts               # ISO calendar-day engine (no timezone, no drift)
     │   ├── db.ts                 # Dexie schema, CRUD, snapshots — the only write path
+    │   ├── debt.ts               # loan analytics: EMI, amortisation, debt-free projection, notes
+    │   ├── debt-seed.ts          # 5-loan demo dataset + reconstructed amortisation history
     │   ├── fuzzy.ts              # parseQuery(), fuzzyScore(), searchSubscriptions()
     │   ├── id.ts                 # pidOf(), traceOf(), slotOf(), txnRef(), hash32()
     │   ├── money.ts              # Static FX, Intl formatting, percent helpers
     │   ├── portability.ts        # JSON snapshot export/import, CSV ledger, clipboard readout
     │   ├── seed.ts               # 17-subscription demo dataset + reconstructed ledger + spends demo
+    │   ├── seed-reset.ts         # resetToSeed() orchestrator (re-arms & re-runs every seed)
     │   ├── spends.ts              # spend analytics pipeline (daily/weekly/monthly/yearly velocity, limiter, ratio)
     │   └── types.ts              # Domain interfaces, categories, signal maps
     ├── pages/
@@ -182,14 +185,11 @@ E:/Projects/Subtrack/
     │   ├── DebtFlow.tsx          # "/loans/flow" — loan registry
     │   ├── LoanDetail.tsx        # "/loans/flow/:id" — per-loan board (amortization, schedule)
     │   ├── DebtInsights.tsx      # "/loans/data" — debt analytics
-    │   ├── standby/              # RETIRED — unmounted legacy decks kept for reference
-    │   │   ├── StandbyDeck.tsx   # Shared standby frame (orange STANDBY deck + arrival roadmap)
-    │   │   ├── CardsDeck.tsx     # Old "/cards" standby deck (superseded by CardsOverview)
-    │   │   ├── LoansDeck.tsx     # Old "/loans" standby deck (superseded by DebtOverview)
     │   ├── Spends.tsx            # "/spends" — Daily Spends cockpit (hero, velocity, ledger, limiter)
     │   ├── SpendFlow.tsx         # "/spends/flow" — full spend registry with range presets & filters
+    │   ├── SpendDetail.tsx       # "/spends/flow/:id" — per-spend diagnostic board
     │   ├── SpendInsights.tsx     # "/spends/data" — needs-vs-wants ratio, payment channels, heatmap, forecast
-    │   ├── SpendLimits.tsx       # "/spends/limits" — weekly discretionary limiter
+    │   ├── SpendPatterns.tsx     # "/spends/patterns" — forensic engine (discipline, anomalies, phase)
     │   └── NotFound.tsx          # 404 terminal diagnostic view
     ├── store/
     │   └── ui.ts                 # Zustand store (persisted prefs, overlays, toasts, booted)
@@ -199,7 +199,7 @@ E:/Projects/Subtrack/
     │   ├── fonts.css             # @font-face for the 4 self-hosted variable woff2 files
     │   ├── base.css              # Reset, background field, focus, scrollbars, reduced motion
     │   └── components.css        # Panels, chamfers, signals, controls, animations
-    ├── App.tsx                   # Router, ThemeSync, BootSequence, lazy routes + prefetch
+    ├── App.tsx                   # Router, ThemeSync, BootSequence, statically imported routes
     └── main.tsx                  # Entry point (mounts App, clears #boot)
 ```
 
@@ -347,6 +347,11 @@ Database name: `subtrack` (`DB_NAME`, exported). Dexie class: `SubTrackDB`.
 class SubTrackDB extends Dexie {
   subscriptions!: Table<Subscription, string>
   payments!: Table<Payment, string>
+  spends!: Table<Spend, string>
+  loans!: Table<Loan, string>
+  loanPayments!: Table<LoanPayment, string>
+  creditCards!: Table<CreditCard, string>
+  cardTransactions!: Table<CardTransaction, string>
   meta!: Table<MetaRecord, string>
 
   constructor() {
@@ -359,10 +364,18 @@ class SubTrackDB extends Dexie {
     this.version(2).stores({
       spends: 'id, date, category, method, createdAt, updatedAt, [date+category]',
     })
+    this.version(3).stores({
+      loans: 'id, status, loanType, lender, startDate, name, createdAt, updatedAt',
+      loanPayments: 'id, loanId, date, emiNumber, [loanId+date]',
+    })
+    this.version(4).stores({
+      creditCards: 'id, status, issuer, network, name, createdAt, updatedAt',
+      cardTransactions: 'id, cardId, date, type, category, [cardId+date]',
+    })
   }
 }
 ```
-`meta` rows used: `seeded` (boot marker) and `schema` ('1').
+`DB_SCHEMA_VERSION = 4` is exported and surfaced in the System Host. `meta` rows used: `seeded` (boot marker), `schema` ('1'), `spends.seeded`, `debt.seeded`, `cards.seeded`, and `spends.weeklyLimit` (JSON).
 
 ### 4.2 Seed Workflow & History Reconstruction
 ```mermaid
@@ -395,7 +408,7 @@ History is **reconstructed from each subscription's own anchor** and capped at `
 | `setProcessStatus(id, status)` | Transitions `active`/`suspended`/`terminated`; sets `statusChangedAt` (cleared when returning to active). |
 | `markUsed(id)` | Sets `lastUsedAt = today` — resets the dormancy timer used by analytics. |
 | `purgeSubscription(id)` | **Deletes the subscription AND all of its payment history.** The terminate dialog states this explicitly. |
-| `wipeAll()` / `resetToSeed()` | Destructive maintenance. Both clear `meta`; `resetToSeed()` re-seeds immediately. Both are dual-confirm (ArmedButton / TerminateDialog). |
+| `wipeAll()` / `resetToSeed()` | Destructive maintenance. Both clear `meta`; `resetToSeed()` (in `seed-reset.ts`) re-arms every seed guard and re-seeds subscriptions, spends, loans and cards immediately. Both are dual-confirm (ArmedButton / TerminateDialog). |
 | `exportSnapshot(settings)` / `importSnapshot(snapshot, mode)` | Portable `Snapshot { app:'subtrack', version:1, exportedAt, settings, subscriptions, payments }`. `mode` is `'replace'` (clears first) or `'merge'` (`bulkPut`). Returns an `ImportReport`. |
 
 Spend lifecycle: `listSpends()`, `getSpend(id)`, `spendsBetween(from, to)`, `createSpend(draft)`, `updateSpend(id, patch)`, `deleteSpend(id)`. Weekly limiter: `getWeeklyLimit()` / `setWeeklyLimit()` (JSON under the `spends.weeklyLimit` meta row). `ensureSpendsSeeded()` boot-seeds a demo spend ledger (guarded by its own `spends.seeded` marker so existing installs still get an explorable `/spends`). `wipeAll()`, `resetToSeed()` and snapshot import/export all carry the spends table.
@@ -442,7 +455,7 @@ export interface SubscriptionView {
 - **`highest` / `lowest`** views, **`views`** (sorted, share-weighted).
 - **`runRateDelta`** — burn today vs `burnAt(previous calendar month)` (`+4.8% VS PREVIOUS CYCLE`).
 - **`cashDelta`**, **`thisMonthCash`**, **`prevMonthCash`** — recorded cash this cycle vs last (`cashAt()` joins the ledger to scheduled occurrences).
-- **`nextPayment`**, **`incoming7`**, **`incoming30`**, **`incoming30Total`**, **`overdue`** (see §5.4).
+- **`nextPayment`**, **`incoming7`**, **`incomingWindow`**, **`incomingWindowTotal`**, **`overdue`** (see §5.4).
 - **`categories: CategorySlice[]`** — `{ category, label, code, signal, monthly, annual, count, share }`, sorted by monthly cost.
 - **`concentration`** — top-3 combined share of burn (e.g. `61%`).
 - **`dormant`** — views with `lastUsedAt` ≥ 30 days old (or never), with days since last use.
@@ -648,11 +661,11 @@ Because `clip-path` also clips `box-shadow`, chamfered panels are a **two-layer 
 
 ## 11. Core Feature Boards & Pages (`src/pages/`)
 
-The Financial OS renders six in-domain cockpits behind one dumb shell. `DOMAINS` in `src/app/nav.ts` is the single source of truth — the shell (`CyberShell`) is domain-agnostic and renders each domain's chrome through `DomainFrame` from the `DOMAINS` entry (identity bar + `subnav` tabs). Adding a future engine = one entry in `DOMAINS` + one page; the standby decks below demonstrate the pattern.
+The Financial OS renders six in-domain cockpits behind one dumb shell. `DOMAINS` in `src/app/nav.ts` is the single source of truth — the shell (`CyberShell`) is domain-agnostic and renders each domain's chrome through `DomainFrame` from the `DOMAINS` entry (identity bar + `subnav` tabs). Adding a future engine = one entry in `DOMAINS` + one page.
 
 ### 11.0 Master Command (`/`)
-The Financial OS cockpit — rolls every engine up into one net position (only live engines contribute today; standby decks read honest `0`):
-- **Hero CutPanel**: `NET MONTHLY BURN` spring-odometer (`AnimatedNumber`), `+Δ VS PREVIOUS CYCLE`, daily burn, plus per-engine burn tags.
+The Financial OS cockpit — rolls every live engine up into one total monthly burn:
+- **Hero CutPanel**: `TOTAL SYSTEM BURN` spring-odometer (`AnimatedNumber`) — the sum of the four engine figures shown as chips below it; subscription run-rate delta, daily drain, plus per-engine burn tags.
 - **Readout strip** (`DataStrip`): projected annual load, active subscriptions, average, top category, charges inside the horizon.
 - **Subsystem Status matrix**: all six `DOMAINS` with LIVE / STANDBY chips, manifest blurbs and version tags — jump straight into any cockpit.
 - **Next Critical Outflow**: the closest scheduled charge across live engines.
@@ -668,7 +681,7 @@ The main Subscriptions flight deck (`Overview.tsx`):
 - **Load Distribution (`BurnRail`)**: segmented register of the whole burn; segments are coloured by **category signal**, interactive (hover/tap → readout), with a category legend.
 - **Right column**: System notes (3 most recent), the 7-day load cluster sparkline, the dominant category card.
 - **Spending Signal**: `runrate`/`cash` toggle with the drawn SVG trace.
-- **Incoming // next 30 days**: full `IncomingStream` on desktop, `IncomingRail` on mobile.
+- **Incoming // next {horizon} days** (the configured `horizonDays`): full `IncomingStream` on desktop, `IncomingRail` on mobile.
 - **Active subscriptions grid**: up to 8 `ProcessCard`s + "load remaining" link; plus an **Archive** rail for suspended/terminated records.
 - Empty system → `NO ACTIVE SUBSCRIPTIONS / SYSTEM IS CURRENTLY CLEAN.` with the add CTA.
 
@@ -706,16 +719,17 @@ Deep financial intelligence (`Insights.tsx`):
 - **Statistics table**: burn, load, daily rate, averages, highest/lowest, lifetime charged, charges in the last 30 days, longest running, newest, currencies in use, static FX reference.
 - **Billing cycle mix**: monthly/quarterly/yearly/custom distribution with shares, plus observations and system notes.
 
-### 11.6 Daily Spends (`/spends`, `/spends/flow`, `/spends/limits`)
+### 11.6 Daily Spends (`/spends`, `/spends/flow`, `/spends/patterns`)
 The live variable-cash cockpit (`Spends.tsx`):
 - **Hero**: `SPENT TODAY` spring-odometer, today's transaction count, `+Δ VS PREVIOUS MONTH`, avg/day and week total, plus a `LOG SPEND` quick action.
 - **Readout strip** (`DataStrip`): week total, discretionary (week), limiter remaining, this-month total, month high day.
 - **Daily velocity**: a 28-day SVG bar chart (past / today) with hover readouts.
-- **Weekly limiter** (`SpendLimits.tsx`, `LimiterGauge`): Mon–Sun discretionary cap in the base currency; a radial gauge with signal states (acid/orange/red) and notes near/exceeding the cap. Essential categories never count against it.
+- **Weekly limiter** (editor on the Patterns tab, `SpendPatterns.tsx`): Mon–Sun discretionary cap, normalised to the base currency; signal states (acid/orange/red) and notes near/exceeding the cap. Essential categories never count against it.
 - **Category mix**: composition strip + per-category share/count bars for the month; clicking a category opens the composer pre-tagged.
 - **Recent ledger** (`SpendLedger.tsx`, `SpendRow`): reverse-chronological day groups with title, method, date, note, DISC/ESS tag, amount, edit and two-step delete.
 - `/spends/flow` (`SpendFlow.tsx`) — the full registry: free-text query across title/notes/category plus category and method filter rails, selection readout and the complete ledger.
-- `/spends/limits` (`SpendLimits.tsx`) — arms the weekly discretionary limiter, quick caps and the discretionary-category reference.
+- `/spends/flow/:id` (`SpendDetail.tsx`) — per-spend diagnostic board: identity + economics hero, merchant intelligence, category peers, clone/edit/armed delete.
+- `/spends/patterns` (`SpendPatterns.tsx`) — forensic engine: discipline score, recurring-merchant detection, z-score anomalies, monthly phase and weekday profile; also hosts the weekly discretionary-cap editor.
 - Empty system → `NO DAY-TO-DAY SPEND YET.` with a LOG FIRST SPEND CTA. The `/spends` route is the `SPND` engine (status `live` in `nav.ts`).
 
 ### 11.7 Credit Cards Engine (`/cards`, `/cards/flow`, `/cards/flow/:id`, `/cards/data`)
@@ -806,6 +820,7 @@ The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-leve
 | `⌘ + K` or `Ctrl + K` | Global | Toggle Command Palette |
 | `/` | Global | Open Command Palette (query field focused) |
 | `N` | Global | Open the New Subscription composer |
+| `X` | Global | Open the Log Spend composer |
 | `1` | Global | Navigate to **Master Command** (`/`) |
 | `2` | Global | Navigate to **Subscriptions** (`/subs`) |
 | `3` | Global | Navigate to **Credit Cards** cockpit (`/cards`) |
@@ -827,8 +842,8 @@ The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-leve
 - **Build tool**: Vite 8 (`rolldown` bundler) with `@vitejs/plugin-react`, `@tailwindcss/vite`, `vite-plugin-pwa` (all dev dependencies), TypeScript 7 for strict typechecking.
 - **Manifest**: hand-authored in `public/manifest.webmanifest` and referenced by `<link>` — the plugin runs with `manifest: false` so the file stays readable and diffable. Includes `standalone` display, theme colours `#050505`/`#F2F1EC`, maskable icon, and three app shortcuts (new subscription, payment matrix, insights).
 - **Service worker**: `vite-plugin-pwa` with `registerType: 'prompt'` and `injectRegister: null` — registration is manual via `virtual:pwa-register/react` in `UpdatePrompt.tsx`, which polls `registration.update()` every 30 minutes and offers a deliberate **RELOAD CONSOLE** when a new build is cached (`skipWaiting` is not auto-called).
-- **Precache**: `globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}']`, `navigateFallback: 'index.html'`, `cleanupOutdatedCaches`, `clientsClaim`, and **no runtime caching** — the app is fully self-contained, so precache ≈ 28 entries / ~846 KB covers offline use entirely.
-- **Code splitting**: `MasterCommand` and `Overview` are statically imported and ship in the entry chunk (the OS cockpit is available on first paint); `PaymentMatrix`, `Insights`, `Settings` and the spends pages and the two remaining standby decks (`CardsDeck`, `LoansDeck`) are lazy routes dynamically imported once on idle, so the entry stays lean while every cockpit snap-transitions on demand. `manualChunks` groups `react` (react, react-dom, react-router-dom), `motion`, and `data` (dexie, zustand).
+- **Precache**: `globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}']`, `navigateFallback: 'index.html'`, `cleanupOutdatedCaches`, `clientsClaim`, and **no runtime caching** — the app is fully self-contained, so the precache of every shell asset covers offline use entirely.
+- **Bundling**: every domain and module page is a static import, so the whole console ships in one entry chunk for zero-latency navigation; `manualChunks` still separates vendor code into `react` (react, react-dom, react-router-dom), `motion`, and `data` (dexie, zustand).
 - **Generated assets**: `pnpm run icons` (or `node scripts/generate-icons.mjs`) draws the icon set and the grain tile with a zero-dependency PNG encoder — no hand-checked-in binaries.
 - **Fonts** are self-hosted (`public/fonts/`), so nothing is fetched from a CDN at runtime.
 
