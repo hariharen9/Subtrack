@@ -237,7 +237,7 @@ export default function Flow() {
                     : 'border-line2 text-faint hover:border-linehard hover:text-dim',
                 )}
               >
-                {entry.code}
+                {entry.label}
                 <span className="ml-1.5 text-linehard">{categoryCounts.get(entry.id) ?? 0}</span>
               </button>
             ))}

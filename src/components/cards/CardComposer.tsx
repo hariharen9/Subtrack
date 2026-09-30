@@ -42,7 +42,7 @@ import { CyberButton, IconButton } from '@/components/ui/CyberButton'
 import { FieldShell, CyberSelect, SegmentedControl } from '@/components/ui/Controls'
 import { CyberDatePicker } from '@/components/ui/CyberDatePicker'
 import { IconClose, IconPlus } from '@/components/ui/Icons'
-import { Led, SIGNAL_TEXT } from '@/components/ui/Signal'
+import { Led, SIGNAL_HEX, SIGNAL_TEXT } from '@/components/ui/Signal'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { KeyCap } from '@/components/ui/Micro'
 
@@ -668,20 +668,32 @@ export function CardComposer() {
                         </div>
                         <div className="mt-3">
                           <FieldShell label="SPEND CATEGORY" code="CATEGORY" hint="Maps transaction into category mix & rewards engine">
-                            <SegmentedControl
-                              ariaLabel="Spend category"
-                              columns={4}
-                              size="sm"
-                              value={txnForm.category}
-                              onChange={(v) => setTxnForm({ ...txnForm, category: v as SpendCategory })}
-                              options={SPEND_CATEGORIES.map((c) => ({
-                                value: c.id,
-                                label: c.code,
-                                hint: c.label,
-                              }))}
-                            />
+                            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
+                              {SPEND_CATEGORIES.map((c) => {
+                                const isSelected = txnForm.category === c.id
+                                return (
+                                  <button
+                                    key={c.id}
+                                    type="button"
+                                    onClick={() => setTxnForm({ ...txnForm, category: c.id })}
+                                    className={cx(
+                                      'flex items-center gap-2 border px-2.5 py-2 text-left transition-all',
+                                      isSelected
+                                        ? 'border-acid bg-acid text-black font-semibold shadow-sm'
+                                        : 'border-line2 bg-surface2 text-dim hover:border-linehard hover:text-fg',
+                                    )}
+                                  >
+                                    <span
+                                      className="h-2 w-2 shrink-0 rounded-full"
+                                      style={{ backgroundColor: isSelected ? '#000000' : SIGNAL_HEX[c.signal] }}
+                                    />
+                                    <span className="text-[12px] truncate font-medium">{c.label}</span>
+                                  </button>
+                                )
+                              })}
+                            </div>
                             <p className={cx('micro mt-1.5', SIGNAL_TEXT[SPEND_CATEGORY_META[txnForm.category]?.signal ?? 'blue'])}>
-                              {SPEND_CATEGORY_META[txnForm.category]?.label.toUpperCase()} · {SPEND_CATEGORY_META[txnForm.category]?.code}
+                              {SPEND_CATEGORY_META[txnForm.category]?.label.toUpperCase()}
                             </p>
                           </FieldShell>
                         </div>

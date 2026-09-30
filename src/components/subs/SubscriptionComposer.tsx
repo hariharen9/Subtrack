@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   CATEGORIES,
+  CATEGORY_SIGNAL,
   type BillingCycle,
   type Category,
 } from '@/lib/types'
@@ -32,7 +33,7 @@ import { FieldShell, SegmentedControl, CyberSelect } from '@/components/ui/Contr
 import { CyberDatePicker } from '@/components/ui/CyberDatePicker'
 import { ServiceBadge } from '@/components/brand/ServiceBadge'
 import { IconClose, IconPlus } from '@/components/ui/Icons'
-import { Led } from '@/components/ui/Signal'
+import { Led, SIGNAL_HEX } from '@/components/ui/Signal'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 
 type CycleChoice = BillingCycle
@@ -416,13 +417,13 @@ export function SubscriptionComposer() {
                               type="button"
                               onClick={() => setPresetCategory(cat.id)}
                               className={cx(
-                                'micro whitespace-nowrap border px-2 py-1 transition-colors',
+                                'micro whitespace-nowrap border px-2.5 py-1 transition-colors',
                                 isCatActive
                                   ? 'border-acid bg-acid text-black font-semibold'
                                   : 'border-line2 text-dim hover:border-linehard hover:text-fg',
                               )}
                             >
-                              {cat.code} ({count})
+                              {cat.label} ({count})
                             </button>
                           )
                         })}
@@ -599,23 +600,32 @@ export function SubscriptionComposer() {
                     <Section code="04" title="CLASSIFICATION">
                       <div className="grid gap-3 md:grid-cols-[1.5fr_1fr]">
                         <FieldShell label="CATEGORY" code="TAG">
-                          <SegmentedControl
-                            ariaLabel="Category"
-                            columns={4}
-                            size="sm"
-                            value={draft.category}
-                            onChange={(value) =>
-                              setDraft((current) => ({ ...current, category: value }))
-                            }
-                            options={CATEGORIES.map((category) => ({
-                              value: category.id,
-                              label: category.code,
-                              hint: category.label,
-                            }))}
-                          />
-                          <p className="micro mt-1.5 text-faint">
-                            {CATEGORIES.find((c) => c.id === draft.category)?.label?.toUpperCase()}
-                          </p>
+                          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                            {CATEGORIES.map((category) => {
+                              const isSelected = draft.category === category.id
+                              return (
+                                <button
+                                  key={category.id}
+                                  type="button"
+                                  onClick={() =>
+                                    setDraft((current) => ({ ...current, category: category.id }))
+                                  }
+                                  className={cx(
+                                    'flex items-center gap-2 border px-2 py-1.5 text-left transition-all',
+                                    isSelected
+                                      ? 'border-acid bg-acid text-black font-semibold shadow-sm'
+                                      : 'border-line2 bg-surface2 text-dim hover:border-linehard hover:text-fg',
+                                  )}
+                                >
+                                  <span
+                                    className="h-2 w-2 shrink-0 rounded-full"
+                                    style={{ backgroundColor: isSelected ? '#000000' : SIGNAL_HEX[CATEGORY_SIGNAL[category.id]] }}
+                                  />
+                                  <span className="text-[11.5px] truncate font-medium">{category.label}</span>
+                                </button>
+                              )
+                            })}
+                          </div>
                         </FieldShell>
 
                         <FieldShell label="ACCENT" code="HEX" hint="Used for the module's signal strip.">

@@ -270,7 +270,6 @@ erDiagram
         string baseCurrency
         string theme
         boolean field
-        boolean calmMode
         number horizonDays
     }
 ```

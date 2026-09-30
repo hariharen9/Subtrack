@@ -162,7 +162,7 @@ export default function CardsFlow() {
             <span className="micro text-[9px] text-faint">CAT:</span>
             <button type="button" onClick={() => setCatFilter('all')} className={cx('micro border px-1.5 py-0.5 transition-colors', catFilter === 'all' ? 'border-acid bg-acid text-black font-semibold' : 'border-line2 text-dim hover:text-fg')}>ALL</button>
             {SPEND_CATEGORIES.map((c) => (
-              <button key={c.id} type="button" onClick={() => setCatFilter(c.id)} className={cx('micro border px-1.5 py-0.5 transition-colors', catFilter === c.id ? 'border-fg bg-fg text-bg font-semibold' : 'border-line2 text-dim hover:text-fg')}>{c.code}</button>
+              <button key={c.id} type="button" onClick={() => setCatFilter(c.id)} className={cx('micro border px-1.5 py-0.5 transition-colors', catFilter === c.id ? 'border-fg bg-fg text-bg font-semibold' : 'border-line2 text-dim hover:text-fg')}>{c.label}</button>
             ))}
             <span className="ml-2 micro text-[9px] text-faint">RANGE:</span>
             {RANGE_FILTERS.map((r) => (

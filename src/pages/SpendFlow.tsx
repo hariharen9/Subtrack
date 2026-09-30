@@ -284,7 +284,7 @@ export default function SpendFlow() {
                       className="block h-1.5 w-1.5 shrink-0 rounded-full"
                       style={{ background: isActive ? 'currentColor' : SIGNAL_HEX[cat.signal] }}
                     />
-                    <span>{cat.code}</span>
+                    <span>{cat.label}</span>
                   </button>
                 )
               })}

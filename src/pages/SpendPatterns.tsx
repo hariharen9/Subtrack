@@ -636,7 +636,7 @@ export default function SpendPatterns() {
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {SPEND_CATEGORIES.map((c) => (
                     <span key={c.id} className={cx('micro border px-1.5 py-0.5 text-[9px]', c.discretionary ? 'border-orange/50 text-orangeink' : 'border-line2 text-faint')}>
-                      {c.code}
+                      {c.label}
                     </span>
                   ))}
                 </div>

@@ -22,11 +22,10 @@ import { TOAST_VERBS, useUI } from '@/store/ui'
 import { useFocusTrap, useIsCompact, useScrollLock } from '@/hooks/usePlatform'
 import { cx } from '@/lib/cx'
 import { CyberButton, IconButton } from '@/components/ui/CyberButton'
-import { FieldShell, SegmentedControl, CyberSelect } from '@/components/ui/Controls'
+import { FieldShell, CyberSelect } from '@/components/ui/Controls'
 import { CyberDatePicker } from '@/components/ui/CyberDatePicker'
 import { IconClose, IconPlus } from '@/components/ui/Icons'
-import { Led } from '@/components/ui/Signal'
-import { SIGNAL_TEXT } from '@/components/ui/Signal'
+import { Led, SIGNAL_HEX, SIGNAL_TEXT } from '@/components/ui/Signal'
 import { KeyCap } from '@/components/ui/Micro'
 
 interface Draft {
@@ -472,22 +471,34 @@ export function SpendComposer() {
                         <h3 className="tech-label text-dim">CATEGORY</h3>
                         <span className="rule-dotted flex-1" />
                       </div>
-                      <FieldShell label="TAG" code="SIGNAL" hint="Wants (lifestyle spends) count against your weekly budget.">
-                        <SegmentedControl
-                          ariaLabel="Spend category"
-                          columns={4}
-                          size="sm"
-                          value={draft.category}
-                          onChange={(value) =>
-                            setDraft((current) => ({ ...current, category: value }))
-                          }
-                          options={SPEND_CATEGORIES.map((category) => ({
-                            value: category.id,
-                            label: category.code,
-                            hint: category.label,
-                          }))}
-                        />
-                        <p className={cx('micro mt-1.5', SIGNAL_TEXT[SPEND_CATEGORIES.find((c) => c.id === draft.category)?.signal ?? 'blue'])}>
+                      <FieldShell label="CATEGORY" code="SIGNAL" hint="Wants (lifestyle spends) count against your weekly budget.">
+                        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
+                          {SPEND_CATEGORIES.map((category) => {
+                            const isSelected = draft.category === category.id
+                            return (
+                              <button
+                                key={category.id}
+                                type="button"
+                                onClick={() =>
+                                  setDraft((current) => ({ ...current, category: category.id }))
+                                }
+                                className={cx(
+                                  'flex items-center gap-2 border px-2.5 py-2 text-left transition-all',
+                                  isSelected
+                                    ? 'border-acid bg-acid text-black font-semibold shadow-sm'
+                                    : 'border-line2 bg-surface2 text-dim hover:border-linehard hover:text-fg',
+                                )}
+                              >
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full"
+                                  style={{ backgroundColor: isSelected ? '#000000' : SIGNAL_HEX[category.signal] }}
+                                />
+                                <span className="text-[12px] truncate font-medium">{category.label}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <p className={cx('micro mt-2', SIGNAL_TEXT[SPEND_CATEGORIES.find((c) => c.id === draft.category)?.signal ?? 'blue'])}>
                           {SPEND_CATEGORIES.find((c) => c.id === draft.category)?.label?.toUpperCase()}
                           {' · '}
                           {SPEND_CATEGORIES.find((c) => c.id === draft.category)?.discretionary
