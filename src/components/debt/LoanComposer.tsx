@@ -15,6 +15,7 @@ import { CURRENCIES, symbolOf, formatMoney, convert } from '@/lib/money'
 import { todayISO } from '@/lib/date'
 import { calcEMI, totalInterest, amortize } from '@/lib/debt'
 import { createLoan, updateLoan, deleteLoan, setLoanStatus, recordLoanPayment, type LoanDraft } from '@/lib/db'
+import { AccountField } from '@/components/accounts/AccountField'
 import { useLoans, useLoanPayments } from '@/hooks/useDebt'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { useFocusTrap, useIsCompact, useScrollLock } from '@/hooks/usePlatform'
@@ -43,7 +44,7 @@ const STATUS_OPTIONS: { value: LoanStatus; label: string }[] = [
 interface LoanForm {
   name: string; lender: string; loanType: LoanType; status: LoanStatus
   principal: string; interestRate: string; tenureMonths: string
-  emi: string; emiOverride: boolean; currency: string; startDate: string; notes: string
+  emi: string; emiOverride: boolean; currency: string; accountId?: string; startDate: string; notes: string
 }
 interface PaymentForm {
   date: string; emiNumber: number; amount: string
@@ -51,13 +52,13 @@ interface PaymentForm {
 }
 
 function emptyLoan(base: string): LoanForm {
-  return { name: '', lender: '', loanType: 'personal', status: 'active', principal: '', interestRate: '', tenureMonths: '', emi: '', emiOverride: false, currency: base, startDate: todayISO(), notes: '' }
+  return { name: '', lender: '', loanType: 'personal', status: 'active', principal: '', interestRate: '', tenureMonths: '', emi: '', emiOverride: false, currency: base, accountId: '', startDate: todayISO(), notes: '' }
 }
 function emptyPayment(): PaymentForm {
   return { date: todayISO(), emiNumber: 1, amount: '', principalComponent: '', interestComponent: '', balanceAfter: '' }
 }
-function loanToForm(l: { name: string; lender: string; loanType: LoanType; status: LoanStatus; principal: number; interestRate: number; tenureMonths: number; emi: number; currency: string; startDate: string; notes: string }): LoanForm {
-  return { name: l.name, lender: l.lender, loanType: l.loanType, status: l.status, principal: String(l.principal), interestRate: String(l.interestRate), tenureMonths: String(l.tenureMonths), emi: String(Math.round(l.emi * 100) / 100), emiOverride: true, currency: l.currency, startDate: l.startDate, notes: l.notes }
+function loanToForm(l: { name: string; lender: string; loanType: LoanType; status: LoanStatus; principal: number; interestRate: number; tenureMonths: number; emi: number; currency: string; accountId?: string; startDate: string; notes: string }): LoanForm {
+  return { name: l.name, lender: l.lender, loanType: l.loanType, status: l.status, principal: String(l.principal), interestRate: String(l.interestRate), tenureMonths: String(l.tenureMonths), emi: String(Math.round(l.emi * 100) / 100), emiOverride: true, currency: l.currency, accountId: l.accountId ?? '', startDate: l.startDate, notes: l.notes }
 }
 
 function Section({ code, title, children, last = false }: { code: string; title: string; children: React.ReactNode; last?: boolean }) {
@@ -136,7 +137,7 @@ export function LoanComposer() {
     if (!form.name.trim() || principal <= 0 || emiValue <= 0 || tenure <= 0) return
     setBusy(true)
     try {
-      const draft: LoanDraft = { name: form.name, lender: form.lender, loanType: form.loanType, principal, interestRate: rate, tenureMonths: tenure, emi: emiValue, currency: form.currency, startDate: form.startDate, notes: form.notes }
+      const draft: LoanDraft = { name: form.name, lender: form.lender, loanType: form.loanType, principal, interestRate: rate, tenureMonths: tenure, emi: emiValue, currency: form.currency, accountId: form.accountId || undefined, startDate: form.startDate, notes: form.notes }
       if (editingLoan) {
         await updateLoan(editingLoan.id, draft)
         if (form.status !== editingLoan.status) await setLoanStatus(editingLoan.id, form.status)
@@ -257,13 +258,14 @@ export function LoanComposer() {
                             <span className="micro pr-3 text-faint">{form.currency}</span>
                           </div>
                         </FieldShell>
-                        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_1.2fr]">
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                           <FieldShell label="RATE" code="% PA" htmlFor="loan-rate">
                             <input id="loan-rate" className="field" value={form.interestRate} onChange={(e) => setForm({ ...form, interestRate: e.target.value.replace(/[^\d.]/g, '').slice(0, 5), emiOverride: false })} placeholder="8.5" inputMode="decimal" aria-label="Annual interest rate" />
                           </FieldShell>
                           <FieldShell label="TENURE" code="MONTHS" htmlFor="loan-tenure" error={tenureError}>
                             <input id="loan-tenure" className="field" value={form.tenureMonths} onChange={(e) => setForm({ ...form, tenureMonths: e.target.value.replace(/\D/g, '').slice(0, 4), emiOverride: false })} placeholder="240" inputMode="numeric" aria-label="Tenure in months" aria-invalid={Boolean(tenureError)} />
                           </FieldShell>
+                          <AccountField value={form.accountId} onChange={(id) => setForm({ ...form, accountId: id })} label="EMI FROM" code="ACCOUNT" />
                           <FieldShell label="CURRENCY" code="ISO-4217" htmlFor="loan-currency">
                             <div id="loan-currency">
                               <CyberSelect ariaLabel="Currency" value={form.currency} onChange={(v) => setForm({ ...form, currency: v })} options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.symbol} ${c.code}`, hint: c.name }))} />

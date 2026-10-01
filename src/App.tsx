@@ -29,11 +29,15 @@ import DebtOverview from '@/pages/DebtOverview'
 import DebtFlow from '@/pages/DebtFlow'
 import LoanDetail from '@/pages/LoanDetail'
 import DebtInsights from '@/pages/DebtInsights'
+import AccountsOverview from '@/pages/AccountsOverview'
+import AccountsFlow from '@/pages/AccountsFlow'
+import AccountsInsights from '@/pages/AccountsInsights'
 import NotFound from '@/pages/NotFound'
 import { ensureSeeded, ensureSpendsSeeded } from '@/lib/db'
 import { ensureDebtSeeded } from '@/lib/debt-seed'
 import { ensureCardsSeeded } from '@/lib/card-seed'
 import { ensureIncomeSeeded } from '@/lib/income-seed'
+import { ensureAccountsSeeded } from '@/lib/account-seed'
 import { useUI } from '@/store/ui'
 import { SmoothScroll } from '@/components/shell/SmoothScroll'
 
@@ -87,7 +91,7 @@ function BootSequence() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([ensureSeeded(), ensureSpendsSeeded(), ensureDebtSeeded(), ensureCardsSeeded(), ensureIncomeSeeded()])
+    Promise.all([ensureSeeded(), ensureSpendsSeeded(), ensureDebtSeeded(), ensureCardsSeeded(), ensureIncomeSeeded(), ensureAccountsSeeded()])
       .catch((error: unknown) => {
         pushToast({
           kind: 'alert',
@@ -155,7 +159,12 @@ export default function App() {
             <Route path="spends/data" element={<SpendInsights />} />
             <Route path="spends/patterns" element={<SpendPatterns />} />
 
-            {/* [06] System Host */}
+            {/* [06] Accounts engine — the spine */}
+            <Route path="accounts" element={<AccountsOverview />} />
+            <Route path="accounts/flow" element={<AccountsFlow />} />
+            <Route path="accounts/data" element={<AccountsInsights />} />
+
+            {/* [07] System Host */}
             <Route path="sys" element={<Settings />} />
 
             {/* 404 catch-all */}

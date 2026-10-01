@@ -50,8 +50,8 @@ SpendState treats personal recurring finances not as passive spreadsheets, but a
 |                                        |                                          |
 |  +-----------------------------------------------------------------------------+  |
 |  |                           LOCAL STORAGE ENGINE                              |  |
-|  |                    IndexedDB / Dexie.js (Schema V5, db "spendstate")          |  |
-|  |     [subscriptions] [payments] [spends] [loans] [cards] [incomes] [meta]   |  |
+|  |                    IndexedDB / Dexie.js (Schema V6, db "spendstate")          |  |
+|  |     [subscriptions] [payments] [spends] [loans] [cards] [incomes] [accounts] |  |
 |  +-----------------------------------------------------------------------------+  |
 +-----------------------------------------------------------------------------------+
 ```
@@ -154,9 +154,12 @@ E:/Projects/SpendState/
     │   ├── useSpends.ts          # spends live queries + memoised spend summary + weekly limiter
     │   ├── useCards.ts           # credit-card live queries + memoised cards summary pipeline
     │   ├── useIncome.ts          # incomes live queries + memoised inflow summary pipeline
+    │   ├── useAccounts.ts        # accounts + transfers live queries + memoised net-worth pipeline
     │   └── useSystem.ts          # Dexie live queries + memoised analytics pipeline
     ├── lib/
     │   ├── analytics.ts          # summarize(), viewOf(), series, streams, matrix, notes
+    │   ├── accounts.ts           # THE SPINE: derived account balances from every movement, net worth
+    │   ├── account-seed.ts       # demo accounts (bank/savings/wallet/cash/credit)
     │   ├── cards.ts              # card analytics: cycles, statements, min due, carry cost,
     │   │                         #   monthly series, rewards, notes
     │   ├── card-seed.ts          # 3-card demo dataset + recent transaction ledger
@@ -195,6 +198,9 @@ E:/Projects/SpendState/
     │   ├── DebtFlow.tsx          # "/loans/flow" — loan registry
     │   ├── LoanDetail.tsx        # "/loans/flow/:id" — per-loan board (amortization, schedule)
     │   ├── DebtInsights.tsx      # "/loans/data" — debt analytics
+    │   ├── AccountsOverview.tsx  # "/accounts" — net-worth cockpit: account stack + movement stream
+    │   ├── AccountsFlow.tsx      # "/accounts/flow" — account registry + transfer rail
+    │   ├── AccountsInsights.tsx  # "/accounts/data" — asset distribution, liquidity, statistics
     │   ├── Spends.tsx            # "/spends" — Daily Spends cockpit (hero, velocity, ledger, limiter)
     │   ├── SpendFlow.tsx         # "/spends/flow" — full spend registry with range presets & filters
     │   ├── SpendDetail.tsx       # "/spends/flow/:id" — per-spend diagnostic board
@@ -363,6 +369,8 @@ class SpendStateDB extends Dexie {
   creditCards!: Table<CreditCard, string>
   cardTransactions!: Table<CardTransaction, string>
   incomes!: Table<Income, string>
+  accounts!: Table<Account, string>
+  transfers!: Table<Transfer, string>
   meta!: Table<MetaRecord, string>
 
   constructor() {
@@ -386,10 +394,14 @@ class SpendStateDB extends Dexie {
     this.version(5).stores({
       incomes: 'id, date, category, method, createdAt, updatedAt, [date+category]',
     })
+    this.version(6).stores({
+      accounts: 'id, type, status, currency, name, createdAt, updatedAt',
+      transfers: 'id, fromAccountId, toAccountId, date',
+    })
   }
 }
 ```
-`DB_SCHEMA_VERSION = 5` is exported and surfaced in the System Host. `meta` rows used: `seeded` (boot marker), `schema` ('1'), `spends.seeded`, `debt.seeded`, `cards.seeded`, `income.seeded`, and `spends.weeklyLimit` (JSON).
+`DB_SCHEMA_VERSION = 6` is exported and surfaced in the System Host. `meta` rows used: `seeded` (boot marker), `schema` ('1'), `spends.seeded`, `debt.seeded`, `cards.seeded`, `income.seeded`, `accounts.seeded`, and `spends.weeklyLimit` (JSON).
 
 ### 4.2 Seed Workflow & History Reconstruction
 ```mermaid
@@ -775,7 +787,23 @@ Income is a **log of received payments**, not an engine — you enter salary/fre
 - **Master Command** — `INCOME (this month) − system burn = NET CASHFLOW` with the savings rate in both modes, a **LOG INCOME** action, and an Income metric card that links to the Spend-domain ledger.
 - Demo ledger guarded by the `income.seeded` marker (`income-seed.ts`).
 
-### 11.10 System Host (`/sys`)
+### 11.10 Accounts Engine (`/accounts`, `/accounts/flow`, `/accounts/data`)
+The **spine** (`ACCT` domain). An account is a money-holding container (bank/savings/cash/wallet/investment/credit). Its **balance is derived — never stored — from every movement posted into it**:
+
+- `income.accountId` → + (money in) · `spend.accountId` → −
+- a subscription's charges (`subscription.accountId`) → − · loan EMIs (`loan.accountId`) → −
+- card settlements (`creditCard.accountId`, `type: 'payment'`) → −
+- **`Transfer`** rows between accounts → −/+.
+- **Net worth = Σ asset balances − Σ credit liabilities.**
+
+Model: `Account { name, type, institution, currency, openingBalance, creditLimit?, color, notes, status }` + `Transfer { fromAccountId, toAccountId, amount, currency, date, notes }`. `AccountComposer` (`components/accounts/`) adds/edits accounts and records transfers; `AccountField` is the shared picker wired into the Spend, Income, Subscription, Loan and Card composers. `summarizeAccounts()` (`src/lib/accounts.ts`) builds the views, net worth, liquid cover, type slices, movement stream and notes.
+
+- **AccountsOverview** (`/accounts`): net-worth hero, asset composition, account stack, recent movements, signals.
+- **AccountsFlow** (`/accounts/flow`): registry (search/type/status/sort) + the transfer rail.
+- **AccountsInsights** (`/accounts/data`): asset distribution, liquidity gauge, per-account balances, statistics.
+- **Master Command**: NET WORTH in the hero readout, a Net Worth metric card and an Accounts cockpit card.
+
+### 11.11 System Host (`/sys`)
 System control and backup room (`Settings.tsx`):
 - **Appearance**: `NIGHT // PRIMARY` vs `DAYLIGHT // BRUTALIST`, background grid toggle, calm motion mode.
 - **Aggregation currency**: 9-currency select + the full static FX reference table (per 1 base, and 1 unit → base).
@@ -818,6 +846,7 @@ interface UIState {
   }
   loanComposer: { open: boolean; mode: 'loan' | 'payment'; editLoanId: string | null; paymentLoanId: string | null }
   incomeComposer: { open: boolean; editId: string | null }
+  accountComposer: { open: boolean; mode: 'account' | 'transfer'; editId: string | null; presetFromId: string | null }
   termination: { open: boolean; subId: string | null; mode: 'terminate' | 'purge' }
 
   // Boot
@@ -833,6 +862,7 @@ interface UIState {
   openCardComposer(opts?: { mode?, editCardId?, presetCardId?, editTxnId?, presetType?, presetAmount? }) / closeCardComposer()
   openLoanComposer(opts?: { mode?, editLoanId?, paymentLoanId? }) / closeLoanComposer()
   openIncomeComposer(opts?: { editId? }) / closeIncomeComposer()
+  openAccountComposer(opts?: { mode?: 'account'|'transfer', editId?, presetFromId? }) / closeAccountComposer()
   openTermination(subId, mode) / closeTermination()
 }
 ```
@@ -842,7 +872,7 @@ interface UIState {
 
 ## 13. Global Keyboard Shortcut Register
 
-The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-level rack entry maps `key → path`. The six-domain rack occupies `1`–`6` (`1` CMD · `2` SPND · `3` SUBS · `4` CRD · `5` DEBT · `6` SYS); the sub-tab single letters printed in the DomainFrame sub-nav are visual reference only and are **not** bound as global hotkeys. Adding a future engine to `DOMAINS` automatically allocates its next free number.
+The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-level rack entry maps `key → path`. The seven-domain rack occupies `1`–`7` (`1` CMD · `2` SPND · `3` SUBS · `4` CRD · `5` DEBT · `6` ACCT · `7` SYS); the sub-tab single letters printed in the DomainFrame sub-nav are visual reference only and are **not** bound as global hotkeys. Adding a future engine to `DOMAINS` automatically allocates its next free number.
 
 | Shortcut | Scope | Action |
 | :--- | :--- | :--- |
@@ -853,12 +883,14 @@ The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-leve
 | `L` | Global | Open the Loan composer |
 | `C` | Global | Log a card transaction |
 | `I` | Global | Open the Income composer |
+| `A` | Global | Open the Account composer |
 | `1` | Global | Navigate to **Master Command** (`/`) |
 | `2` | Global | Navigate to **Daily Spends** cockpit (`/spends`) |
 | `3` | Global | Navigate to **Subscriptions** (`/subs`) |
 | `4` | Global | Navigate to **Credit Cards** cockpit (`/cards`) |
 | `5` | Global | Navigate to **Loans & EMIs** cockpit (`/loans`) |
-| `6` | Global | Navigate to **System Host** (`/sys`) |
+| `6` | Global | Navigate to **Accounts** cockpit (`/accounts`) |
+| `7` | Global | Navigate to **System Host** (`/sys`) |
 | `T` | Global | Toggle Night / Daylight theme |
 | `M` | Global | Toggle Minimal Zen / Cyber OS mode |
 | `ESC` | Global | Close the active modal, sheet, palette or popover |

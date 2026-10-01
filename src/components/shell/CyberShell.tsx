@@ -27,6 +27,7 @@ import { SpendComposer } from '@/components/spends/SpendComposer'
 import { CardComposer } from '@/components/cards/CardComposer'
 import { LoanComposer } from '@/components/debt/LoanComposer'
 import { IncomeComposer } from '@/components/income/IncomeComposer'
+import { AccountComposer } from '@/components/accounts/AccountComposer'
 import { TerminationConsole } from '@/components/subs/TerminationConsole'
 import { BootScreen } from '@/components/ui/Skeleton'
 
@@ -65,6 +66,7 @@ export function CyberShell() {
   const openSpendComposer = useUI((s) => s.openSpendComposer)
   const openLoanComposer = useUI((s) => s.openLoanComposer)
   const openIncomeComposer = useUI((s) => s.openIncomeComposer)
+  const openAccountComposer = useUI((s) => s.openAccountComposer)
   const openCardComposer = useUI((s) => s.openCardComposer)
   const toggleTheme = useUI((s) => s.toggleTheme)
   const uiMode = useUI((s) => s.uiMode)
@@ -77,6 +79,7 @@ export function CyberShell() {
     { key: 'x', handler: () => openSpendComposer() },
     { key: 'l', handler: () => openLoanComposer() },
     { key: 'i', handler: () => openIncomeComposer() },
+    { key: 'a', handler: () => openAccountComposer() },
     { key: 'c', handler: () => openCardComposer({ mode: 'txn' }) },
     { key: 't', handler: () => toggleTheme() },
     { key: 'm', handler: () => toggleUiMode() },
@@ -129,6 +132,7 @@ export function CyberShell() {
       <CardComposer />
       <LoanComposer />
       <IncomeComposer />
+      <AccountComposer />
       <TerminationConsole />
       <UpdatePrompt />
     </div>

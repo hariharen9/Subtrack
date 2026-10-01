@@ -17,6 +17,7 @@ import {
 import { CURRENCIES, formatMoney, symbolOf } from '@/lib/money'
 import { todayISO } from '@/lib/date'
 import { createSpend, updateSpend } from '@/lib/db'
+import { AccountField } from '@/components/accounts/AccountField'
 import { useSpends } from '@/hooks/useSpends'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { useFocusTrap, useIsCompact, useScrollLock } from '@/hooks/usePlatform'
@@ -34,6 +35,7 @@ interface Draft {
   currency: string
   category: SpendCategory
   method: SpendMethod
+  accountId?: string
   date: string
   notes: string
 }
@@ -45,6 +47,7 @@ function emptyDraft(currency: string): Draft {
     currency,
     category: 'food',
     method: 'upi',
+    accountId: undefined,
     date: todayISO(),
     notes: '',
   }
@@ -125,6 +128,7 @@ export function SpendComposer() {
         currency: editing.currency,
         category: editing.category,
         method: editing.method,
+        accountId: editing.accountId,
         date: editing.date,
         notes: editing.notes,
       })
@@ -176,6 +180,7 @@ export function SpendComposer() {
       currency: draft.currency,
       category: draft.category,
       method: draft.method,
+      accountId: draft.accountId || undefined,
       date: draft.date,
       notes: draft.notes,
     }
@@ -433,35 +438,37 @@ export function SpendComposer() {
                           </div>
                         </FieldShell>
 
-                        <div className="flex flex-col gap-3">
-                          <FieldShell label="METHOD" code="CHANNEL">
-                            <CyberSelect
-                              ariaLabel="Payment method"
-                              value={draft.method}
-                              onChange={(value) =>
-                                setDraft((current) => ({ ...current, method: value }))
-                              }
-                              options={(Object.keys(SPEND_METHOD_LABEL) as SpendMethod[]).map((m) => ({
-                                value: m,
-                                label: SPEND_METHOD_LABEL[m],
-                              }))}
-                            />
-                          </FieldShell>
-                          <FieldShell label="CURRENCY" code="ISO-4217">
-                            <CyberSelect
-                              ariaLabel="Currency"
-                              value={draft.currency}
-                              onChange={(value) =>
-                                setDraft((current) => ({ ...current, currency: value }))
-                              }
-                              options={CURRENCIES.map((currency) => ({
-                                value: currency.code,
-                                label: `${currency.symbol} ${currency.code}`,
-                                hint: currency.name,
-                              }))}
-                            />
-                          </FieldShell>
-                        </div>
+                        <AccountField value={draft.accountId} onChange={(id) => setDraft((current) => ({ ...current, accountId: id || undefined }))} />
+                      </div>
+
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <FieldShell label="METHOD" code="CHANNEL">
+                          <CyberSelect
+                            ariaLabel="Payment method"
+                            value={draft.method}
+                            onChange={(value) =>
+                              setDraft((current) => ({ ...current, method: value }))
+                            }
+                            options={(Object.keys(SPEND_METHOD_LABEL) as SpendMethod[]).map((m) => ({
+                              value: m,
+                              label: SPEND_METHOD_LABEL[m],
+                            }))}
+                          />
+                        </FieldShell>
+                        <FieldShell label="CURRENCY" code="ISO-4217">
+                          <CyberSelect
+                            ariaLabel="Currency"
+                            value={draft.currency}
+                            onChange={(value) =>
+                              setDraft((current) => ({ ...current, currency: value }))
+                            }
+                            options={CURRENCIES.map((currency) => ({
+                              value: currency.code,
+                              label: `${currency.symbol} ${currency.code}`,
+                              hint: currency.name,
+                            }))}
+                          />
+                        </FieldShell>
                       </div>
                     </motion.section>
 

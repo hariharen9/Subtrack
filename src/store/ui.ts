@@ -82,6 +82,16 @@ export interface IncomeComposerState {
   editId: string | null
 }
 
+export interface AccountComposerState {
+  open: boolean
+  /** 'account' = add/edit an account; 'transfer' = move money between accounts. */
+  mode: 'account' | 'transfer'
+  /** Account being edited (account mode). */
+  editId: string | null
+  /** Preselected source account (transfer mode). */
+  presetFromId: string | null
+}
+
 export interface TerminationState {
   open: boolean
   subId: string | null
@@ -108,6 +118,7 @@ interface UIState {
   cardComposer: CardComposerState
   loanComposer: LoanComposerState
   incomeComposer: IncomeComposerState
+  accountComposer: AccountComposerState
   termination: TerminationState
   /** False until the local volume has been opened and seeded. */
   booted: boolean
@@ -149,6 +160,8 @@ interface UIState {
   closeLoanComposer: () => void
   openIncomeComposer: (options?: { editId?: string }) => void
   closeIncomeComposer: () => void
+  openAccountComposer: (options?: { mode?: 'account' | 'transfer'; editId?: string; presetFromId?: string }) => void
+  closeAccountComposer: () => void
   openTermination: (subId: string, mode: TerminationMode) => void
   closeTermination: () => void
   // Category management
@@ -182,6 +195,7 @@ export const useUI = create<UIState>()(
       cardComposer: { open: false, mode: 'card', editCardId: null, presetCardId: null, editTxnId: null, presetType: null, presetAmount: null },
       loanComposer: { open: false, mode: 'loan', editLoanId: null, paymentLoanId: null },
       incomeComposer: { open: false, editId: null },
+      accountComposer: { open: false, mode: 'account', editId: null, presetFromId: null },
       termination: { open: false, subId: null, mode: 'terminate' },
       booted: false,
       subCategories: DEFAULT_CATEGORIES,
@@ -278,6 +292,17 @@ export const useUI = create<UIState>()(
       openIncomeComposer: (options) =>
         set({ incomeComposer: { open: true, editId: options?.editId ?? null } }),
       closeIncomeComposer: () => set({ incomeComposer: { open: false, editId: null } }),
+      openAccountComposer: (options) =>
+        set({
+          accountComposer: {
+            open: true,
+            mode: options?.mode ?? 'account',
+            editId: options?.editId ?? null,
+            presetFromId: options?.presetFromId ?? null,
+          },
+        }),
+      closeAccountComposer: () =>
+        set({ accountComposer: { open: false, mode: 'account', editId: null, presetFromId: null } }),
       openTermination: (subId, mode) => set({ termination: { open: true, subId, mode } }),
       closeTermination: () =>
         set({ termination: { open: false, subId: null, mode: 'terminate' } }),
@@ -461,6 +486,26 @@ export const TOAST_VERBS = {
     kind: 'alert' as ToastKind,
     label: 'INCOME REMOVED',
     text: `${title} · entry erased`,
+  }),
+  accountAdded: (name: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'ACCOUNT INITIALIZED',
+    text: `${name} · ${detail}`,
+  }),
+  accountUpdated: (name: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'ACCOUNT UPDATED',
+    text: `${name} · record written`,
+  }),
+  accountDeleted: (name: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'ACCOUNT REMOVED',
+    text: `${name} · container erased`,
+  }),
+  transferLogged: (detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'TRANSFER RECORDED ✓',
+    text: detail,
   }),
   cardAdded: (name: string, detail: string) => ({
     kind: 'ok' as ToastKind,

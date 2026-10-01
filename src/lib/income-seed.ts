@@ -14,17 +14,18 @@ interface IncomeSeedSpec {
   title: string
   amount: number
   category: IncomeCategory
+  accountId?: string
   notes?: string
 }
 
 const SEED_SPECS: IncomeSeedSpec[] = [
-  { daysAgo: 2, title: 'Salary — Acme Technologies', amount: 95000, category: 'salary' },
-  { daysAgo: 9, title: 'Freelance — Studio Nine', amount: 28000, category: 'freelance', notes: 'Brand identity retainer' },
-  { daysAgo: 16, title: 'Flat Rent — Block C', amount: 22000, category: 'rental' },
-  { daysAgo: 24, title: 'Dividend — Index Fund', amount: 6500, category: 'investment' },
-  { daysAgo: 33, title: 'Salary — Acme Technologies', amount: 95000, category: 'salary' },
-  { daysAgo: 41, title: 'Freelance — Studio Nine', amount: 21000, category: 'freelance' },
-  { daysAgo: 52, title: 'Salary — Acme Technologies', amount: 95000, category: 'salary' },
+  { daysAgo: 2, title: 'Salary — Acme Technologies', amount: 95000, category: 'salary', accountId: 'seed-account-bank' },
+  { daysAgo: 9, title: 'Freelance — Studio Nine', amount: 28000, category: 'freelance', notes: 'Brand identity retainer', accountId: 'seed-account-savings' },
+  { daysAgo: 16, title: 'Flat Rent — Block C', amount: 22000, category: 'rental', accountId: 'seed-account-bank' },
+  { daysAgo: 24, title: 'Dividend — Index Fund', amount: 6500, category: 'investment', accountId: 'seed-account-savings' },
+  { daysAgo: 33, title: 'Salary — Acme Technologies', amount: 95000, category: 'salary', accountId: 'seed-account-bank' },
+  { daysAgo: 41, title: 'Freelance — Studio Nine', amount: 21000, category: 'freelance', accountId: 'seed-account-savings' },
+  { daysAgo: 52, title: 'Salary — Acme Technologies', amount: 95000, category: 'salary', accountId: 'seed-account-bank' },
 ]
 
 export function buildIncomeSeed(today: string): Income[] {
@@ -36,6 +37,7 @@ export function buildIncomeSeed(today: string): Income[] {
     currency: 'INR',
     category: spec.category,
     method: 'netbanking' as const,
+    accountId: spec.accountId,
     date: addDaysISO(today, -spec.daysAgo),
     notes: spec.notes ?? '',
     createdAt: now,

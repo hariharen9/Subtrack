@@ -144,6 +144,7 @@ export function buildSeed(today: string = todayISO()): SeedResult {
     const sub: Subscription = {
       id,
       serviceId: service.id,
+      accountId: 'seed-account-bank',
       name: service.name,
       price: spec.price ?? service.price,
       currency: 'INR',
@@ -238,6 +239,13 @@ export const SPEND_SEED_SPECS: SpendSeedSpec[] = [
   { daysAgo: 20, title: 'IMAX — movie', amount: 720, category: 'entertainment', method: 'card' },
 ]
 
+/** Demo spends settle to an account based on how they were paid. */
+function spendAccountFor(method: SpendMethod): string {
+  if (method === 'cash') return 'seed-account-cash'
+  if (method === 'wallet') return 'seed-account-wallet'
+  return 'seed-account-bank'
+}
+
 /** Week start (Monday) of `today` in ISO form, used to stress the limiter. */
 export function buildSpendSeed(today: string): Spend[] {
   const rows: Spend[] = []
@@ -249,6 +257,7 @@ export function buildSpendSeed(today: string): Spend[] {
       currency: 'INR',
       category: spec.category,
       method: spec.method,
+      accountId: spendAccountFor(spec.method),
       date: addDaysISO(today, -spec.daysAgo),
       notes: spec.notes ?? '',
       createdAt: `${addDaysISO(today, -spec.daysAgo)}T${String(12 + (spec.daysAgo % 9)).padStart(2, '0')}:0${spec.daysAgo % 10}:00`,

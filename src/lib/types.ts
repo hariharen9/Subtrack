@@ -27,6 +27,8 @@ export interface Subscription {
   id: string
   /** Catalog key when the process came from a known service; else null. */
   serviceId: string | null
+  /** Account this subscription is charged to (see `Account`). */
+  accountId?: string
   name: string
   price: number
   currency: string
@@ -208,6 +210,8 @@ export interface Spend {
   currency: string
   category: SpendCategory
   method: SpendMethod
+  /** Account the money left from. */
+  accountId?: string
   /** ISO date the money left (YYYY-MM-DD). */
   date: string
   notes: string
@@ -335,6 +339,8 @@ export interface Loan {
   /** Monthly EMI amount in native currency. */
   emi: number
   currency: string
+  /** Account the EMIs are paid from. */
+  accountId?: string
   /** ISO date of the first EMI payment. */
   startDate: string
   /** ISO date when the loan was fully paid off (null if active). */
@@ -414,6 +420,8 @@ export interface CreditCard {
   /** Payment due day of month (1–28). */
   dueDay: number
   currency: string
+  /** Account that settles this card's payments. */
+  accountId?: string
   /** Card accent for the visual. */
   color: string
   notes: string
@@ -471,6 +479,8 @@ export interface Income {
   currency: string
   category: IncomeCategory
   method: SpendMethod
+  /** Account the money landed in. */
+  accountId?: string
   /** ISO date the money landed (YYYY-MM-DD). */
   date: string
   notes: string
@@ -515,3 +525,66 @@ export const INCOME_CATEGORY_LABEL: Record<IncomeCategory, string> = Object.from
 export const INCOME_CATEGORY_CODE: Record<IncomeCategory, string> = Object.fromEntries(
   INCOME_CATEGORIES.map((c) => [c.id, c.code]),
 ) as Record<IncomeCategory, string>
+
+/* ── Accounts / Transfers ────────────────────────────────────────────── */
+
+export type AccountType = 'bank' | 'savings' | 'cash' | 'wallet' | 'investment' | 'credit' | 'other'
+
+export type AccountStatus = 'active' | 'archived'
+
+/** A money-holding account. Its balance is derived from logged movements. */
+export interface Account {
+  id: string
+  name: string
+  type: AccountType
+  /** Bank / provider name. */
+  institution: string
+  currency: string
+  /** Starting balance before any logged movement. */
+  openingBalance: number
+  /** Credit limit — credit accounts only. */
+  creditLimit?: number
+  color: string
+  notes: string
+  status: AccountStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AccountTypeMeta {
+  id: AccountType
+  label: string
+  code: string
+  signal: 'acid' | 'blue' | 'magenta' | 'orange' | 'red'
+  /** true when the balance counts as a liability in net worth. */
+  liability: boolean
+}
+
+export const ACCOUNT_TYPES: AccountTypeMeta[] = [
+  { id: 'bank', label: 'Bank', code: 'BNK', signal: 'acid', liability: false },
+  { id: 'savings', label: 'Savings', code: 'SAV', signal: 'blue', liability: false },
+  { id: 'cash', label: 'Cash', code: 'CSH', signal: 'acid', liability: false },
+  { id: 'wallet', label: 'Wallet', code: 'WLT', signal: 'magenta', liability: false },
+  { id: 'investment', label: 'Investment', code: 'INV', signal: 'orange', liability: false },
+  { id: 'credit', label: 'Credit', code: 'CRD', signal: 'red', liability: true },
+  { id: 'other', label: 'Other', code: 'OTH', signal: 'blue', liability: false },
+]
+
+export const ACCOUNT_TYPE_META: Record<AccountType, AccountTypeMeta> =
+  Object.fromEntries(ACCOUNT_TYPES.map((a) => [a.id, a])) as Record<AccountType, AccountTypeMeta>
+
+export const ACCOUNT_TYPE_LABEL: Record<AccountType, string> = Object.fromEntries(
+  ACCOUNT_TYPES.map((a) => [a.id, a.label]),
+) as Record<AccountType, string>
+
+/** A move of money between two accounts — neither income nor spend. */
+export interface Transfer {
+  id: string
+  fromAccountId: string
+  toAccountId: string
+  amount: number
+  currency: string
+  date: string
+  notes: string
+  createdAt: string
+}

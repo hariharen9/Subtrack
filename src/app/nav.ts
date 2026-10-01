@@ -18,6 +18,7 @@ import {
   IconSys,
   IconTime,
   IconCore,
+  IconAccount,
 } from '@/components/ui/Icons'
 
 export interface NavItem {
@@ -202,10 +203,27 @@ export const DOMAINS: Domain[] = [
     ],
   },
   {
+    code: 'ACCT',
+    label: 'Accounts',
+    path: '/accounts',
+    key: '6',
+    blurb: 'Money containers, derived balances and net worth',
+    status: 'live',
+    icon: IconAccount,
+    manifest:
+      'The spine of the OS: every account holds money and its balance is derived from the movements posted into it — income, spends, subscription charges, EMIs, card settlements and transfers.',
+    tag: 'ENGINE LIVE',
+    subnav: [
+      { code: 'CORE', label: 'Overview', path: '/accounts', key: 'O', icon: IconCore },
+      { code: 'FLOW', label: 'Registry', path: '/accounts/flow', key: 'F', icon: IconFlow },
+      { code: 'DATA', label: 'Insights', path: '/accounts/data', key: 'I', icon: IconData },
+    ],
+  },
+  {
     code: 'SYS',
     label: 'System Host',
     path: '/sys',
-    key: '6',
+    key: '7',
     blurb: 'Vault, currency, skins, danger zone',
     status: 'live',
     icon: IconSys,

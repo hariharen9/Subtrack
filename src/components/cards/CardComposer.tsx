@@ -23,6 +23,7 @@ import {
 import { CURRENCIES, formatMoney, symbolOf, convert } from '@/lib/money'
 import { todayISO } from '@/lib/date'
 import { minDueFor } from '@/lib/cards'
+import { AccountField } from '@/components/accounts/AccountField'
 import {
   createCreditCard,
   updateCreditCard,
@@ -85,6 +86,7 @@ interface CardForm {
   billingDay: string
   dueDay: string
   currency: string
+  accountId?: string
   color: string
   notes: string
 }
@@ -113,6 +115,7 @@ function emptyCardForm(base: string): CardForm {
     billingDay: '18',
     dueDay: '5',
     currency: base,
+    accountId: '',
     color: '#F4F4F4',
     notes: '',
   }
@@ -129,6 +132,7 @@ function cardToForm(card: {
   billingDay: number
   dueDay: number
   currency: string
+  accountId?: string
   color: string
   notes: string
 }): CardForm {
@@ -143,6 +147,7 @@ function cardToForm(card: {
     billingDay: String(card.billingDay),
     dueDay: String(card.dueDay),
     currency: card.currency,
+    accountId: card.accountId ?? '',
     color: card.color,
     notes: card.notes,
   }
@@ -297,6 +302,7 @@ export function CardComposer() {
         billingDay: billingDayValue,
         dueDay: dueDayValue,
         currency: cardForm.currency,
+        accountId: cardForm.accountId || undefined,
         color: cardForm.color,
         notes: cardForm.notes,
       }
@@ -494,10 +500,11 @@ export function CardComposer() {
                             <span className="micro pr-3 text-faint">{cardForm.currency}</span>
                           </div>
                         </FieldShell>
-                        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1.2fr_1.2fr]">
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                           <FieldShell label="APR %" code="RATE" htmlFor="card-apr" hint="Annual finance charge (e.g. 42%)">
                             <input id="card-apr" className="field" value={cardForm.interestRate} onChange={(e) => setCardForm({ ...cardForm, interestRate: e.target.value.replace(/[^\d.]/g, '').slice(0, 4) })} placeholder="42" inputMode="decimal" />
                           </FieldShell>
+                          <AccountField value={cardForm.accountId} onChange={(id) => setCardForm({ ...cardForm, accountId: id })} label="SETTLED FROM" code="ACCOUNT" />
                           <FieldShell label="CURRENCY" code="ISO-4217">
                             <CyberSelect ariaLabel="Currency" value={cardForm.currency} onChange={(v) => setCardForm({ ...cardForm, currency: v })} options={CURRENCIES.map((c) => ({ value: c.code, label: `${c.symbol} ${c.code}`, hint: c.name }))} />
                           </FieldShell>

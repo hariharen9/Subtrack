@@ -24,6 +24,7 @@ import { annualCost, cycleNoun, monthlyCost } from '@/lib/cycle'
 import { convert } from '@/lib/money'
 import { todayISO } from '@/lib/date'
 import { createSubscription, updateSubscription } from '@/lib/db'
+import { AccountField } from '@/components/accounts/AccountField'
 import { useSubscriptions, useSystem } from '@/hooks/useSystem'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { useFocusTrap, useIsCompact, useScrollLock } from '@/hooks/usePlatform'
@@ -51,6 +52,7 @@ const ACCENTS = ['#B7FF00', '#00C8FF', '#FF2BD6', '#FF7A00', '#FF304F', '#8B949E
 interface Draft {
   name: string
   serviceId: string | null
+  accountId: string | null
   price: string
   /** False once the user edits the amount, so catalog defaults stop overwriting it. */
   priceAuto: boolean
@@ -68,6 +70,7 @@ function emptyDraft(currency: string): Draft {
   return {
     name: '',
     serviceId: null,
+    accountId: null,
     price: '',
     priceAuto: true,
     currency,
@@ -121,6 +124,7 @@ export function SubscriptionComposer() {
       setDraft({
         name: editing.name,
         serviceId: editing.serviceId,
+        accountId: editing.accountId ?? null,
         price: String(editing.price),
         priceAuto: false,
         currency: editing.currency,
@@ -241,6 +245,7 @@ export function SubscriptionComposer() {
     const payload = {
       name: draft.name,
       serviceId: draft.serviceId,
+      accountId: draft.accountId || undefined,
       price,
       currency: draft.currency,
       billingCycle: draft.billingCycle,
@@ -531,7 +536,8 @@ export function SubscriptionComposer() {
                           )}
                         </FieldShell>
 
-                        <FieldShell label="CURRENCY" code="ISO-4217" htmlFor="composer-currency">
+                          <AccountField value={draft.accountId ?? ''} onChange={(id) => setDraft((current) => ({ ...current, accountId: id || null }))} label="CHARGED TO" code="ACCOUNT" />
+                          <FieldShell label="CURRENCY" code="ISO-4217" htmlFor="composer-currency">
                           <div id="composer-currency">
                             <CyberSelect
                               ariaLabel="Currency"

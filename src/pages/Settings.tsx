@@ -10,6 +10,7 @@ import { useState } from 'react'
 import { usePayments, useSubscriptions, useSystem } from '@/hooks/useSystem'
 import { useSpends } from '@/hooks/useSpends'
 import { useIncomes } from '@/hooks/useIncome'
+import { useAccounts } from '@/hooks/useAccounts'
 import { useUI, TOAST_VERBS } from '@/store/ui'
 import { CURRENCIES, formatMoney, convert } from '@/lib/money'
 import { downloadFile } from '@/lib/portability'
@@ -36,12 +37,14 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['L'], label: 'Initialize a loan' },
   { keys: ['C'], label: 'Log a card transaction' },
   { keys: ['I'], label: 'Log an income receipt' },
+  { keys: ['A'], label: 'Add an account / transfer' },
   { keys: ['1'], label: 'Master Command' },
   { keys: ['2'], label: 'Daily Spends' },
   { keys: ['3'], label: 'Subscriptions' },
   { keys: ['4'], label: 'Credit Cards' },
   { keys: ['5'], label: 'Loans & EMIs' },
-  { keys: ['6'], label: 'System Host' },
+  { keys: ['6'], label: 'Accounts' },
+  { keys: ['7'], label: 'System Host' },
   { keys: ['T'], label: 'Toggle night / daylight' },
   { keys: ['M'], label: 'Toggle Minimal Zen / Cyber OS mode' },
   { keys: ['ESC'], label: 'Close a console, sheet or palette' },
@@ -81,6 +84,7 @@ export default function Settings() {
   }
   const spends = useSpends()
   const incomes = useIncomes()
+  const accounts = useAccounts()
   const doExportSpendsCsv = () => {
     const header = ['date', 'title', 'amount', 'currency', 'category', 'method', 'notes'].join(',')
     const esc = (value: string | number) => {
@@ -355,6 +359,7 @@ export default function Settings() {
                 { label: 'Charges', value: String(payments.length) },
                 { label: 'Spends', value: String(spends.length) },
                 { label: 'Income', value: String(incomes.length) },
+                { label: 'Accounts', value: String(accounts.length) },
                 { label: 'Oldest record', value: oldest ?? '—' },
                 { label: 'Schema', value: `V${DB_SCHEMA_VERSION}` },
                 { label: 'Trace', value: traceOf(todayISO()) },

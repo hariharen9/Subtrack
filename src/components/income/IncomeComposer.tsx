@@ -17,6 +17,7 @@ import { CURRENCIES, symbolOf, formatMoney, convert } from '@/lib/money'
 import { todayISO, monthKey } from '@/lib/date'
 import { sumIncome } from '@/lib/income'
 import { createIncome, updateIncome, deleteIncome, type IncomeDraft } from '@/lib/db'
+import { AccountField } from '@/components/accounts/AccountField'
 import { useIncomes } from '@/hooks/useIncome'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { useFocusTrap, useIsCompact, useScrollLock } from '@/hooks/usePlatform'
@@ -49,15 +50,16 @@ interface IncomeForm {
   currency: string
   category: IncomeCategory
   method: SpendMethod
+  accountId?: string
   date: string
   notes: string
 }
 
 function emptyForm(base: string): IncomeForm {
-  return { title: '', amount: '', currency: base, category: 'salary', method: 'netbanking', date: todayISO(), notes: '' }
+  return { title: '', amount: '', currency: base, category: 'salary', method: 'netbanking', accountId: '', date: todayISO(), notes: '' }
 }
 function toForm(i: Income): IncomeForm {
-  return { title: i.title, amount: String(i.amount), currency: i.currency, category: i.category, method: i.method, date: i.date, notes: i.notes }
+  return { title: i.title, amount: String(i.amount), currency: i.currency, category: i.category, method: i.method, accountId: i.accountId ?? '', date: i.date, notes: i.notes }
 }
 
 export function IncomeComposer() {
@@ -111,6 +113,7 @@ export function IncomeComposer() {
         currency: form.currency,
         category: form.category,
         method: form.method,
+        accountId: form.accountId || undefined,
         date: form.date,
         notes: form.notes,
       }
@@ -247,6 +250,7 @@ export function IncomeComposer() {
                             <CyberSelect ariaLabel="Method" value={form.method} onChange={(v) => setForm({ ...form, method: v as SpendMethod })} options={METHODS.map((m) => ({ value: m, label: SPEND_METHOD_LABEL[m] }))} />
                           </div>
                         </FieldShell>
+                        <AccountField value={form.accountId} onChange={(id) => setForm({ ...form, accountId: id })} label="DEPOSIT TO" code="ACCOUNT" />
                         <FieldShell label="DATE RECEIVED" code="ISO DATE">
                           <CyberDatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} ariaLabel="Income date" />
                         </FieldShell>

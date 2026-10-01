@@ -113,6 +113,7 @@ export function buildCardSeed(today: string): { cards: CreditCard[]; transaction
     billingDay: spec.billingDay,
     dueDay: spec.dueDay,
     currency: spec.currency,
+    accountId: 'seed-account-bank',
     color: spec.color,
     notes: spec.notes,
     createdAt: now,

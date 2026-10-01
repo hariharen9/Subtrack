@@ -22,6 +22,7 @@ import { useSpendsSystem, useSpends } from '@/hooks/useSpends'
 import { useDebtSystem } from '@/hooks/useDebt'
 import { useCardsSystem } from '@/hooks/useCards'
 import { useIncomeSystem } from '@/hooks/useIncome'
+import { useAccountsSystem } from '@/hooks/useAccounts'
 import { useUI } from '@/store/ui'
 import { formatMoney, formatPercent, splitMoney, formatCompact } from '@/lib/money'
 import { formatSignalDate, todayISO, diffDays, addMonthsClamped } from '@/lib/date'
@@ -44,6 +45,7 @@ import {
   IconSpends,
   IconSys,
   IconIncome,
+  IconAccount,
   IconZap,
 } from '@/components/ui/Icons'
 
@@ -78,6 +80,7 @@ export default function MasterCommand() {
   const debtData = useDebtSystem()
   const cardsData = useCardsSystem()
   const incomeData = useIncomeSystem()
+  const accountsData = useAccountsSystem()
   const base = useUI((s) => s.baseCurrency)
   const uiMode = useUI((s) => s.uiMode)
   const openComposer = useUI((s) => s.openComposer)
@@ -107,6 +110,7 @@ export default function MasterCommand() {
   const monthlyInflow = incomeData.summary.monthTotal
   const netCashflow = monthlyInflow - systemBurn
   const savingsRate = monthlyInflow > 0 ? netCashflow / monthlyInflow : 0
+  const netWorth = accountsData.summary.netWorth
 
   // ── Domain Allocation Shares ──
   const allocationSlices = useMemo(() => {
@@ -312,8 +316,8 @@ export default function MasterCommand() {
           )}
         </div>
 
-        {/* 5 Clean Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* Clean Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {/* Subscriptions */}
           <Link
             to="/subs"
@@ -426,6 +430,29 @@ export default function MasterCommand() {
               <IconArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Link>
+
+          {/* Net Worth */}
+          <Link
+            to="/accounts"
+            className="group rounded-2xl border border-line bg-surface p-4 shadow-sm hover:border-linehard transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-dim">Net Worth</span>
+                <span className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center text-dim group-hover:text-fg transition-colors">
+                  <IconAccount size={14} />
+                </span>
+              </div>
+              <div className={cx('text-2xl font-bold mt-2', netWorth >= 0 ? 'text-fg' : 'text-red-500')}>{formatMoney(netWorth, base)}</div>
+              <p className="text-xs text-dim mt-0.5">
+                {accountsData.summary.active.length} account{accountsData.summary.active.length === 1 ? '' : 's'}
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs text-acid-ink font-medium">
+              <span>Open accounts</span>
+              <IconArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
         </div>
 
         {/* 2-Column Section: Upcoming Bills + Recent Spends */}
@@ -524,7 +551,7 @@ export default function MasterCommand() {
               <Led signal="acid" size="sm" pulse />
               MASTER COMMAND
             </span>
-            <span className="micro text-faint hidden sm:inline">OS CORE // 4 ENGINES + INCOME LOG</span>
+            <span className="micro text-faint hidden sm:inline">OS CORE // 5 ENGINES + INCOME LOG</span>
             <span className="text-linehard hidden sm:inline">·</span>
             <span className="micro text-faint hidden md:inline">100% OFFLINE LOCAL VAULT</span>
           </div>
@@ -605,6 +632,10 @@ export default function MasterCommand() {
                       </span>
                     </>
                   )}
+                  <span className="text-linehard">·</span>
+                  <span className={cx('micro font-semibold', netWorth >= 0 ? 'text-acidink' : 'text-redink')}>
+                    NET WORTH {formatCompact(netWorth, base)}
+                  </span>
                 </div>
               </div>
 
@@ -672,10 +703,10 @@ export default function MasterCommand() {
             code="MATRIX"
             title="Subsystem Cockpits"
             signal="acid"
-            right={<span className="micro text-faint">4 LIVE DOMAINS · 1 INCOME LEDGER</span>}
+            right={<span className="micro text-faint">5 LIVE DOMAINS · 1 INCOME LEDGER</span>}
           />
 
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
 
             {/* SUBSCRIPTIONS */}
             <Link to="/subs" className="group block focus-visible:outline-none">
@@ -839,6 +870,42 @@ export default function MasterCommand() {
                     {spendsData.summary.countToday > 0 ? `${spendsData.summary.countToday} TXN TODAY` : 'READY FOR CAPTURE'}
                   </span>
                   <span className="micro flex items-center gap-0.5 text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-orangeink">
+                    DECK <IconArrowRight size={11} />
+                  </span>
+                </div>
+              </CutPanel>
+            </Link>
+
+            {/* ACCOUNTS */}
+            <Link to="/accounts" className="group block focus-visible:outline-none">
+              <CutPanel cut="br" cutSize={12} innerClassName="p-3.5 transition-colors group-hover:bg-surface2 group-hover:border-acid">
+                <div className="flex items-center justify-between">
+                  <span className="micro flex items-center gap-1.5">
+                    <IconAccount size={14} className="text-acid" />
+                    <span className="font-semibold text-fg">ACCOUNTS</span>
+                  </span>
+                  <span className="micro flex items-center gap-1 text-acidink">
+                    <Led signal="acid" size="sm" pulse />
+                    SPINE
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <span className="numeral text-[22px] font-bold text-fg">{formatMoney(netWorth, base)}</span>
+                  <span className="micro block text-faint">NET WORTH</span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-2">
+                  <div>
+                    <span className="micro block text-faint">ASSETS</span>
+                    <span className="numeral text-[13px] text-acidink">{formatCompact(accountsData.summary.totalAssets, base)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="micro block text-faint">LIQUID</span>
+                    <span className="numeral text-[13px] text-fg">{formatCompact(accountsData.summary.liquid, base)}</span>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-1.5">
+                  <span className="micro text-faint truncate">{accountsData.summary.active.length} ACCOUNTS TRACKED</span>
+                  <span className="micro flex items-center gap-0.5 text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-acidink">
                     DECK <IconArrowRight size={11} />
                   </span>
                 </div>

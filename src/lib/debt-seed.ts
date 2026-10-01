@@ -111,6 +111,7 @@ export function buildDebtSeed(today: string): { loans: Loan[]; loanPayments: Loa
       tenureMonths: spec.tenureMonths,
       emi: spec.emi,
       currency: spec.currency,
+      accountId: 'seed-account-bank',
       startDate,
       closedAt,
       notes: '',
