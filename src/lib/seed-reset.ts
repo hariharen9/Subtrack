@@ -9,6 +9,7 @@
 import { wipeAll, ensureSeeded, ensureSpendsSeeded, resetSubscriptionSeed, resetSpendsSeed } from './db'
 import { ensureDebtSeeded, resetDebtSeed } from './debt-seed'
 import { ensureCardsSeeded, resetCardsSeed } from './card-seed'
+import { ensureIncomeSeeded, resetIncomeSeed } from './income-seed'
 
 export async function resetToSeed(): Promise<void> {
   await wipeAll()
@@ -16,10 +17,12 @@ export async function resetToSeed(): Promise<void> {
   resetSpendsSeed()
   resetDebtSeed()
   resetCardsSeed()
+  resetIncomeSeed()
   await Promise.all([
     ensureSeeded(),
     ensureSpendsSeeded(),
     ensureDebtSeeded(),
     ensureCardsSeeded(),
+    ensureIncomeSeeded(),
   ])
 }

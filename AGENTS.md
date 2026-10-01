@@ -50,8 +50,8 @@ SpendState treats personal recurring finances not as passive spreadsheets, but a
 |                                        |                                          |
 |  +-----------------------------------------------------------------------------+  |
 |  |                           LOCAL STORAGE ENGINE                              |  |
-|  |                    IndexedDB / Dexie.js (Schema V4, db "spendstate")          |  |
-|  |        [subscriptions] [payments] [spends] [loans] [cards] [meta]          |  |
+|  |                    IndexedDB / Dexie.js (Schema V5, db "spendstate")          |  |
+|  |     [subscriptions] [payments] [spends] [loans] [cards] [incomes] [meta]   |  |
 |  +-----------------------------------------------------------------------------+  |
 +-----------------------------------------------------------------------------------+
 ```
@@ -153,6 +153,7 @@ E:/Projects/SpendState/
     │   │                         # useFocusTrap, useScrollLock
     │   ├── useSpends.ts          # spends live queries + memoised spend summary + weekly limiter
     │   ├── useCards.ts           # credit-card live queries + memoised cards summary pipeline
+    │   ├── useIncome.ts          # incomes live queries + memoised inflow summary pipeline
     │   └── useSystem.ts          # Dexie live queries + memoised analytics pipeline
     ├── lib/
     │   ├── analytics.ts          # summarize(), viewOf(), series, streams, matrix, notes
@@ -168,6 +169,8 @@ E:/Projects/SpendState/
     │   ├── debt-seed.ts          # 5-loan demo dataset + reconstructed amortisation history
     │   ├── fuzzy.ts              # parseQuery(), fuzzyScore(), searchSubscriptions()
     │   ├── id.ts                 # pidOf(), traceOf(), slotOf(), txnRef(), hash32()
+    │   ├── income.ts             # income log analytics: this-month inflow, category mix, net cashflow
+    │   ├── income-seed.ts        # demo income ledger (recent salary, freelance, rental receipts)
     │   ├── money.ts              # Static FX, Intl formatting, percent helpers
     │   ├── portability.ts        # JSON snapshot export/import, CSV ledger, clipboard readout
     │   ├── seed.ts               # 17-subscription demo dataset + reconstructed ledger + spends demo
@@ -359,6 +362,7 @@ class SpendStateDB extends Dexie {
   loanPayments!: Table<LoanPayment, string>
   creditCards!: Table<CreditCard, string>
   cardTransactions!: Table<CardTransaction, string>
+  incomes!: Table<Income, string>
   meta!: Table<MetaRecord, string>
 
   constructor() {
@@ -379,10 +383,13 @@ class SpendStateDB extends Dexie {
       creditCards: 'id, status, issuer, network, name, createdAt, updatedAt',
       cardTransactions: 'id, cardId, date, type, category, [cardId+date]',
     })
+    this.version(5).stores({
+      incomes: 'id, date, category, method, createdAt, updatedAt, [date+category]',
+    })
   }
 }
 ```
-`DB_SCHEMA_VERSION = 4` is exported and surfaced in the System Host. `meta` rows used: `seeded` (boot marker), `schema` ('1'), `spends.seeded`, `debt.seeded`, `cards.seeded`, and `spends.weeklyLimit` (JSON).
+`DB_SCHEMA_VERSION = 5` is exported and surfaced in the System Host. `meta` rows used: `seeded` (boot marker), `schema` ('1'), `spends.seeded`, `debt.seeded`, `cards.seeded`, `income.seeded`, and `spends.weeklyLimit` (JSON).
 
 ### 4.2 Seed Workflow & History Reconstruction
 ```mermaid
@@ -734,6 +741,7 @@ The live variable-cash cockpit (`Spends.tsx`):
 - **Weekly limiter** (editor on the Patterns tab, `SpendPatterns.tsx`): Mon–Sun discretionary cap, normalised to the base currency; signal states (acid/orange/red) and notes near/exceeding the cap. Essential categories never count against it.
 - **Category mix**: composition strip + per-category share/count bars for the month; clicking a category opens the composer pre-tagged.
 - **Recent ledger** (`SpendLedger.tsx`, `SpendRow`): reverse-chronological day groups with title, method, date, note, DISC/ESS tag, amount, edit and two-step delete.
+- **Income log**: the same registry toggles to income (`?log=income`) — received payments with the same filters, sort, CSV export and per-row edit.
 - `/spends/flow` (`SpendFlow.tsx`) — the full registry: free-text query across title/notes/category plus category and method filter rails, selection readout and the complete ledger.
 - `/spends/flow/:id` (`SpendDetail.tsx`) — per-spend diagnostic board: identity + economics hero, merchant intelligence, category peers, clone/edit/armed delete.
 - `/spends/patterns` (`SpendPatterns.tsx`) — forensic engine: discipline score, recurring-merchant detection, z-score anomalies, monthly phase and weekday profile; also hosts the weekly discretionary-cap editor.
@@ -757,7 +765,17 @@ The credit card subsystem is fully live (`CRD` domain in `nav.ts`). Its data mod
 ### 11.8 Loans & EMIs Engine (`/loans`, `/loans/flow`, `/loans/flow/:id`, `/loans/data`)
 Fully live (`DEBT` domain): `DebtOverview` cockpit, `DebtFlow` registry, `LoanDetail` amortization board and `DebtInsights`. Data model: `Loan` + `LoanPayment` (see §3.1). See the live pages for the authoritative feature set.
 
-### 11.9 System Host (`/sys`)
+### 11.9 Income (logged on Master Command)
+Income is a **log of received payments**, not an engine — you enter salary/freelance/rental receipts by hand (the pleasant mirror of logging a spend), because inflow is low-volume and its value is one derived number: **net cashflow**. There is no dedicated route; the surface is Master Command.
+
+- **`Income`** (`types.ts`) — `{ title, amount, currency, category, method, date, notes }`; `IncomeCategory` (salary/freelance/business/investment/rental/gift/other) + `INCOME_CATEGORY_META`.
+- **`summarizeIncome()`** (`src/lib/income.ts`) — this-month inflow, MoM delta, lifetime total, average receipt, category mix and the recent ledger.
+- **`IncomeComposer`** (`components/income/`) — quick-capture console with source presets; `incomeLogged/Updated/Deleted` toasts.
+- **Spend domain** — the Flow registry (`/spends/flow`) carries a **SPENDS | INCOME** toggle (`?log=income`) that renders the income log with the same search / time-envelope / method / sort / CSV chrome; **Spend Insights** (`/spends/data`) adds an **Income vs outflow** panel (month inflow, net vs spends, category mix).
+- **Master Command** — `INCOME (this month) − system burn = NET CASHFLOW` with the savings rate in both modes, a **LOG INCOME** action, and an Income metric card that links to the Spend-domain ledger.
+- Demo ledger guarded by the `income.seeded` marker (`income-seed.ts`).
+
+### 11.10 System Host (`/sys`)
 System control and backup room (`Settings.tsx`):
 - **Appearance**: `NIGHT // PRIMARY` vs `DAYLIGHT // BRUTALIST`, background grid toggle, calm motion mode.
 - **Aggregation currency**: 9-currency select + the full static FX reference table (per 1 base, and 1 unit → base).
@@ -798,6 +816,8 @@ interface UIState {
     presetType: CardTxnType | null  // e.g. 'payment' for quick PAY actions
     presetAmount: number | null   // e.g. the statement due for a quick PAY
   }
+  loanComposer: { open: boolean; mode: 'loan' | 'payment'; editLoanId: string | null; paymentLoanId: string | null }
+  incomeComposer: { open: boolean; editId: string | null }
   termination: { open: boolean; subId: string | null; mode: 'terminate' | 'purge' }
 
   // Boot
@@ -805,12 +825,14 @@ interface UIState {
   setBooted: (booted: boolean) => void
 
   // Actions
-  setTheme / toggleTheme / setField / setCalmMode / setBaseCurrency / setHorizonDays
+  setTheme / toggleTheme / setUiMode / toggleUiMode / setZenAccent / setField / setBaseCurrency / setHorizonDays
   pushToast(toast) / dismissToast(id) / clearToasts()
   setPaletteOpen(open) / togglePalette()
   openComposer(opts?) / closeComposer()
   openSpendComposer(opts?) / closeSpendComposer()
   openCardComposer(opts?: { mode?, editCardId?, presetCardId?, editTxnId?, presetType?, presetAmount? }) / closeCardComposer()
+  openLoanComposer(opts?: { mode?, editLoanId?, paymentLoanId? }) / closeLoanComposer()
+  openIncomeComposer(opts?: { editId? }) / closeIncomeComposer()
   openTermination(subId, mode) / closeTermination()
 }
 ```
@@ -820,7 +842,7 @@ interface UIState {
 
 ## 13. Global Keyboard Shortcut Register
 
-The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-level rack entry maps `key → path`. Currently the six-domain rack occupies `1`–`6`; the SUBS sub-tab single letters (`O/F/M/I`) are printed in the DomainFrame sub-nav for visual reference only and are **not** bound as global hotkeys (only the six rack numbers are). Adding a future engine to `DOMAINS` automatically allocates its next free number via `domainByKey()` / the `DOMAINS.map` in `CyberShell`.
+The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-level rack entry maps `key → path`. The six-domain rack occupies `1`–`6` (`1` CMD · `2` SPND · `3` SUBS · `4` CRD · `5` DEBT · `6` SYS); the sub-tab single letters printed in the DomainFrame sub-nav are visual reference only and are **not** bound as global hotkeys. Adding a future engine to `DOMAINS` automatically allocates its next free number.
 
 | Shortcut | Scope | Action |
 | :--- | :--- | :--- |
@@ -828,13 +850,17 @@ The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-leve
 | `/` | Global | Open Command Palette (query field focused) |
 | `N` | Global | Open the New Subscription composer |
 | `X` | Global | Open the Log Spend composer |
+| `L` | Global | Open the Loan composer |
+| `C` | Global | Log a card transaction |
+| `I` | Global | Open the Income composer |
 | `1` | Global | Navigate to **Master Command** (`/`) |
-| `2` | Global | Navigate to **Subscriptions** (`/subs`) |
-| `3` | Global | Navigate to **Credit Cards** cockpit (`/cards`) |
-| `4` | Global | Navigate to **Loans & EMIs** cockpit (`/loans`) |
-| `5` | Global | Navigate to **Daily Spends** cockpit (`/spends`) |
+| `2` | Global | Navigate to **Daily Spends** cockpit (`/spends`) |
+| `3` | Global | Navigate to **Subscriptions** (`/subs`) |
+| `4` | Global | Navigate to **Credit Cards** cockpit (`/cards`) |
+| `5` | Global | Navigate to **Loans & EMIs** cockpit (`/loans`) |
 | `6` | Global | Navigate to **System Host** (`/sys`) |
 | `T` | Global | Toggle Night / Daylight theme |
+| `M` | Global | Toggle Minimal Zen / Cyber OS mode |
 | `ESC` | Global | Close the active modal, sheet, palette or popover |
 | `↑` / `↓` | Palette | Navigate results (commands, then subscriptions) |
 | `Enter` | Palette | Execute the selected command / open the subscription |

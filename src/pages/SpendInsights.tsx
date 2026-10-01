@@ -10,6 +10,7 @@
 import { useMemo } from 'react'
 import { motion } from 'motion/react'
 import { useSpendInsights, useSpends } from '@/hooks/useSpends'
+import { useIncomeSystem } from '@/hooks/useIncome'
 import { useUI } from '@/store/ui'
 import { formatMoney, formatPercent, splitMoney, formatCompact } from '@/lib/money'
 import { formatSignalDate, monthKey, shiftMonthKey, todayISO, diffDays } from '@/lib/date'
@@ -88,6 +89,7 @@ function StatBlock({
 /** Small radial gauge — SVG arc with percentage in the center. */
 export default function SpendInsights() {
   const insights = useSpendInsights()
+  const incomeData = useIncomeSystem()
   const spends = useSpends()
   const base = useUI((s) => s.baseCurrency)
   const openSpendComposer = useUI((s) => s.openSpendComposer)
@@ -285,6 +287,57 @@ export default function SpendInsights() {
                 </div>
               )}
             </div>
+          </CutPanel>
+        </motion.div>
+
+        {/* Income vs outflow */}
+        <motion.div variants={RISE} className="lg:col-span-12">
+          <CutPanel cut="br" cutSize={16} innerClassName="p-4">
+            <SectionHeader
+              code="INC"
+              title="Income vs outflow"
+              signal="acid"
+              right={<span className="micro text-faint">{incomeData.summary.countMonth} RECEIPTS THIS CYCLE</span>}
+            />
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="border border-line bg-bg2 p-3">
+                <span className="micro block text-faint">INCOME (MONTH)</span>
+                <span className="numeral mt-0.5 block text-[18px] font-bold text-acidink">{formatMoney(incomeData.summary.monthTotal, base)}</span>
+                <span className={cx('micro', incomeData.summary.monthDelta >= 0 ? 'text-acidink' : 'text-orangeink')}>{formatPercent(incomeData.summary.monthDelta, 1)} VS PREV</span>
+              </div>
+              <div className="border border-line bg-bg2 p-3">
+                <span className="micro block text-faint">SPENDS (MONTH)</span>
+                <span className="numeral mt-0.5 block text-[18px] font-bold text-orangeink">{formatMoney(insights.monthTotal, base)}</span>
+                <span className="micro text-faint">RECORDED OUTFLOW</span>
+              </div>
+              <div className="border border-line bg-bg2 p-3">
+                <span className="micro block text-faint">NET · INCOME − SPENDS</span>
+                <span className={cx('numeral mt-0.5 block text-[18px] font-bold', incomeData.summary.monthTotal - insights.monthTotal >= 0 ? 'text-acidink' : 'text-redink')}>
+                  {formatMoney(incomeData.summary.monthTotal - insights.monthTotal, base)}
+                </span>
+                <span className="micro text-faint">THIS CYCLE</span>
+              </div>
+              <div className="border border-line bg-bg2 p-3">
+                <span className="micro block text-faint">AVG RECEIPT</span>
+                <span className="numeral mt-0.5 block text-[18px] font-bold text-fg">{formatMoney(incomeData.summary.avgPerEntry, base)}</span>
+                <span className="micro text-faint">{incomeData.summary.count} LIFETIME</span>
+              </div>
+            </div>
+            {incomeData.summary.categories.length > 0 && (
+              <div className="mt-3 border-t border-line pt-3">
+                <span className="micro text-faint">INCOME MIX</span>
+                <div className="mt-1.5 flex flex-wrap gap-2">
+                  {incomeData.summary.categories.map((c) => (
+                    <span key={c.category} className={cx('micro inline-flex items-center gap-1.5 border px-2 py-0.5', SIGNAL_TEXT[c.signal])}>
+                      <span aria-hidden="true" className="h-1.5 w-1.5" style={{ background: SIGNAL_HEX[c.signal] }} />
+                      <span className="font-semibold">{c.code}</span>
+                      <span className="text-fg">{formatMoney(c.amount, base)}</span>
+                      <span className="opacity-70">({(c.share * 100).toFixed(0)}%)</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </CutPanel>
         </motion.div>
 

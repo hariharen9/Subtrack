@@ -90,6 +90,24 @@ export function exportSpendsCsv(spends: import('./types').Spend[]): void {
   useUI.getState().pushToast(TOAST_VERBS.info('CSV EXPORT COMPLETE', `${spends.length} transactions exported`))
 }
 
+export function toIncomesCsv(incomes: import('./types').Income[]): string {
+  const header = ['date', 'title', 'amount', 'currency', 'category', 'method', 'notes'].join(',')
+  const rows = incomes
+    .slice()
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .map((i) =>
+      [i.date, i.title, i.amount, i.currency, i.category, i.method, i.notes || ''].map(escapeCsv).join(','),
+    )
+  return [header, ...rows].join('\n')
+}
+
+export function exportIncomesCsv(incomes: import('./types').Income[]): void {
+  const csv = toIncomesCsv(incomes)
+  const stamp = new Date().toISOString().slice(0, 10)
+  downloadFile(`spendstate-income-${stamp}.csv`, csv, 'text/csv')
+  useUI.getState().pushToast(TOAST_VERBS.info('CSV EXPORT COMPLETE', `${incomes.length} income entries exported`))
+}
+
 export function openImportDialog(): void {
   const input = document.createElement('input')
   input.type = 'file'

@@ -25,6 +25,8 @@ import type {
   CreditCard,
   CardTransaction,
   CardTxnType,
+  Income,
+  IncomeCategory,
 } from './types'
 import { buildSeed, buildSpendSeed } from './seed'
 import { occurrenceAt, occurrencesBetween } from './cycle'
@@ -34,7 +36,7 @@ import { newId } from './id'
 export const DB_NAME = 'spendstate'
 
 /** Newest Dexie schema version declared below — surfaced in the System Host. */
-export const DB_SCHEMA_VERSION = 4
+export const DB_SCHEMA_VERSION = 5
 
 class SpendStateDB extends Dexie {
   subscriptions!: Table<Subscription, string>
@@ -44,6 +46,7 @@ class SpendStateDB extends Dexie {
   loanPayments!: Table<LoanPayment, string>
   creditCards!: Table<CreditCard, string>
   cardTransactions!: Table<CardTransaction, string>
+  incomes!: Table<Income, string>
   meta!: Table<MetaRecord, string>
 
   constructor() {
@@ -64,6 +67,9 @@ class SpendStateDB extends Dexie {
       creditCards: 'id, status, issuer, network, name, createdAt, updatedAt',
       cardTransactions: 'id, cardId, date, type, category, [cardId+date]',
     })
+    this.version(5).stores({
+      incomes: 'id, date, category, method, createdAt, updatedAt, [date+category]',
+    })
   }
 }
 
@@ -74,6 +80,7 @@ const META_SCHEMA = 'schema'
 const META_SPENDS_SEEDED = 'spends.seeded'
 const META_DEBT_SEEDED = 'debt.seeded'
 const META_CARDS_SEEDED = 'cards.seeded'
+const META_INCOME_SEEDED = 'income.seeded'
 
 /* ------------------------------------------------------------------ boot --- */
 
@@ -611,6 +618,52 @@ export async function deleteCardTransaction(id: string): Promise<void> {
   await db.cardTransactions.delete(id)
 }
 
+/* --------------------------------------------------------------- income --- */
+
+export interface IncomeDraft {
+  title: string
+  amount: number
+  currency: string
+  category: IncomeCategory
+  method: SpendMethod
+  date: string
+  notes: string
+}
+
+export function listIncomes(): Promise<Income[]> {
+  return db.incomes.toArray()
+}
+
+export function getIncome(id: string): Promise<Income | undefined> {
+  return db.incomes.get(id)
+}
+
+export async function createIncome(draft: IncomeDraft): Promise<Income> {
+  const now = nowStamp()
+  const income: Income = {
+    id: newId(),
+    title: draft.title.trim(),
+    amount: draft.amount,
+    currency: draft.currency,
+    category: draft.category,
+    method: draft.method,
+    date: draft.date,
+    notes: draft.notes.trim(),
+    createdAt: now,
+    updatedAt: now,
+  }
+  await db.incomes.add(income)
+  return income
+}
+
+export async function updateIncome(id: string, patch: Partial<IncomeDraft>): Promise<void> {
+  await db.incomes.update(id, { ...patch, updatedAt: nowStamp() })
+}
+
+export async function deleteIncome(id: string): Promise<void> {
+  await db.incomes.delete(id)
+}
+
 const META_WEEKLY_LIMIT = 'spends.weeklyLimit'
 
 export async function getWeeklyLimit(): Promise<WeeklySpendLimit | null> {
@@ -628,7 +681,7 @@ export async function setWeeklyLimit(limit: WeeklySpendLimit): Promise<void> {
 }
 
 export async function wipeAll(): Promise<void> {
-  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.creditCards, db.cardTransactions, db.meta], async () => {
+  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.creditCards, db.cardTransactions, db.incomes, db.meta], async () => {
     await db.subscriptions.clear()
     await db.payments.clear()
     await db.spends.clear()
@@ -636,6 +689,7 @@ export async function wipeAll(): Promise<void> {
     await db.loanPayments.clear()
     await db.creditCards.clear()
     await db.cardTransactions.clear()
+    await db.incomes.clear()
     await db.meta.clear()
   })
 }
@@ -664,10 +718,11 @@ export interface Snapshot {
   loanPayments?: LoanPayment[]
   creditCards?: CreditCard[]
   cardTransactions?: CardTransaction[]
+  incomes?: Income[]
 }
 
 export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
-  const [subscriptions, payments, spends, loans, loanPayments, creditCards, cardTransactions] = await Promise.all([
+  const [subscriptions, payments, spends, loans, loanPayments, creditCards, cardTransactions, incomes] = await Promise.all([
     listSubscriptions(),
     listPayments(),
     listSpends(),
@@ -675,6 +730,7 @@ export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
     db.loanPayments.toArray(),
     listCreditCards(),
     db.cardTransactions.toArray(),
+    listIncomes(),
   ])
   return {
     app: 'spendstate',
@@ -688,6 +744,7 @@ export async function exportSnapshot(settings: AppSettings): Promise<Snapshot> {
     loanPayments,
     creditCards,
     cardTransactions,
+    incomes,
   }
 }
 
@@ -699,6 +756,7 @@ export interface ImportReport {
   loanPayments: number
   creditCards: number
   cardTransactions: number
+  incomes: number
   mode: 'replace' | 'merge'
 }
 
@@ -718,8 +776,9 @@ export async function importSnapshot(
   const loanPayments = Array.isArray(snapshot.loanPayments) ? snapshot.loanPayments : []
   const creditCards = Array.isArray(snapshot.creditCards) ? snapshot.creditCards : []
   const cardTransactions = Array.isArray(snapshot.cardTransactions) ? snapshot.cardTransactions : []
+  const incomes = Array.isArray(snapshot.incomes) ? snapshot.incomes : []
 
-  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.creditCards, db.cardTransactions, db.meta], async () => {
+  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.creditCards, db.cardTransactions, db.incomes, db.meta], async () => {
     if (mode === 'replace') {
       await db.subscriptions.clear()
       await db.payments.clear()
@@ -728,6 +787,7 @@ export async function importSnapshot(
       await db.loanPayments.clear()
       await db.creditCards.clear()
       await db.cardTransactions.clear()
+      await db.incomes.clear()
     }
     await db.subscriptions.bulkPut(subscriptions)
     if (payments.length) await db.payments.bulkPut(payments)
@@ -736,12 +796,14 @@ export async function importSnapshot(
     if (loanPayments.length) await db.loanPayments.bulkPut(loanPayments)
     if (creditCards.length) await db.creditCards.bulkPut(creditCards)
     if (cardTransactions.length) await db.cardTransactions.bulkPut(cardTransactions)
+    if (incomes.length) await db.incomes.bulkPut(incomes)
     // Mark every demo generator as satisfied so a later boot can never inject
     // demo rows on top of restored data.
     await db.meta.put({ key: META_SEEDED, value: nowStamp() })
     await db.meta.put({ key: META_SPENDS_SEEDED, value: nowStamp() })
     await db.meta.put({ key: META_DEBT_SEEDED, value: nowStamp() })
     await db.meta.put({ key: META_CARDS_SEEDED, value: nowStamp() })
+    await db.meta.put({ key: META_INCOME_SEEDED, value: nowStamp() })
   })
 
   return {
@@ -752,6 +814,7 @@ export async function importSnapshot(
     loanPayments: loanPayments.length,
     creditCards: creditCards.length,
     cardTransactions: cardTransactions.length,
+    incomes: incomes.length,
     mode,
   }
 }

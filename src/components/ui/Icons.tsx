@@ -43,6 +43,7 @@ import {
   LuCopy,
   LuSparkles,
   LuFeather,
+  LuBanknote,
 } from 'react-icons/lu'
 
 export type IconProps = SVGProps<SVGSVGElement> & {
@@ -114,6 +115,7 @@ export const IconCommandCenter = createIcon(LuTerminal)
 export const IconCreditCard = createIcon(LuCreditCard)
 export const IconDebt = createIcon(LuLandmark)
 export const IconSpends = createIcon(LuReceipt)
+export const IconIncome = createIcon(LuBanknote)
 
 /** Sub-navigation & aliases */
 export const IconSubsession = createIcon(LuLayers)

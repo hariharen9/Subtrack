@@ -76,6 +76,12 @@ export interface LoanComposerState {
   paymentLoanId: string | null
 }
 
+export interface IncomeComposerState {
+  open: boolean
+  /** Income being edited. */
+  editId: string | null
+}
+
 export interface TerminationState {
   open: boolean
   subId: string | null
@@ -101,6 +107,7 @@ interface UIState {
   spendComposer: SpendComposerState
   cardComposer: CardComposerState
   loanComposer: LoanComposerState
+  incomeComposer: IncomeComposerState
   termination: TerminationState
   /** False until the local volume has been opened and seeded. */
   booted: boolean
@@ -140,6 +147,8 @@ interface UIState {
     paymentLoanId?: string
   }) => void
   closeLoanComposer: () => void
+  openIncomeComposer: (options?: { editId?: string }) => void
+  closeIncomeComposer: () => void
   openTermination: (subId: string, mode: TerminationMode) => void
   closeTermination: () => void
   // Category management
@@ -172,6 +181,7 @@ export const useUI = create<UIState>()(
       spendComposer: { open: false, editId: null, presetCategory: null },
       cardComposer: { open: false, mode: 'card', editCardId: null, presetCardId: null, editTxnId: null, presetType: null, presetAmount: null },
       loanComposer: { open: false, mode: 'loan', editLoanId: null, paymentLoanId: null },
+      incomeComposer: { open: false, editId: null },
       termination: { open: false, subId: null, mode: 'terminate' },
       booted: false,
       subCategories: DEFAULT_CATEGORIES,
@@ -265,6 +275,9 @@ export const useUI = create<UIState>()(
         }),
       closeLoanComposer: () =>
         set({ loanComposer: { open: false, mode: 'loan', editLoanId: null, paymentLoanId: null } }),
+      openIncomeComposer: (options) =>
+        set({ incomeComposer: { open: true, editId: options?.editId ?? null } }),
+      closeIncomeComposer: () => set({ incomeComposer: { open: false, editId: null } }),
       openTermination: (subId, mode) => set({ termination: { open: true, subId, mode } }),
       closeTermination: () =>
         set({ termination: { open: false, subId: null, mode: 'terminate' } }),
@@ -433,6 +446,21 @@ export const TOAST_VERBS = {
     kind: 'ok' as ToastKind,
     label: 'EMI RECORDED ✓',
     text: `${name} · ${detail}`,
+  }),
+  incomeLogged: (title: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'INCOME LOGGED ✓',
+    text: `${title} · ${detail}`,
+  }),
+  incomeUpdated: (title: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'INCOME UPDATED',
+    text: `${title} · entry written`,
+  }),
+  incomeDeleted: (title: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'INCOME REMOVED',
+    text: `${title} · entry erased`,
   }),
   cardAdded: (name: string, detail: string) => ({
     kind: 'ok' as ToastKind,

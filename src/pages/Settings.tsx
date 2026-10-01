@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import { usePayments, useSubscriptions, useSystem } from '@/hooks/useSystem'
 import { useSpends } from '@/hooks/useSpends'
+import { useIncomes } from '@/hooks/useIncome'
 import { useUI, TOAST_VERBS } from '@/store/ui'
 import { CURRENCIES, formatMoney, convert } from '@/lib/money'
 import { downloadFile } from '@/lib/portability'
@@ -32,11 +33,14 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['/'], label: 'Query financial OS from anywhere' },
   { keys: ['N'], label: 'Initialize a subscription' },
   { keys: ['X'], label: 'Log a daily spend' },
+  { keys: ['L'], label: 'Initialize a loan' },
+  { keys: ['C'], label: 'Log a card transaction' },
+  { keys: ['I'], label: 'Log an income receipt' },
   { keys: ['1'], label: 'Master Command' },
-  { keys: ['2'], label: 'Subscriptions' },
-  { keys: ['3'], label: 'Credit Cards' },
-  { keys: ['4'], label: 'Loans & EMIs' },
-  { keys: ['5'], label: 'Daily Spends' },
+  { keys: ['2'], label: 'Daily Spends' },
+  { keys: ['3'], label: 'Subscriptions' },
+  { keys: ['4'], label: 'Credit Cards' },
+  { keys: ['5'], label: 'Loans & EMIs' },
   { keys: ['6'], label: 'System Host' },
   { keys: ['T'], label: 'Toggle night / daylight' },
   { keys: ['M'], label: 'Toggle Minimal Zen / Cyber OS mode' },
@@ -76,6 +80,7 @@ export default function Settings() {
     pushToast(TOAST_VERBS.info('LEDGER EXPORTED', `${payments.length} rows written as CSV`))
   }
   const spends = useSpends()
+  const incomes = useIncomes()
   const doExportSpendsCsv = () => {
     const header = ['date', 'title', 'amount', 'currency', 'category', 'method', 'notes'].join(',')
     const esc = (value: string | number) => {
@@ -349,6 +354,7 @@ export default function Settings() {
                 { label: 'Archived', value: String(summary.suspended.length + summary.terminated.length) },
                 { label: 'Charges', value: String(payments.length) },
                 { label: 'Spends', value: String(spends.length) },
+                { label: 'Income', value: String(incomes.length) },
                 { label: 'Oldest record', value: oldest ?? '—' },
                 { label: 'Schema', value: `V${DB_SCHEMA_VERSION}` },
                 { label: 'Trace', value: traceOf(todayISO()) },

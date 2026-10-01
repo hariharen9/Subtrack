@@ -33,6 +33,7 @@ import NotFound from '@/pages/NotFound'
 import { ensureSeeded, ensureSpendsSeeded } from '@/lib/db'
 import { ensureDebtSeeded } from '@/lib/debt-seed'
 import { ensureCardsSeeded } from '@/lib/card-seed'
+import { ensureIncomeSeeded } from '@/lib/income-seed'
 import { useUI } from '@/store/ui'
 import { SmoothScroll } from '@/components/shell/SmoothScroll'
 
@@ -86,7 +87,7 @@ function BootSequence() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([ensureSeeded(), ensureSpendsSeeded(), ensureDebtSeeded(), ensureCardsSeeded()])
+    Promise.all([ensureSeeded(), ensureSpendsSeeded(), ensureDebtSeeded(), ensureCardsSeeded(), ensureIncomeSeeded()])
       .catch((error: unknown) => {
         pushToast({
           kind: 'alert',

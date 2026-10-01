@@ -113,7 +113,7 @@ export function endOfMonthISO(iso: string): string {
 
 /** '2026-09' — the aggregation key for a calendar month. */
 export function monthKey(iso: string): string {
-  return iso.slice(0, 7)
+  return typeof iso === 'string' ? iso.slice(0, 7) : ''
 }
 
 export function monthKeyToISOStart(key: string): string {

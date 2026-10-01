@@ -21,6 +21,7 @@ import { useSystem } from '@/hooks/useSystem'
 import { useSpendsSystem, useSpends } from '@/hooks/useSpends'
 import { useDebtSystem } from '@/hooks/useDebt'
 import { useCardsSystem } from '@/hooks/useCards'
+import { useIncomeSystem } from '@/hooks/useIncome'
 import { useUI } from '@/store/ui'
 import { formatMoney, formatPercent, splitMoney, formatCompact } from '@/lib/money'
 import { formatSignalDate, todayISO, diffDays, addMonthsClamped } from '@/lib/date'
@@ -42,6 +43,7 @@ import {
   IconDebt,
   IconSpends,
   IconSys,
+  IconIncome,
   IconZap,
 } from '@/components/ui/Icons'
 
@@ -75,12 +77,14 @@ export default function MasterCommand() {
   const recentSpends = useSpends()
   const debtData = useDebtSystem()
   const cardsData = useCardsSystem()
+  const incomeData = useIncomeSystem()
   const base = useUI((s) => s.baseCurrency)
   const uiMode = useUI((s) => s.uiMode)
   const openComposer = useUI((s) => s.openComposer)
   const openSpendComposer = useUI((s) => s.openSpendComposer)
   const openLoanComposer = useUI((s) => s.openLoanComposer)
   const openCardComposer = useUI((s) => s.openCardComposer)
+  const openIncomeComposer = useUI((s) => s.openIncomeComposer)
   const today = todayISO()
 
   // ── Engine Monthly Contributions ──
@@ -98,6 +102,11 @@ export default function MasterCommand() {
   const variableBurn = spendsMonthly + (cardsData.ready ? cardsData.summary.totalOutstanding : 0)
   const dailyDrain = systemBurn / 30.4375
   const annualBurn = systemBurn * 12
+
+  // ── Net Cashflow (inflow logged this month − burn) ──
+  const monthlyInflow = incomeData.summary.monthTotal
+  const netCashflow = monthlyInflow - systemBurn
+  const savingsRate = monthlyInflow > 0 ? netCashflow / monthlyInflow : 0
 
   // ── Domain Allocation Shares ──
   const allocationSlices = useMemo(() => {
@@ -209,6 +218,14 @@ export default function MasterCommand() {
               <span>Subscription</span>
               <kbd className="ml-1 text-[10px] text-faint">N</kbd>
             </button>
+            <button
+              onClick={() => openIncomeComposer()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-line text-sm font-medium text-fg hover:border-linehard hover:bg-surface-2 transition-all shadow-sm cursor-pointer"
+            >
+              <IconPlus size={14} className="text-acid-ink" />
+              <span>Income</span>
+              <kbd className="ml-1 text-[10px] text-faint">I</kbd>
+            </button>
           </div>
         </div>
 
@@ -227,6 +244,14 @@ export default function MasterCommand() {
               </div>
               <p className="mt-2 text-xs text-faint">
                 Annual run rate: {formatCompact(annualBurn, base)} · Daily burn: ~{formatMoney(dailyDrain, base)}/day
+              </p>
+              <p className="mt-1 text-xs text-faint">
+                Net cashflow:{' '}
+                <span className={netCashflow >= 0 ? 'font-medium text-acid-ink' : 'font-medium text-red-500'}>
+                  {netCashflow >= 0 ? '+' : '−'}{formatMoney(Math.abs(netCashflow), base)}/mo
+                </span>{' '}
+                · Inflow {formatMoney(monthlyInflow, base)}
+                {monthlyInflow > 0 ? ` · savings ${(savingsRate * 100).toFixed(0)}%` : ''}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -287,8 +312,8 @@ export default function MasterCommand() {
           )}
         </div>
 
-        {/* 4 Clean Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 5 Clean Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {/* Subscriptions */}
           <Link
             to="/subs"
@@ -375,6 +400,29 @@ export default function MasterCommand() {
             </div>
             <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs text-acid-ink font-medium">
               <span>View debt payoff</span>
+              <IconArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
+
+          {/* Income */}
+          <Link
+            to="/spends/flow?log=income"
+            className="group rounded-2xl border border-line bg-surface p-4 shadow-sm hover:border-linehard transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-dim">Income</span>
+                <span className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center text-dim group-hover:text-fg transition-colors">
+                  <IconIncome size={14} />
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-acid-ink mt-2">{formatMoney(monthlyInflow, base)}</div>
+              <p className="text-xs text-dim mt-0.5">
+                {incomeData.summary.countMonth} logged this cycle
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs text-acid-ink font-medium">
+              <span>View income ledger</span>
               <IconArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
           </Link>
@@ -476,7 +524,7 @@ export default function MasterCommand() {
               <Led signal="acid" size="sm" pulse />
               MASTER COMMAND
             </span>
-            <span className="micro text-faint hidden sm:inline">OS CORE // 4 ENGINES LIVE</span>
+            <span className="micro text-faint hidden sm:inline">OS CORE // 4 ENGINES + INCOME LOG</span>
             <span className="text-linehard hidden sm:inline">·</span>
             <span className="micro text-faint hidden md:inline">100% OFFLINE LOCAL VAULT</span>
           </div>
@@ -494,6 +542,9 @@ export default function MasterCommand() {
             </CyberButton>
             <CyberButton variant="ghost" size="sm" leading={<IconPlus size={12} />} onClick={() => openLoanComposer({ mode: 'loan' })}>
               LOAN <KeyCap className="ml-1 hidden lg:inline">L</KeyCap>
+            </CyberButton>
+            <CyberButton variant="ghost" size="sm" leading={<IconPlus size={12} />} onClick={() => openIncomeComposer()}>
+              INCOME <KeyCap className="ml-1 hidden lg:inline">I</KeyCap>
             </CyberButton>
           </div>
         </div>
@@ -537,6 +588,24 @@ export default function MasterCommand() {
                 <p className="micro mt-1 text-faint">
                   NORMALIZED ACROSS ALL 4 DOMAINS · INCLUDES RECURRING PROCESSES, LOANS, DISCRETIONARY CASH & CARDS
                 </p>
+                {/* Net cashflow readout — the other side of the ledger */}
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="micro text-acidink">INFLOW {formatCompact(monthlyInflow, base)}</span>
+                  <span className="text-linehard">·</span>
+                  <span className="micro text-orangeink">OUTFLOW {formatCompact(systemBurn, base)}</span>
+                  <span className="text-linehard">·</span>
+                  <span className={cx('micro font-semibold', netCashflow >= 0 ? 'text-acidink' : 'text-redink')}>
+                    NET {netCashflow >= 0 ? '+' : '−'}{formatCompact(Math.abs(netCashflow), base)}/MO
+                  </span>
+                  {monthlyInflow > 0 && (
+                    <>
+                      <span className="text-linehard">·</span>
+                      <span className={cx('micro font-semibold', savingsRate >= 0 ? 'text-fg' : 'text-redink')}>
+                        SAVINGS RATE {(savingsRate * 100).toFixed(0)}%
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Fixed vs Variable Split Telemetry */}
@@ -603,7 +672,7 @@ export default function MasterCommand() {
             code="MATRIX"
             title="Subsystem Cockpits"
             signal="acid"
-            right={<span className="micro text-faint">4 LIVE DOMAINS ONLINE</span>}
+            right={<span className="micro text-faint">4 LIVE DOMAINS · 1 INCOME LEDGER</span>}
           />
 
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">

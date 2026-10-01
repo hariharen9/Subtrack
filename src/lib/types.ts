@@ -459,3 +459,59 @@ export const CARD_TXN_TYPE_LABEL: Record<CardTxnType, string> = {
   reward: 'Reward',
   refund: 'Refund',
 }
+
+/* ── Income / Inflows ────────────────────────────────────────────────── */
+
+/** A logged inflow — one received payment. The mirror of a Spend. */
+export interface Income {
+  id: string
+  /** What it was, e.g. "Salary — Acme Corp". */
+  title: string
+  amount: number
+  currency: string
+  category: IncomeCategory
+  method: SpendMethod
+  /** ISO date the money landed (YYYY-MM-DD). */
+  date: string
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type IncomeCategory =
+  | 'salary'
+  | 'freelance'
+  | 'business'
+  | 'investment'
+  | 'rental'
+  | 'gift'
+  | 'other'
+
+/** Display + signal metadata for an income category. */
+export interface IncomeCategoryMeta {
+  id: IncomeCategory
+  label: string
+  code: string
+  signal: 'acid' | 'blue' | 'magenta' | 'orange' | 'red'
+}
+
+export const INCOME_CATEGORIES: IncomeCategoryMeta[] = [
+  { id: 'salary', label: 'Salary', code: 'SAL', signal: 'acid' },
+  { id: 'freelance', label: 'Freelance', code: 'FRL', signal: 'blue' },
+  { id: 'business', label: 'Business', code: 'BIZ', signal: 'magenta' },
+  { id: 'investment', label: 'Investment', code: 'INV', signal: 'orange' },
+  { id: 'rental', label: 'Rental', code: 'RNT', signal: 'blue' },
+  { id: 'gift', label: 'Gift / Bonus', code: 'GFT', signal: 'magenta' },
+  { id: 'other', label: 'Other', code: 'OTH', signal: 'acid' },
+]
+
+export const INCOME_CATEGORY_META: Record<IncomeCategory, IncomeCategoryMeta> =
+  Object.fromEntries(INCOME_CATEGORIES.map((c) => [c.id, c])) as Record<IncomeCategory, IncomeCategoryMeta>
+
+export const INCOME_CATEGORY_LABEL: Record<IncomeCategory, string> = Object.fromEntries(
+  INCOME_CATEGORIES.map((c) => [c.id, c.label]),
+) as Record<IncomeCategory, string>
+
+export const INCOME_CATEGORY_CODE: Record<IncomeCategory, string> = Object.fromEntries(
+  INCOME_CATEGORIES.map((c) => [c.id, c.code]),
+) as Record<IncomeCategory, string>
