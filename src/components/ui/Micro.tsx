@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // MICRO TYPOGRAPHY PARTS
+ * SPENDSTATE // MICRO TYPOGRAPHY PARTS
  * Small printed parts: labels, key caps, section headers, hard rules.
  */
 import type { ReactNode } from 'react'

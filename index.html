@@ -6,10 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0"
     />
-    <title>SUBTRACK // FINANCIAL OPERATING SYSTEM</title>
+    <title>SPENDSTATE // FINANCIAL OPERATING SYSTEM</title>
     <meta
       name="description"
-      content="SUBTRACK — every subscription you run, monitored as a financial process. Local-first, offline-capable, no accounts."
+      content="SPENDSTATE — every subscription you run, monitored as a financial process. Local-first, offline-capable, no accounts."
     />
     <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#F2F1EC" media="(prefers-color-scheme: light)" />
@@ -20,14 +20,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="SUBTRACK" />
-    <meta name="application-name" content="SUBTRACK" />
+    <meta name="apple-mobile-web-app-title" content="SPENDSTATE" />
+    <meta name="application-name" content="SPENDSTATE" />
     <meta name="format-detection" content="telephone=no" />
     <!-- Prevent a light flash before the theme boots. -->
     <script>
       ;(() => {
         try {
-          const stored = localStorage.getItem('subtrack.theme')
+          const stored = localStorage.getItem('spendstate.theme')
           const mode =
             stored === 'dark' || stored === 'day'
               ? stored
@@ -35,6 +35,19 @@
                 ? 'day'
                 : 'dark'
           document.documentElement.dataset.theme = mode
+
+          let ui = localStorage.getItem('spendstate.uiMode')
+          let zenAccent = localStorage.getItem('spendstate.zenAccent')
+          if (!ui || !zenAccent) {
+            try {
+              const parsed = JSON.parse(localStorage.getItem('spendstate.ui') || '{}')
+              if (!ui) ui = parsed.state?.uiMode
+              if (!zenAccent) zenAccent = parsed.state?.zenAccent
+            } catch {}
+          }
+          document.documentElement.dataset.ui = ui === 'minimal' ? 'minimal' : 'cyber'
+          document.documentElement.dataset.zenAccent = zenAccent || 'emerald'
+
           document.documentElement.dataset.boot = '1'
         } catch {
           /* storage blocked — dark default is already in the markup */

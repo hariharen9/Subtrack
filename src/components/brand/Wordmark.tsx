@@ -1,23 +1,21 @@
 /**
- * SUBTRACK // WORDMARK
- * The mark is the same load register as the app icon: three ascending bars over
- * a deposit rail. Drawn in CSS boxes so it can be tinted and animated.
+ * SPENDSTATE // WORDMARK
+ * The mark is a chamfered "SS" plate, drawn in CSS so it can be tinted and
+ * pulsed.
  */
 import { cx } from '@/lib/cx'
 
 export function Mark({ className, animated = false }: { className?: string; animated?: boolean }) {
   return (
-    <span className={cx('flex items-end gap-[2px]', className)} aria-hidden="true">
-      <span
-        className="block w-[3px] bg-acid"
-        style={{ height: 7, animationDelay: '0ms' }}
-      />
-      <span className="block w-[3px] bg-acid" style={{ height: 11 }} />
-      <span
-        className={cx('block w-[3px] bg-acid', animated && 'animate-pulse-led')}
-        style={{ height: 16 }}
-      />
-      <span className="ml-[3px] block h-[2px] w-4 bg-fg" />
+    <span
+      aria-hidden="true"
+      className={cx(
+        'grid h-[22px] w-[22px] shrink-0 place-items-center border border-acid bg-acidsoft font-mono text-[11px] font-bold leading-none tracking-[-0.08em] text-acidink',
+        animated && 'animate-pulse-led',
+        className,
+      )}
+    >
+      SS
     </span>
   )
 }
@@ -33,7 +31,7 @@ export function Wordmark({ compact = false }: { compact?: boolean }) {
             compact ? 'text-[15px]' : 'text-[17px]',
           )}
         >
-          SUBTRACK
+          SPENDSTATE
         </span>
         <span className="micro mt-[3px] text-faint">
           {compact ? 'FIN OS' : 'FINANCIAL OS // 1.0'}

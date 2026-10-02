@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // UI STATE
+ * SPENDSTATE // UI STATE
  *
  * Preferences are instant and synchronous (localStorage) so the console opens
  * with the right skin and currency already applied; financial data lives in
@@ -9,6 +9,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { BASE_CURRENCY } from '@/lib/money'
+import {
+  type CategoryMeta,
+  type SpendCategoryMeta,
+  DEFAULT_CATEGORIES,
+  DEFAULT_SPEND_CATEGORIES,
+  setActiveSubCategories,
+  setActiveSpendCategories,
+} from '@/lib/types'
+import { migrateSubCategory, migrateSpendCategory } from '@/lib/repository'
 
 export type ToastKind = 'ok' | 'info' | 'warn' | 'alert' | 'busy'
 
@@ -31,32 +40,98 @@ export interface ComposerState {
 
 export type TerminationMode = 'terminate' | 'purge'
 
+export type CardComposerTxnType = 'purchase' | 'payment' | 'fee' | 'interest' | 'reward' | 'refund'
+
+export interface SpendComposerState {
+  open: boolean
+  /** Prefill a spend being edited. */
+  editId: string | null
+  /** Preselect a category when opening from a category block. */
+  presetCategory: string | null
+}
+
+export interface CardComposerState {
+  open: boolean
+  /** 'card' = add/edit a credit card; 'txn' = record a card transaction. */
+  mode: 'card' | 'txn'
+  /** Card being edited (card mode). */
+  editCardId: string | null
+  /** Card preselected for a transaction (txn mode). */
+  presetCardId: string | null
+  /** Transaction being edited (txn mode). */
+  editTxnId: string | null
+  /** Transaction type preselected (e.g. a quick PAY action). */
+  presetType: CardComposerTxnType | null
+  /** Amount prefilled (e.g. the statement due for a quick PAY action). */
+  presetAmount: number | null
+}
+
+export interface LoanComposerState {
+  open: boolean
+  /** 'loan' = add/edit a loan; 'payment' = record an EMI payment. */
+  mode: 'loan' | 'payment'
+  /** Loan being edited (loan mode). */
+  editLoanId: string | null
+  /** Loan to record a payment against (payment mode). */
+  paymentLoanId: string | null
+}
+
+export interface IncomeComposerState {
+  open: boolean
+  /** Income being edited. */
+  editId: string | null
+}
+
+export interface AccountComposerState {
+  open: boolean
+  /** 'account' = add/edit an account; 'transfer' = move money between accounts. */
+  mode: 'account' | 'transfer'
+  /** Account being edited (account mode). */
+  editId: string | null
+  /** Preselected source account (transfer mode). */
+  presetFromId: string | null
+}
+
 export interface TerminationState {
   open: boolean
   subId: string | null
   mode: TerminationMode
 }
 
+export type ZenAccent = 'emerald' | 'indigo' | 'amber' | 'slate' | 'cyan'
+
 interface UIState {
   theme: 'dark' | 'day'
+  /** Interface personality: 'cyber' (Brutalist Terminal HUD) or 'minimal' (Calm, Soft Modern Zen / Claude style). */
+  uiMode: 'cyber' | 'minimal'
+  /** Curated accent color profile in Zen / Minimal mode. */
+  zenAccent: ZenAccent
   /** Decorative grid + grain field. */
   field: boolean
-  /** Extra restraint on top of the OS reduced-motion setting. */
-  calmMode: boolean
   baseCurrency: string
   /** Days of incoming flow shown by the stream. */
   horizonDays: number
   toasts: SystemToast[]
   paletteOpen: boolean
   composer: ComposerState
+  spendComposer: SpendComposerState
+  cardComposer: CardComposerState
+  loanComposer: LoanComposerState
+  incomeComposer: IncomeComposerState
+  accountComposer: AccountComposerState
   termination: TerminationState
   /** False until the local volume has been opened and seeded. */
   booted: boolean
+  /** Dynamic categories configurable by the user */
+  subCategories: CategoryMeta[]
+  spendCategories: SpendCategoryMeta[]
   setBooted: (booted: boolean) => void
   setTheme: (theme: 'dark' | 'day') => void
   toggleTheme: () => void
+  setUiMode: (mode: 'cyber' | 'minimal') => void
+  toggleUiMode: () => void
+  setZenAccent: (accent: ZenAccent) => void
   setField: (on: boolean) => void
-  setCalmMode: (on: boolean) => void
   setBaseCurrency: (code: string) => void
   setHorizonDays: (days: number) => void
   pushToast: (toast: Omit<SystemToast, 'id'>) => string
@@ -66,8 +141,40 @@ interface UIState {
   togglePalette: () => void
   openComposer: (options?: { editId?: string; presetServiceId?: string }) => void
   closeComposer: () => void
+  openSpendComposer: (options?: { editId?: string; presetCategory?: string }) => void
+  closeSpendComposer: () => void
+  openCardComposer: (options?: {
+    mode?: 'card' | 'txn'
+    editCardId?: string
+    presetCardId?: string
+    editTxnId?: string
+    presetType?: CardComposerTxnType
+    presetAmount?: number
+  }) => void
+  closeCardComposer: () => void
+  openLoanComposer: (options?: {
+    mode?: 'loan' | 'payment'
+    editLoanId?: string
+    paymentLoanId?: string
+  }) => void
+  closeLoanComposer: () => void
+  openIncomeComposer: (options?: { editId?: string }) => void
+  closeIncomeComposer: () => void
+  openAccountComposer: (options?: { mode?: 'account' | 'transfer'; editId?: string; presetFromId?: string }) => void
+  closeAccountComposer: () => void
   openTermination: (subId: string, mode: TerminationMode) => void
   closeTermination: () => void
+  // Category management
+  addSubCategory: (category: CategoryMeta) => void
+  updateSubCategory: (id: string, patch: Partial<CategoryMeta>) => void
+  deleteSubCategory: (id: string, fallbackId?: string) => Promise<void>
+  reorderSubCategories: (categories: CategoryMeta[]) => void
+  resetSubCategories: () => void
+  addSpendCategory: (category: SpendCategoryMeta) => void
+  updateSpendCategory: (id: string, patch: Partial<SpendCategoryMeta>) => void
+  deleteSpendCategory: (id: string, fallbackId?: string) => Promise<void>
+  reorderSpendCategories: (categories: SpendCategoryMeta[]) => void
+  resetSpendCategories: () => void
 }
 
 let toastSeq = 0
@@ -76,21 +183,44 @@ export const useUI = create<UIState>()(
   persist(
     (set, get) => ({
       theme: 'dark',
+      uiMode: 'cyber',
+      zenAccent: 'emerald',
       field: true,
-      calmMode: false,
       baseCurrency: BASE_CURRENCY,
       horizonDays: 30,
       toasts: [],
       paletteOpen: false,
       composer: { open: false, editId: null, presetServiceId: null },
+      spendComposer: { open: false, editId: null, presetCategory: null },
+      cardComposer: { open: false, mode: 'card', editCardId: null, presetCardId: null, editTxnId: null, presetType: null, presetAmount: null },
+      loanComposer: { open: false, mode: 'loan', editLoanId: null, paymentLoanId: null },
+      incomeComposer: { open: false, editId: null },
+      accountComposer: { open: false, mode: 'account', editId: null, presetFromId: null },
       termination: { open: false, subId: null, mode: 'terminate' },
       booted: false,
+      subCategories: DEFAULT_CATEGORIES,
+      spendCategories: DEFAULT_SPEND_CATEGORIES,
       setBooted: (booted) => set({ booted }),
 
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set({ theme: get().theme === 'dark' ? 'day' : 'dark' }),
+      setUiMode: (uiMode) => {
+        set({ uiMode })
+        if (typeof document !== 'undefined') {
+          document.documentElement.dataset.ui = uiMode
+        }
+      },
+      toggleUiMode: () => {
+        const next = get().uiMode === 'cyber' ? 'minimal' : 'cyber'
+        get().setUiMode(next)
+      },
+      setZenAccent: (zenAccent) => {
+        set({ zenAccent })
+        if (typeof document !== 'undefined') {
+          document.documentElement.dataset.zenAccent = zenAccent
+        }
+      },
       setField: (field) => set({ field }),
-      setCalmMode: (calmMode) => set({ calmMode }),
       setBaseCurrency: (baseCurrency) => set({ baseCurrency }),
       setHorizonDays: (horizonDays) => set({ horizonDays }),
 
@@ -114,23 +244,162 @@ export const useUI = create<UIState>()(
           },
         }),
       closeComposer: () => set({ composer: { open: false, editId: null, presetServiceId: null } }),
+      openSpendComposer: (options) =>
+        set({
+          spendComposer: {
+            open: true,
+            editId: options?.editId ?? null,
+            presetCategory: options?.presetCategory ?? null,
+          },
+        }),
+      closeSpendComposer: () =>
+        set({ spendComposer: { open: false, editId: null, presetCategory: null } }),
+      openCardComposer: (options) =>
+        set({
+          cardComposer: {
+            open: true,
+            mode: options?.mode ?? 'card',
+            editCardId: options?.editCardId ?? null,
+            presetCardId: options?.presetCardId ?? null,
+            editTxnId: options?.editTxnId ?? null,
+            presetType: options?.presetType ?? null,
+            presetAmount: options?.presetAmount ?? null,
+          },
+        }),
+      closeCardComposer: () =>
+        set({
+          cardComposer: {
+            open: false,
+            mode: 'card',
+            editCardId: null,
+            presetCardId: null,
+            editTxnId: null,
+            presetType: null,
+            presetAmount: null,
+          },
+        }),
+      openLoanComposer: (options) =>
+        set({
+          loanComposer: {
+            open: true,
+            mode: options?.mode ?? 'loan',
+            editLoanId: options?.editLoanId ?? null,
+            paymentLoanId: options?.paymentLoanId ?? null,
+          },
+        }),
+      closeLoanComposer: () =>
+        set({ loanComposer: { open: false, mode: 'loan', editLoanId: null, paymentLoanId: null } }),
+      openIncomeComposer: (options) =>
+        set({ incomeComposer: { open: true, editId: options?.editId ?? null } }),
+      closeIncomeComposer: () => set({ incomeComposer: { open: false, editId: null } }),
+      openAccountComposer: (options) =>
+        set({
+          accountComposer: {
+            open: true,
+            mode: options?.mode ?? 'account',
+            editId: options?.editId ?? null,
+            presetFromId: options?.presetFromId ?? null,
+          },
+        }),
+      closeAccountComposer: () =>
+        set({ accountComposer: { open: false, mode: 'account', editId: null, presetFromId: null } }),
       openTermination: (subId, mode) => set({ termination: { open: true, subId, mode } }),
       closeTermination: () =>
         set({ termination: { open: false, subId: null, mode: 'terminate' } }),
+
+      // Category management actions
+      addSubCategory: (category) => {
+        const current = get().subCategories
+        if (current.some((c) => c.id === category.id)) return
+        const next = [...current, category]
+        setActiveSubCategories(next)
+        set({ subCategories: next })
+      },
+      updateSubCategory: (id, patch) => {
+        const next = get().subCategories.map((c) => (c.id === id ? { ...c, ...patch } : c))
+        setActiveSubCategories(next)
+        set({ subCategories: next })
+      },
+      deleteSubCategory: async (id, fallbackId = 'other') => {
+        const next = get().subCategories.filter((c) => c.id !== id)
+        await migrateSubCategory(id, fallbackId)
+        setActiveSubCategories(next)
+        set({ subCategories: next })
+      },
+      reorderSubCategories: (categories) => {
+        setActiveSubCategories(categories)
+        set({ subCategories: categories })
+      },
+      resetSubCategories: () => {
+        setActiveSubCategories(DEFAULT_CATEGORIES)
+        set({ subCategories: DEFAULT_CATEGORIES })
+      },
+
+      addSpendCategory: (category) => {
+        const current = get().spendCategories
+        if (current.some((c) => c.id === category.id)) return
+        const next = [...current, category]
+        setActiveSpendCategories(next)
+        set({ spendCategories: next })
+      },
+      updateSpendCategory: (id, patch) => {
+        const next = get().spendCategories.map((c) => (c.id === id ? { ...c, ...patch } : c))
+        setActiveSpendCategories(next)
+        set({ spendCategories: next })
+      },
+      deleteSpendCategory: async (id, fallbackId = 'other') => {
+        const next = get().spendCategories.filter((c) => c.id !== id)
+        await migrateSpendCategory(id, fallbackId)
+        setActiveSpendCategories(next)
+        set({ spendCategories: next })
+      },
+      reorderSpendCategories: (categories) => {
+        setActiveSpendCategories(categories)
+        set({ spendCategories: categories })
+      },
+      resetSpendCategories: () => {
+        setActiveSpendCategories(DEFAULT_SPEND_CATEGORIES)
+        set({ spendCategories: DEFAULT_SPEND_CATEGORIES })
+      },
     }),
     {
-      name: 'subtrack.ui',
-      version: 1,
+      name: 'spendstate.ui',
+      version: 2,
       partialize: (state) => ({
         theme: state.theme,
+        uiMode: state.uiMode,
+        zenAccent: state.zenAccent,
         field: state.field,
-        calmMode: state.calmMode,
         baseCurrency: state.baseCurrency,
         horizonDays: state.horizonDays,
+        subCategories: state.subCategories,
+        spendCategories: state.spendCategories,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.subCategories?.length) {
+          setActiveSubCategories(state.subCategories)
+        }
+        if (state?.spendCategories?.length) {
+          setActiveSpendCategories(state.spendCategories)
+        }
+      },
     },
   ),
 )
+
+// Initialize active categories on file evaluation
+if (typeof window !== 'undefined') {
+  try {
+    const raw = localStorage.getItem('spendstate.ui')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (parsed?.state?.subCategories) setActiveSubCategories(parsed.state.subCategories)
+      if (parsed?.state?.spendCategories) setActiveSpendCategories(parsed.state.spendCategories)
+    }
+  } catch {
+    // ignore
+  }
+}
 
 /** Standalone helper for non-React call sites (db flows, hotkeys). */
 export function announce(toast: Omit<SystemToast, 'id'>): string {
@@ -178,7 +447,112 @@ export const TOAST_VERBS = {
     label: 'CYCLE EXECUTED ✓',
     text: `${name} · ${detail}`,
   }),
+  loanAdded: (name: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'LOAN INITIALIZED',
+    text: `${name} · ${detail}`,
+  }),
+  loanUpdated: (name: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'LOAN UPDATED',
+    text: `${name} · record written`,
+  }),
+  loanPaidOff: (name: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'LOAN PAID OFF ✓',
+    text: `${name} · marked as closed`,
+  }),
+  loanDeleted: (name: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'LOAN DELETED',
+    text: `${name} and its payment history erased`,
+  }),
+  emiLogged: (name: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'EMI RECORDED ✓',
+    text: `${name} · ${detail}`,
+  }),
+  incomeLogged: (title: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'INCOME LOGGED ✓',
+    text: `${title} · ${detail}`,
+  }),
+  incomeUpdated: (title: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'INCOME UPDATED',
+    text: `${title} · entry written`,
+  }),
+  incomeDeleted: (title: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'INCOME REMOVED',
+    text: `${title} · entry erased`,
+  }),
+  accountAdded: (name: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'ACCOUNT INITIALIZED',
+    text: `${name} · ${detail}`,
+  }),
+  accountUpdated: (name: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'ACCOUNT UPDATED',
+    text: `${name} · record written`,
+  }),
+  accountDeleted: (name: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'ACCOUNT REMOVED',
+    text: `${name} · container erased`,
+  }),
+  transferLogged: (detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'TRANSFER RECORDED ✓',
+    text: detail,
+  }),
+  cardAdded: (name: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'CARD INITIALIZED',
+    text: `${name} · ${detail}`,
+  }),
+  cardUpdated: (name: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'CARD UPDATED',
+    text: `${name} · record written`,
+  }),
+  cardDeleted: (name: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'CARD PURGED',
+    text: `${name} and its transaction history erased`,
+  }),
+  cardTxnLogged: (title: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'TXN RECORDED ✓',
+    text: `${title} · ${detail}`,
+  }),
+  cardTxnUpdated: (title: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'TXN UPDATED',
+    text: `${title} · record written`,
+  }),
+  cardTxnDeleted: (title: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'TXN REMOVED',
+    text: `${title} · entry erased`,
+  }),
   info: (label: string, text?: string) => ({ kind: 'info' as ToastKind, label, text }),
+  spendLogged: (title: string, detail: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'SPEND LOGGED ✓',
+    text: `${title} · ${detail}`,
+  }),
+  spendUpdated: (title: string) => ({
+    kind: 'ok' as ToastKind,
+    label: 'SPEND UPDATED',
+    text: `${title} · entry written`,
+  }),
+  spendDeleted: (title: string) => ({
+    kind: 'alert' as ToastKind,
+    label: 'SPEND REMOVED',
+    text: `${title} · entry erased`,
+  }),
   warn: (label: string, text?: string) => ({ kind: 'warn' as ToastKind, label, text }),
   error: (label: string, text?: string) => ({
     kind: 'alert' as ToastKind,

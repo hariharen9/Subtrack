@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CATEGORY BLOCK
+ * SPENDSTATE // CATEGORY BLOCK
  *
  * The distribution primitive. No pie charts: a category is a labelled block with
  * a segmented bar, a count, its monthly cost and its share of burn. Stack a few

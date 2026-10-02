@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // BURN RAIL
+ * SPENDSTATE // BURN RAIL
  *
  * The signature instrument: total monthly burn rendered as one continuous load
  * register, segmented by process. Segment colour is the CATEGORY signal, not the

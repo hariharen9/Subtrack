@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // PROCESS AUTHORING CONSOLE
+ * SPENDSTATE // PROCESS AUTHORING CONSOLE
  *
  * The INITIALIZE SUBSCRIPTION flow. Selecting a service pre-fills glyph, accent,
  * category and the cycle people actually buy, so the happy path stays
@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   CATEGORIES,
+  CATEGORY_SIGNAL,
   type BillingCycle,
   type Category,
 } from '@/lib/types'
@@ -22,7 +23,8 @@ import { CURRENCIES, formatMoney, symbolOf } from '@/lib/money'
 import { annualCost, cycleNoun, monthlyCost } from '@/lib/cycle'
 import { convert } from '@/lib/money'
 import { todayISO } from '@/lib/date'
-import { createSubscription, updateSubscription } from '@/lib/db'
+import { createSubscription, updateSubscription } from '@/lib/repository'
+import { AccountField } from '@/components/accounts/AccountField'
 import { useSubscriptions, useSystem } from '@/hooks/useSystem'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { useFocusTrap, useIsCompact, useScrollLock } from '@/hooks/usePlatform'
@@ -32,7 +34,7 @@ import { FieldShell, SegmentedControl, CyberSelect } from '@/components/ui/Contr
 import { CyberDatePicker } from '@/components/ui/CyberDatePicker'
 import { ServiceBadge } from '@/components/brand/ServiceBadge'
 import { IconClose, IconPlus } from '@/components/ui/Icons'
-import { Led } from '@/components/ui/Signal'
+import { Led, SIGNAL_HEX } from '@/components/ui/Signal'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 
 type CycleChoice = BillingCycle
@@ -50,6 +52,7 @@ const ACCENTS = ['#B7FF00', '#00C8FF', '#FF2BD6', '#FF7A00', '#FF304F', '#8B949E
 interface Draft {
   name: string
   serviceId: string | null
+  accountId: string | null
   price: string
   /** False once the user edits the amount, so catalog defaults stop overwriting it. */
   priceAuto: boolean
@@ -67,6 +70,7 @@ function emptyDraft(currency: string): Draft {
   return {
     name: '',
     serviceId: null,
+    accountId: null,
     price: '',
     priceAuto: true,
     currency,
@@ -94,6 +98,7 @@ export function SubscriptionComposer() {
   const closeComposer = useUI((s) => s.closeComposer)
   const pushToast = useUI((s) => s.pushToast)
   const base = useUI((s) => s.baseCurrency)
+  const subCategories = useUI((s) => s.subCategories)
   const compact = useIsCompact()
   const navigate = useNavigate()
   const subscriptions = useSubscriptions()
@@ -119,6 +124,7 @@ export function SubscriptionComposer() {
       setDraft({
         name: editing.name,
         serviceId: editing.serviceId,
+        accountId: editing.accountId ?? null,
         price: String(editing.price),
         priceAuto: false,
         currency: editing.currency,
@@ -239,6 +245,7 @@ export function SubscriptionComposer() {
     const payload = {
       name: draft.name,
       serviceId: draft.serviceId,
+      accountId: draft.accountId || undefined,
       price,
       currency: draft.currency,
       billingCycle: draft.billingCycle,
@@ -369,6 +376,7 @@ export function SubscriptionComposer() {
                     initial="hidden"
                     animate="show"
                     className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+                    data-lenis-prevent
                   >
                     {/* 01 SERVICE */}
                     <Section code="01" title="SERVICE">
@@ -392,7 +400,7 @@ export function SubscriptionComposer() {
                       </FieldShell>
 
                       {/* Category quick tabs */}
-                      <div className="no-scrollbar mt-2.5 flex items-center gap-1 overflow-x-auto pb-0.5">
+                      <div className="no-scrollbar mt-2.5 flex items-center gap-1 overflow-x-auto pb-0.5" data-lenis-prevent>
                         <button
                           type="button"
                           onClick={() => setPresetCategory('all')}
@@ -415,20 +423,20 @@ export function SubscriptionComposer() {
                               type="button"
                               onClick={() => setPresetCategory(cat.id)}
                               className={cx(
-                                'micro whitespace-nowrap border px-2 py-1 transition-colors',
+                                'micro whitespace-nowrap border px-2.5 py-1 transition-colors',
                                 isCatActive
                                   ? 'border-acid bg-acid text-black font-semibold'
                                   : 'border-line2 text-dim hover:border-linehard hover:text-fg',
                               )}
                             >
-                              {cat.code} ({count})
+                              {cat.label} ({count})
                             </button>
                           )
                         })}
                       </div>
 
                       {/* Preset Grid */}
-                      <div className="no-scrollbar mt-2 max-h-[220px] overflow-y-auto overscroll-contain pr-0.5 md:max-h-[240px]">
+                      <div className="no-scrollbar mt-2 max-h-[220px] overflow-y-auto overscroll-contain pr-0.5 md:max-h-[240px]" data-lenis-prevent>
                         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
                           {filteredCatalog.map((service) => {
                             const selected = draft.serviceId === service.id
@@ -528,7 +536,8 @@ export function SubscriptionComposer() {
                           )}
                         </FieldShell>
 
-                        <FieldShell label="CURRENCY" code="ISO-4217" htmlFor="composer-currency">
+                          <AccountField value={draft.accountId ?? ''} onChange={(id) => setDraft((current) => ({ ...current, accountId: id || null }))} label="CHARGED TO" code="ACCOUNT" />
+                          <FieldShell label="CURRENCY" code="ISO-4217" htmlFor="composer-currency">
                           <div id="composer-currency">
                             <CyberSelect
                               ariaLabel="Currency"
@@ -598,23 +607,32 @@ export function SubscriptionComposer() {
                     <Section code="04" title="CLASSIFICATION">
                       <div className="grid gap-3 md:grid-cols-[1.5fr_1fr]">
                         <FieldShell label="CATEGORY" code="TAG">
-                          <SegmentedControl
-                            ariaLabel="Category"
-                            columns={4}
-                            size="sm"
-                            value={draft.category}
-                            onChange={(value) =>
-                              setDraft((current) => ({ ...current, category: value }))
-                            }
-                            options={CATEGORIES.map((category) => ({
-                              value: category.id,
-                              label: category.code,
-                              hint: category.label,
-                            }))}
-                          />
-                          <p className="micro mt-1.5 text-faint">
-                            {CATEGORIES.find((c) => c.id === draft.category)?.label?.toUpperCase()}
-                          </p>
+                          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                            {subCategories.map((category) => {
+                              const isSelected = draft.category === category.id
+                              return (
+                                <button
+                                  key={category.id}
+                                  type="button"
+                                  onClick={() =>
+                                    setDraft((current) => ({ ...current, category: category.id }))
+                                  }
+                                  className={cx(
+                                    'flex items-center gap-2 border px-2 py-1.5 text-left transition-all',
+                                    isSelected
+                                      ? 'border-acid bg-acid text-black font-semibold shadow-sm'
+                                      : 'border-line2 bg-surface2 text-dim hover:border-linehard hover:text-fg',
+                                  )}
+                                >
+                                  <span
+                                    className="h-2 w-2 shrink-0 rounded-full"
+                                    style={{ backgroundColor: isSelected ? '#000000' : SIGNAL_HEX[CATEGORY_SIGNAL[category.id]] }}
+                                  />
+                                  <span className="text-[11.5px] truncate font-medium">{category.label}</span>
+                                </button>
+                              )
+                            })}
+                          </div>
                         </FieldShell>
 
                         <FieldShell label="ACCENT" code="HEX" hint="Used for the module's signal strip.">

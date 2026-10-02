@@ -7,7 +7,7 @@ import './styles/index.css'
 document.getElementById('boot')?.remove()
 
 const container = document.getElementById('root')
-if (!container) throw new Error('SUBTRACK: #root container is missing')
+if (!container) throw new Error('SPENDSTATE: #root container is missing')
 
 createRoot(container).render(
   <StrictMode>

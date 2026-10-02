@@ -1,10 +1,11 @@
 /**
- * SUBTRACK // PORTABILITY
+ * SPENDSTATE // PORTABILITY
  *
  * Export and import are first-class because the data is yours and lives only
  * here. JSON is the canonical snapshot; CSV is offered for spreadsheets.
  */
 import { exportSnapshot, importSnapshot, type Snapshot } from './db'
+import { importFromSpendwiser, type SpendWiserMigrationExport } from './migrateFromSpendwiser'
 import { useUI, TOAST_VERBS } from '@/store/ui'
 import { useSubscriptions } from '@/hooks/useSystem'
 import type { Payment } from './types'
@@ -29,12 +30,13 @@ export async function exportJson(): Promise<void> {
     baseCurrency: settings.baseCurrency,
     theme: settings.theme,
     field: settings.field,
-    calmMode: settings.calmMode,
+    uiMode: settings.uiMode,
+    zenAccent: settings.zenAccent,
     horizonDays: settings.horizonDays,
   })
   const stamp = new Date().toISOString().slice(0, 10)
-  downloadFile(`subtrack-snapshot-${stamp}.json`, JSON.stringify(snapshot, null, 2), 'application/json')
-  useUI.getState().pushToast(TOAST_VERBS.info('EXPORT COMPLETE', `${snapshot.subscriptions.length} subscriptions written to file`))
+  downloadFile(`spendstate-snapshot-${stamp}.json`, JSON.stringify(snapshot, null, 2), 'application/json')
+  useUI.getState().pushToast(TOAST_VERBS.info('EXPORT COMPLETE', `${snapshot.subscriptions.length} subscriptions · ${snapshot.spends?.length ?? 0} spends written to file`))
 }
 
 function escapeCsv(value: string | number): string {
@@ -71,6 +73,42 @@ export function toCsv(payments: Payment[], subscriptionsById: Map<string, string
   return [header, ...rows].join('\n')
 }
 
+export function toSpendsCsv(spends: import('./types').Spend[]): string {
+  const header = ['date', 'title', 'amount', 'currency', 'category', 'method', 'notes'].join(',')
+  const rows = spends
+    .slice()
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .map((s) =>
+      [s.date, s.title, s.amount, s.currency, s.category, s.method, s.notes || ''].map(escapeCsv).join(','),
+    )
+  return [header, ...rows].join('\n')
+}
+
+export function exportSpendsCsv(spends: import('./types').Spend[]): void {
+  const csv = toSpendsCsv(spends)
+  const stamp = new Date().toISOString().slice(0, 10)
+  downloadFile(`spendstate-spends-${stamp}.csv`, csv, 'text/csv')
+  useUI.getState().pushToast(TOAST_VERBS.info('CSV EXPORT COMPLETE', `${spends.length} transactions exported`))
+}
+
+export function toIncomesCsv(incomes: import('./types').Income[]): string {
+  const header = ['date', 'title', 'amount', 'currency', 'category', 'method', 'notes'].join(',')
+  const rows = incomes
+    .slice()
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .map((i) =>
+      [i.date, i.title, i.amount, i.currency, i.category, i.method, i.notes || ''].map(escapeCsv).join(','),
+    )
+  return [header, ...rows].join('\n')
+}
+
+export function exportIncomesCsv(incomes: import('./types').Income[]): void {
+  const csv = toIncomesCsv(incomes)
+  const stamp = new Date().toISOString().slice(0, 10)
+  downloadFile(`spendstate-income-${stamp}.csv`, csv, 'text/csv')
+  useUI.getState().pushToast(TOAST_VERBS.info('CSV EXPORT COMPLETE', `${incomes.length} income entries exported`))
+}
+
 export function openImportDialog(): void {
   const input = document.createElement('input')
   input.type = 'file'
@@ -90,13 +128,68 @@ export function openImportDialog(): void {
         ui.setBaseCurrency(parsed.settings.baseCurrency)
         ui.setTheme(parsed.settings.theme)
         ui.setHorizonDays(parsed.settings.horizonDays)
+        // Older snapshots may omit these — only apply when present.
+        if (typeof parsed.settings.field === 'boolean') ui.setField(parsed.settings.field)
+        if (parsed.settings.uiMode) ui.setUiMode(parsed.settings.uiMode)
+        if (parsed.settings.zenAccent) ui.setZenAccent(parsed.settings.zenAccent as any)
       }
       useUI
         .getState()
         .pushToast(
           TOAST_VERBS.info(
             'SNAPSHOT RESTORED',
-            `${report.subscriptions} subscriptions · ${report.payments} recorded charges`,
+            `${report.subscriptions} subscriptions · ${report.payments} charges · ${report.spends ?? 0} spends`,
+          ),
+        )
+    } catch (error) {
+      useUI
+        .getState()
+        .pushToast(
+          TOAST_VERBS.error('IMPORT FAILED', error instanceof Error ? error.message : 'Unreadable file'),
+        )
+    }
+  })
+  input.click()
+}
+
+/**
+ * Import a SpendWiser migration export (one-time, file-based handoff).
+ * Reuses the Snapshot path via the converter. Confirms replace up front,
+ * consistent with the rest of the Danger Zone.
+ */
+export function openImportFromSpendwiserDialog(): void {
+  const confirmed = window.confirm(
+    'Import a SpendWiser export? This replaces the current local volume. Export a snapshot first if you are unsure.',
+  )
+  if (!confirmed) return
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'application/json,.json'
+  input.style.display = 'none'
+  document.body.appendChild(input)
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0]
+    input.remove()
+    if (!file) return
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text) as SpendWiserMigrationExport
+      if (parsed?.app !== 'spendwiser') throw new Error('Not a SpendWiser export')
+      const report = await importFromSpendwiser(parsed)
+      if (report.settings) {
+        const ui = useUI.getState()
+        ui.setBaseCurrency(report.settings.baseCurrency)
+        ui.setTheme(report.settings.theme)
+      }
+      const lossLine = report.losses.length
+        ? ` · dropped: ${report.losses.join(', ')}`
+        : ''
+      useUI
+        .getState()
+        .pushToast(
+          TOAST_VERBS.info(
+            'SPENDWISER IMPORTED',
+            `${report.subscriptions} subscriptions · ${report.payments} charges · ${report.spends ?? 0} spends${lossLine}`,
           ),
         )
     } catch (error) {
@@ -143,7 +236,7 @@ export function burnReadout(
   count: number,
 ): string {
   return [
-    'SUBTRACK // MONTHLY BURN READOUT',
+    'SPENDSTATE // MONTHLY BURN READOUT',
     `MONTHLY BURN   ${formatMoney(monthly, base)}`,
     `PROJECTED LOAD ${formatMoney(annual, base)}`,
     `ACTIVE         ${count} SUBSCRIPTIONS`,

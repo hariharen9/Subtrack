@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // INCOMING STREAM
+ * SPENDSTATE // INCOMING STREAM
  *
  * The next 30 days of money leaving the system, as a signal stream: a continuous
  * connector, one node per scheduled day, grouped charges and a running cumulative
@@ -177,7 +177,7 @@ export function IncomingRail({
 }) {
   if (!events.length) return null
   return (
-    <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+    <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" data-lenis-prevent>
       {events.map((event) => {
         const signal = signalFor(event, today)
         return (

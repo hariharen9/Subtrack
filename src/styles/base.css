@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SUBTRACK // BASE LAYER
+   SPENDSTATE // BASE LAYER
    Reset, the instrument-panel background field, focus, scrollbars.
    ========================================================================== */
 
@@ -17,7 +17,6 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    scroll-behavior: smooth;
     /* Bleed into display cutouts when installed. */
     background: var(--c-bg);
   }

@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // OVERVIEW (CORE)
+ * SPENDSTATE // OVERVIEW (CORE)
  *
  * The command centre. One enormous number, one load register, the incoming
  * stream and the running processes — arranged as an asymmetric instrumentation
@@ -242,7 +242,7 @@ export default function Overview() {
                       },
                       {
                         label: `Charges in ${horizonDays}D`,
-                        value: `${summary.incoming30.length} · ${formatMoney(summary.incoming30Total, base)}`,
+                        value: `${summary.incomingWindow.length} · ${formatMoney(summary.incomingWindowTotal, base)}`,
                         signal: 'orange',
                       },
                     ]}
@@ -656,21 +656,21 @@ export default function Overview() {
             <CutPanel cut="tl-br" cutSize={14} innerClassName="p-0" className="h-full">
               <SectionHeader
                 code="IN"
-                title="Incoming // next 30 days"
+                title={`Incoming // next ${horizonDays} days`}
                 signal="orange"
-                right={<span className="micro text-faint">{summary.incoming30.length} EVENTS</span>}
+                right={<span className="micro text-faint">{summary.incomingWindow.length} EVENTS</span>}
               />
               {/* mobile gets a rail, desktop the full stream */}
-              <div className="hidden md:block lg:max-h-[560px] lg:overflow-y-auto">
+              <div className="hidden md:block lg:max-h-[560px] lg:overflow-y-auto" data-lenis-prevent>
                 <IncomingStream
-                  events={summary.incoming30}
+                  events={summary.incomingWindow}
                   base={base}
                   today={today}
                   className="px-1"
                 />
               </div>
               <div className="p-3 md:hidden">
-                <IncomingRail events={summary.incoming30.slice(0, 10)} today={today} />
+                <IncomingRail events={summary.incomingWindow.slice(0, 10)} today={today} />
               </div>
             </CutPanel>
           </motion.div>

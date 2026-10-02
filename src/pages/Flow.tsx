@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // FLOW (SUBSCRIPTIONS)
+ * SPENDSTATE // FLOW (SUBSCRIPTIONS)
  *
  * Every process the user runs, with a query bar that speaks the same language as
  * the command palette, status filters, sorting, and two densities: the command
@@ -15,7 +15,7 @@ import { viewOf } from '@/lib/analytics'
 import { searchSubscriptions } from '@/lib/fuzzy'
 import { formatMoney } from '@/lib/money'
 import { todayISO } from '@/lib/date'
-import { CATEGORIES, CATEGORY_LABEL, type Category, type ProcessStatus } from '@/lib/types'
+import { CATEGORY_LABEL, type Category, type ProcessStatus } from '@/lib/types'
 import { CutPanel } from '@/components/ui/CutPanel'
 import { CyberButton } from '@/components/ui/CyberButton'
 import { DataStrip } from '@/components/ui/DataStrip'
@@ -46,6 +46,7 @@ export default function Flow() {
   const { summary } = useSystem()
   const subscriptions = useSubscriptions()
   const base = useUI((s) => s.baseCurrency)
+  const subCategories = useUI((s) => s.subCategories)
   const openComposer = useUI((s) => s.openComposer)
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState('')
@@ -209,7 +210,7 @@ export default function Flow() {
           </div>
 
           {/* Categories (Center) */}
-          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto xl:justify-center">
+          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto xl:justify-center" data-lenis-prevent>
             <button
               type="button"
               onClick={() => setCategory('all')}
@@ -223,7 +224,7 @@ export default function Flow() {
             >
               ALL CATEGORIES
             </button>
-            {CATEGORIES.map((entry) => (
+            {subCategories.map((entry) => (
               <button
                 key={entry.id}
                 type="button"
@@ -237,7 +238,7 @@ export default function Flow() {
                     : 'border-line2 text-faint hover:border-linehard hover:text-dim',
                 )}
               >
-                {entry.code}
+                {entry.label}
                 <span className="ml-1.5 text-linehard">{categoryCounts.get(entry.id) ?? 0}</span>
               </button>
             ))}

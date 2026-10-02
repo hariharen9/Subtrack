@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SMALL HOOKS
+ * SPENDSTATE // SMALL HOOKS
  * Clock ticks, media queries and a declarative hotkey binder. Kept deliberately
  * tiny: the console should never be busy rendering chrome.
  */

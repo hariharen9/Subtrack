@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SKELELETONS & EMPTY STATES
+ * SPENDSTATE // SKELELETONS & EMPTY STATES
  *
  * Loading never says "Loading...". It says INITIALIZING SYSTEM and shows the
  * shape of what is coming, drawn in the same grid the real content will use.

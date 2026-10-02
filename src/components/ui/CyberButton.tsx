@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // CONTROL SURFACE
+ * SPENDSTATE // CONTROL SURFACE
  *
  * Buttons are hardware: 2px ink border, square body, printed label, and a press
  * that physically displaces the element. Variants map to meaning, not mood.

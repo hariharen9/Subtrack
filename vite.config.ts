@@ -49,6 +49,9 @@ export default defineConfig({
       ],
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
+        // The optional Firebase SDK lives in its own lazily-imported chunk. Keep
+        // it out of the precache so a default install never downloads Firebase.
+        globIgnores: ['**/firestore-*.js'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         clientsClaim: true,

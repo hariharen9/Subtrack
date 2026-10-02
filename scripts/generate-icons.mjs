@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // ASSET FORGE
+ * SPENDSTATE // ASSET FORGE
  *
  * Draws the app icon set and the grain texture with zero dependencies:
  * a ~40-line PNG encoder (zlib is in Node) plus a rect rasteriser.
@@ -107,7 +107,16 @@ const ACID = [0xb7, 0xff, 0x00]
 const INK = [0xf4, 0xf4, 0xf4]
 const GRID = [0xf4, 0xf4, 0xf4]
 
-/** The SUBTRACK mark: an ascending load register over a deposit rail. */
+/** A blocky "S" glyph, five cells wide and five tall, drawn from hard rects. */
+function drawS(canvas, x, y, c, color) {
+  canvas.rect(x, y, c * 5, c, color) // top bar
+  canvas.rect(x, y, c, c * 3, color) // upper-left stem
+  canvas.rect(x, y + c * 2, c * 5, c, color) // middle bar
+  canvas.rect(x + c * 4, y + c * 2, c, c * 3, color) // lower-right stem
+  canvas.rect(x, y + c * 4, c * 5, c, color) // bottom bar
+}
+
+/** The SPENDSTATE mark: two blocky "S" glyphs over a deposit rail. */
 function drawMark(canvas, { plate = true, grid = true } = {}) {
   if (plate) canvas.rect(0, 0, 1, 1, VOID)
 
@@ -124,12 +133,12 @@ function drawMark(canvas, { plate = true, grid = true } = {}) {
   canvas.rect(0.76, 0.906, 0.16, 0.014, GRID, 90)
   canvas.rect(0.906, 0.76, 0.014, 0.16, GRID, 90)
 
-  // three load bars: the burn, ascending
-  canvas.rect(0.26, 0.56, 0.108, 0.2, ACID)
-  canvas.rect(0.446, 0.44, 0.108, 0.32, ACID)
-  canvas.rect(0.632, 0.24, 0.108, 0.52, ACID)
+  // monogram: two S glyphs
+  const c = 0.07
+  drawS(canvas, 0.115, 0.31, c, ACID)
+  drawS(canvas, 0.115 + c * 6, 0.31, c, ACID)
 
-  // signal LED on the tallest bar
+  // signal LED on the upper right
   canvas.rect(0.84, 0.24, 0.045, 0.045, INK)
 
   // deposit rail
@@ -180,4 +189,4 @@ const report = [
   writeIcon('public/icons/apple-touch-icon.png', 180, { plate: true, grid: false, scale: 0.9 }),
   writeNoise(),
 ]
-console.log('[SUBTRACK] assets forged:\n  ' + report.join('\n  '))
+console.log('[SPENDSTATE] assets forged:\n  ' + report.join('\n  '))

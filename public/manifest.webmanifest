@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "SUBTRACK — Financial Operating System",
-  "short_name": "SUBTRACK",
+  "name": "SPENDSTATE — Financial Operating System",
+  "short_name": "SPENDSTATE",
   "description": "Every subscription you run, monitored as a financial process. Local-first: your data never leaves this device.",
   "start_url": "/",
   "scope": "/",
@@ -39,7 +39,7 @@
       "name": "Initialize subscription",
       "short_name": "Initialize",
       "description": "Open the new-process console",
-      "url": "/flow?action=init",
+      "url": "/subs/flow?action=init",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
@@ -53,6 +53,12 @@
       "short_name": "Analytics",
       "description": "Burn, load and category distribution",
       "url": "/data"
+    },
+    {
+      "name": "Log a daily spend",
+      "short_name": "Spends",
+      "description": "Open the daily-spends ledger",
+      "url": "/spends"
     }
   ]
 }

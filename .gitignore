@@ -6,6 +6,13 @@ dev-dist
 .smoke
 .smoke-report.txt
 *.local
+.env.local
 .DS_Store
 .vite
 *.tsbuildinfo
+/.commandcode/
+
+# Firebase local state (emulator logs, cache)
+.firebase/
+firestore-debug.log
+ui-debug.log

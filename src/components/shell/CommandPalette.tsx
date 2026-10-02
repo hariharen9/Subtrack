@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // COMMAND PALETTE
+ * SPENDSTATE // COMMAND PALETTE
  *
  * ⌘K / CTRL+K opens the query engine. One field does two jobs: it filters the
  * command set and it queries the process index with the fuzzy engine (name,
@@ -11,8 +11,10 @@ import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { useUI } from '@/store/ui'
 import { usePayments, useSubscriptions, useSystem } from '@/hooks/useSystem'
-import { searchSubscriptions, parseQuery, fuzzyScore } from '@/lib/fuzzy'
-import { CATEGORY_CODE } from '@/lib/types'
+import { useSpends } from '@/hooks/useSpends'
+import { useCreditCards } from '@/hooks/useCards'
+import { searchSubscriptions, searchSpends, parseQuery, fuzzyScore } from '@/lib/fuzzy'
+import { CATEGORY_CODE, SPEND_CATEGORY_META, SPEND_METHOD_LABEL } from '@/lib/types'
 import { cycleSuffix } from '@/lib/cycle'
 import { formatMoney } from '@/lib/money'
 import { formatSignalDate } from '@/lib/date'
@@ -20,23 +22,29 @@ import { pidOf } from '@/lib/id'
 import { cx } from '@/lib/cx'
 import { useFocusTrap, useScrollLock } from '@/hooks/usePlatform'
 import { ServiceBadge } from '@/components/brand/ServiceBadge'
+import { SpendBadge } from '@/components/spends/SpendBadge'
 import { Led } from '@/components/ui/Signal'
 import { KeyCap } from '@/components/ui/Micro'
 import {
   IconArrowRight,
   IconClose,
-  IconCore,
+  IconCommandCenter,
+  IconCreditCard,
   IconData,
+  IconDebt,
   IconDownload,
   IconFlow,
   IconLink,
   IconMoon,
   IconPlus,
   IconSearch,
+  IconSparkles,
+  IconSpends,
   IconSun,
   IconSys,
   IconTime,
   IconUpload,
+  IconZap,
 } from '@/components/ui/Icons'
 import { burnReadout, copyText, exportJson, openImportDialog } from '@/lib/portability'
 
@@ -53,14 +61,20 @@ export function CommandPalette() {
   const open = useUI((s) => s.paletteOpen)
   const setOpen = useUI((s) => s.setPaletteOpen)
   const openComposer = useUI((s) => s.openComposer)
+  const openSpendComposer = useUI((s) => s.openSpendComposer)
   const toggleTheme = useUI((s) => s.toggleTheme)
   const theme = useUI((s) => s.theme)
+  const uiMode = useUI((s) => s.uiMode)
+  const toggleUiMode = useUI((s) => s.toggleUiMode)
+  const setZenAccent = useUI((s) => s.setZenAccent)
   const base = useUI((s) => s.baseCurrency)
 
   const navigate = useNavigate()
   const { summary } = useSystem()
   const subs = useSubscriptions()
   const payments = usePayments()
+  const spends = useSpends()
+  const cards = useCreditCards()
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -71,6 +85,57 @@ export function CommandPalette() {
 
   const commands = useMemo<Command[]>(
     () => [
+      {
+        id: 'toggle-ui-mode',
+        label: uiMode === 'minimal' ? 'Switch to Cyber Operating System' : 'Switch to Minimal Zen Mode (Claude style)',
+        hint: uiMode === 'minimal' ? 'Terminal HUD, telemetry meters, chamfers' : 'Soft modern cards, serene typography, zero clutter',
+        kbd: 'M',
+        icon: uiMode === 'minimal' ? IconZap : IconSparkles,
+        run: () => toggleUiMode(),
+      },
+      {
+        id: 'zen-accent-emerald',
+        label: 'Zen Accent: Emerald (Calm Sage)',
+        hint: 'Serene forest green accent',
+        icon: IconSparkles,
+        run: () => setZenAccent('emerald'),
+      },
+      {
+        id: 'zen-accent-indigo',
+        label: 'Zen Accent: Indigo (Linear Tech)',
+        hint: 'Deep cobalt tech accent',
+        icon: IconSparkles,
+        run: () => setZenAccent('indigo'),
+      },
+      {
+        id: 'zen-accent-amber',
+        label: 'Zen Accent: Amber (Warm Honey)',
+        hint: 'Warm golden honey accent',
+        icon: IconSparkles,
+        run: () => setZenAccent('amber'),
+      },
+      {
+        id: 'zen-accent-slate',
+        label: 'Zen Accent: Slate (Monochrome)',
+        hint: 'Pure zero-tint monochrome',
+        icon: IconSparkles,
+        run: () => setZenAccent('slate'),
+      },
+      {
+        id: 'zen-accent-cyan',
+        label: 'Zen Accent: Cyan (Cool Mint)',
+        hint: 'Cool mint cyan accent',
+        icon: IconSparkles,
+        run: () => setZenAccent('cyan'),
+      },
+      {
+        id: 'init-spend',
+        label: 'Log daily spend',
+        hint: 'Quick record a variable expense',
+        kbd: 'X',
+        icon: IconPlus,
+        run: () => openSpendComposer(),
+      },
       {
         id: 'init',
         label: 'New subscription',
@@ -88,36 +153,96 @@ export function CommandPalette() {
         run: () => inputRef.current?.focus(),
       },
       {
-        id: 'core',
-        label: 'Open Overview',
-        hint: 'Burn, load, incoming flow',
+        id: 'cmd',
+        label: 'Open Master Command',
+        hint: 'Global runway, subsystem matrix',
         kbd: '1',
-        icon: IconCore,
+        icon: IconCommandCenter,
         run: () => navigate('/'),
       },
       {
-        id: 'flow',
-        label: 'Open Subscriptions',
-        hint: 'Every running subscription',
+        id: 'subs',
+        label: 'Open Subscriptions Cockpit',
+        hint: 'Subscription engine overview',
         kbd: '2',
         icon: IconFlow,
-        run: () => navigate('/flow'),
+        run: () => navigate('/subs'),
+      },
+      {
+        id: 'flow',
+        label: 'Open Subscriptions Registry',
+        hint: 'Searchable process index',
+        kbd: 'F',
+        icon: IconFlow,
+        run: () => navigate('/subs/flow'),
+      },
+      {
+        id: 'spends',
+        label: 'Open Daily Spends Cockpit',
+        hint: 'Variable spend overview, velocity, limiter',
+        kbd: '5',
+        icon: IconSpends,
+        run: () => navigate('/spends'),
+      },
+      {
+        id: 'spends-flow',
+        label: 'Open Daily Spends Ledger',
+        hint: 'Full transaction registry and filters',
+        icon: IconFlow,
+        run: () => navigate('/spends/flow'),
+      },
+      {
+        id: 'spends-data',
+        label: 'Open Spends Insights',
+        hint: 'Needs-vs-wants ratio, payment channels, weekday heatmap',
+        icon: IconData,
+        run: () => navigate('/spends/data'),
+      },
+      {
+        id: 'spends-patterns',
+        label: 'Open Spend Patterns',
+        hint: 'Forensic analysis: heatmap, anomalies, recurring merchants, discipline',
+        icon: IconTime,
+        run: () => navigate('/spends/patterns'),
       },
       {
         id: 'time',
         label: 'Open Payment Matrix',
-        hint: 'Calendar of outgoing flow',
-        kbd: '3',
+        hint: '6-week calendar of outgoing cashflow',
+        kbd: 'M',
         icon: IconTime,
-        run: () => navigate('/time'),
+        run: () => navigate('/subs/time'),
       },
       {
         id: 'data',
-        label: 'Open System Analytics',
-        hint: 'Distribution and concentration',
-        kbd: '4',
+        label: 'Open Subscription Insights',
+        hint: 'Category distribution and concentration',
+        kbd: 'I',
         icon: IconData,
-        run: () => navigate('/data'),
+        run: () => navigate('/subs/data'),
+      },
+      {
+        id: 'cards',
+        label: 'Open Credit Cards Cockpit',
+        hint: 'Card vault, utilisation, dues, rewards',
+        kbd: '3',
+        icon: IconCreditCard,
+        run: () => navigate('/cards'),
+      },
+      {
+        id: 'cards-flow',
+        label: 'Open Card Transactions',
+        hint: 'Full card transaction registry',
+        icon: IconCreditCard,
+        run: () => navigate('/cards/flow'),
+      },
+      {
+        id: 'loans',
+        label: 'Open Loans & EMIs Cockpit',
+        hint: 'Debt overview, amortization, outstanding tracking',
+        kbd: '4',
+        icon: IconDebt,
+        run: () => navigate('/loans'),
       },
       {
         id: 'export',
@@ -153,9 +278,9 @@ export function CommandPalette() {
       },
       {
         id: 'sys',
-        label: 'Open Settings',
-        hint: 'Currency, theme, data volume',
-        kbd: '5',
+        label: 'Open System Host',
+        hint: 'Theme, currency, vault backup',
+        kbd: '6',
         icon: IconSys,
         run: () => navigate('/sys'),
       },
@@ -181,9 +306,24 @@ export function CommandPalette() {
   }, [commands, query])
 
   const processHits = useMemo(() => searchSubscriptions(subs, query, base), [subs, query, base])
+  const spendHits = useMemo(() => searchSpends(spends, query, base), [spends, query, base])
+  const cardHits = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const scored = cards
+      .map((card) => ({
+        card,
+        score: Math.max(
+          fuzzyScore(`${card.name} ${card.issuer}`, q),
+          fuzzyScore(`··${card.last4} ${card.network}`, q) - 6,
+        ),
+      }))
+      .sort((a, b) => b.score - a.score)
+    if (!q) return scored.filter((hit) => hit.card.status === 'active')
+    return scored.filter((hit) => hit.score > 0)
+  }, [cards, query])
   const intent = useMemo(() => parseQuery(query), [query])
 
-  const totalRows = commandHits.length + processHits.length
+  const totalRows = commandHits.length + processHits.length + cardHits.length + spendHits.length
 
   useEffect(() => {
     if (open) {
@@ -209,13 +349,27 @@ export function CommandPalette() {
     if (index < commandHits.length) {
       const command = commandHits[index]
       command.run()
-      // Commands that keep the palette open (search focus) opt out of closing.
       if (command.id !== 'search') close()
       return
     }
-    const hit = processHits[index - commandHits.length]
-    if (hit) {
-      navigate(`/flow/${hit.sub.id}`)
+    const subOffset = index - commandHits.length
+    if (subOffset < processHits.length) {
+      const hit = processHits[subOffset]
+      navigate(`/subs/flow/${hit.sub.id}`)
+      close()
+      return
+    }
+    const cardOffset = subOffset - processHits.length
+    if (cardOffset < cardHits.length) {
+      const hit = cardHits[cardOffset]
+      navigate(`/cards/flow/${hit.card.id}`)
+      close()
+      return
+    }
+    const spendOffset = cardOffset - cardHits.length
+    const spendHit = spendHits[spendOffset]
+    if (spendHit) {
+      navigate(`/spends/flow/${spendHit.spend.id}`)
       close()
     }
   }
@@ -285,6 +439,7 @@ export function CommandPalette() {
                 </span>
                 <span className="micro hidden text-faint sm:inline">
                   INDEX {String(subs.length).padStart(2, '0')} SUBSCRIPTIONS ·{' '}
+                  {String(spends.length).padStart(3, '0')} SPENDS ·{' '}
                   {String(payments.length).padStart(4, '0')} CHARGES
                 </span>
                 <button
@@ -304,7 +459,7 @@ export function CommandPalette() {
                   ref={inputRef}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search subscriptions, jump to views, or execute actions..."
+                  placeholder="Search financial OS, jump to views, execute actions..."
                   aria-label="Query"
                   autoComplete="off"
                   spellCheck={false}
@@ -335,7 +490,7 @@ export function CommandPalette() {
                     ))
                   )}
                   <span className="micro ml-auto text-faint">
-                    {commandHits.length} CMD · {processHits.length} SUBS
+                    {commandHits.length} CMD · {processHits.length} SUBS · {cardHits.length} CRDS · {spendHits.length} SPNDS
                   </span>
                 </div>
               )}
@@ -344,6 +499,7 @@ export function CommandPalette() {
               <ul
                 ref={listRef}
                 className="max-h-[52vh] overflow-y-auto overscroll-contain py-1"
+                data-lenis-prevent
                 role="listbox"
                 aria-label="Results"
               >
@@ -394,7 +550,7 @@ export function CommandPalette() {
 
                 {processHits.length > 0 && (
                   <li className="tech-label px-3 py-1.5" role="presentation">
-                    ACTIVE SUBSCRIPTIONS // {processHits.length}
+                    SUBSCRIPTIONS // {processHits.length}
                   </li>
                 )}
                 {processHits.slice(0, 40).map((hit, offset) => {
@@ -441,6 +597,111 @@ export function CommandPalette() {
                           </span>
                           <span className={cx('micro block', active ? 'text-black/60' : 'text-faint')}>
                             {cycleSuffix(sub.billingCycle, sub.customIntervalDays)}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+
+                {cardHits.length > 0 && (
+                  <li className="tech-label px-3 py-1.5" role="presentation">
+                    CREDIT CARDS // {cardHits.length}
+                  </li>
+                )}
+                {cardHits.slice(0, 12).map((hit, offset) => {
+                  const index = commandHits.length + processHits.length + offset
+                  const active = index === activeIndex
+                  const { card } = hit
+                  return (
+                    <li key={card.id} role="option" aria-selected={active}>
+                      <button
+                        type="button"
+                        data-index={index}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onClick={() => runIndex(index)}
+                        className={cx(
+                          'flex w-full items-center gap-3 px-3 py-2 text-left transition-colors',
+                          active ? 'bg-acid text-black' : 'hover:bg-surface2',
+                        )}
+                      >
+                        <IconCreditCard size={16} className={active ? 'text-black' : 'text-dim'} />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate text-[13px] font-medium">{card.name}</span>
+                            <span className={cx('micro', active ? 'text-black/60' : 'text-faint')}>
+                              {card.network.toUpperCase()}
+                            </span>
+                            {card.status !== 'active' && (
+                              <span className={cx('micro', active ? 'text-black/60' : 'text-orangeink')}>
+                                {card.status.toUpperCase()}
+                              </span>
+                            )}
+                          </span>
+                          <span className={cx('pid block truncate', active ? 'text-black/60' : '')}>
+                            {card.issuer} ··{card.last4} · LIMIT {formatMoney(card.creditLimit, card.currency)}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="meta block">{card.billingDay}/{card.dueDay}</span>
+                          <span className={cx('micro block', active ? 'text-black/60' : 'text-faint')}>
+                            STMT/DUE DAY
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+
+                {spendHits.length > 0 && (
+                  <li className="tech-label px-3 py-1.5" role="presentation">
+                    DAILY SPENDS // {spendHits.length}
+                  </li>
+                )}
+                {spendHits.slice(0, 30).map((hit, offset) => {
+                  const index = commandHits.length + processHits.length + cardHits.length + offset
+                  const active = index === activeIndex
+                  const { spend } = hit
+                  const meta = SPEND_CATEGORY_META[spend.category]
+                  return (
+                    <li key={spend.id} role="option" aria-selected={active}>
+                      <button
+                        type="button"
+                        data-index={index}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onClick={() => runIndex(index)}
+                        className={cx(
+                          'flex w-full items-center gap-3 px-3 py-2 text-left transition-colors',
+                          active ? 'bg-acid text-black' : 'hover:bg-surface2',
+                        )}
+                      >
+                        <SpendBadge
+                          category={spend.category}
+                          title={spend.title}
+                          size="sm"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate text-[13px] font-medium">{spend.title}</span>
+                            <span
+                              className={cx('micro', active ? 'text-black/60' : 'text-faint')}
+                            >
+                              {meta?.code}
+                            </span>
+                          </span>
+                          <span
+                            className={cx('pid block truncate', active ? 'text-black/60' : '')}
+                          >
+                            {formatSignalDate(spend.date)} · {SPEND_METHOD_LABEL[spend.method]}
+                            {hit.via.length > 0 && ` · VIA ${hit.via.join('+')}`}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="meta block">
+                            {formatMoney(spend.amount, spend.currency)}
+                          </span>
+                          <span className={cx('micro block', active ? 'text-black/60' : 'text-faint')}>
+                            {spend.method.toUpperCase()}
                           </span>
                         </span>
                       </button>

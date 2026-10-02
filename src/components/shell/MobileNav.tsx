@@ -1,15 +1,15 @@
 /**
- * SUBTRACK // MOBILE CONSOLE
+ * SPENDSTATE // FINANCIAL OS MOBILE CONSOLE
  *
- * Mobile is not a shrunken desktop: it gets its own control console. Five cells
- * across the bottom, each with a code, an icon, a live count and its own status
- * plate — and a burn composition strip running along the top edge so the
- * persistent chrome is informative instead of decorative. The primary action is
- * a thumb-reachable chamfered key floating just above the console.
+ * Mobile is not a shrunken desktop: it gets its own control console. Six domain
+ * cells across the bottom, each with a code, an icon and a status light — live
+ * domains glow acid, standby domains sit orange until they power on. The burn
+ * composition strip runs along the top edge so the chrome stays informative.
  */
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { NAV_ITEMS } from '@/app/nav'
+import { DOMAINS, domainFor } from '@/app/nav'
 import { cx } from '@/lib/cx'
 import { useUI } from '@/store/ui'
 import { Led } from '@/components/ui/Signal'
@@ -21,21 +21,54 @@ export function MobileNav({
   activePath,
   views,
   processCount,
-  chargesThisMonth,
 }: {
   activePath: string
   views: SubscriptionView[]
   processCount: number
-  chargesThisMonth: number
 }) {
   const openComposer = useUI((s) => s.openComposer)
+  const openSpendComposer = useUI((s) => s.openSpendComposer)
+  const openCardComposer = useUI((s) => s.openCardComposer)
+  const openLoanComposer = useUI((s) => s.openLoanComposer)
+
+  const domain = domainFor(activePath)
+
+  const action = useMemo(() => {
+    switch (domain.code) {
+      case 'SUBS':
+        return {
+          label: 'Add subscription',
+          onClick: () => openComposer(),
+        }
+      case 'CRD':
+        return {
+          label: 'Log card transaction',
+          onClick: () => openCardComposer({ mode: 'txn' }),
+        }
+      case 'DEBT':
+        return {
+          label: 'Initialize loan',
+          onClick: () => openLoanComposer({ mode: 'loan' }),
+        }
+      case 'SPND':
+        return {
+          label: 'Log daily spend',
+          onClick: () => openSpendComposer(),
+        }
+      case 'CMD':
+      default:
+        return {
+          label: 'Log daily spend',
+          onClick: () => openSpendComposer(),
+        }
+    }
+  }, [domain.code, openComposer, openCardComposer, openLoanComposer, openSpendComposer])
 
   const isActive = (path: string) =>
-    path === '/' ? activePath === '/' : activePath.startsWith(path)
+    path === '/' ? activePath === '/' : domainFor(activePath).code === domainFor(path).code
 
   const counts: Record<string, number | undefined> = {
-    FLOW: processCount,
-    TIME: chargesThisMonth,
+    SUBS: processCount,
   }
 
   return (
@@ -43,34 +76,37 @@ export function MobileNav({
       <div className="pointer-events-none absolute inset-x-0 bottom-full flex justify-end px-3 pb-3">
         <motion.button
           type="button"
-          onClick={() => openComposer()}
+          onClick={action.onClick}
           whileTap={{ scale: 0.94, y: 2 }}
           transition={{ type: 'spring', stiffness: 620, damping: 34 }}
-          className="clip-cut-tl pointer-events-auto grid h-14 w-14 place-items-center border-b-2 border-r-2 border-black bg-acid text-black focus-visible:outline-none"
+          className="clip-cut-tl pointer-events-auto grid h-12 w-12 place-items-center border-b-2 border-r-2 border-black bg-acid text-black focus-visible:outline-none cursor-pointer"
           style={{ ['--_cut' as string]: '10px' }}
-          aria-label="Add a subscription"
+          aria-label={action.label}
+          title={action.label}
         >
-          <IconPlus size={22} />
+          <IconPlus size={19} />
         </motion.button>
       </div>
 
       <BurnEdge views={views} />
 
       <nav
-        aria-label="Primary"
-        className="safe-b grid grid-cols-5 border-t-2 border-linehard bg-bg/95 backdrop-blur-[3px]"
+        aria-label="Financial OS Primary Console"
+        className="safe-b grid grid-cols-6 border-t-2 border-linehard bg-bg/95 backdrop-blur-[3px]"
       >
-        {NAV_ITEMS.map((item) => {
-          const active = isActive(item.path)
-          const Icon = item.icon
-          const count = counts[item.code]
+        {DOMAINS.map((domain) => {
+          const active = isActive(domain.path)
+          const Icon = domain.icon
+          const count = counts[domain.code]
+          const standby = domain.status === 'standby'
           return (
             <Link
-              key={item.path}
-              to={item.path}
+              key={domain.path}
+              to={domain.path}
               aria-current={active ? 'page' : undefined}
+              title={domain.label}
               className={cx(
-                'relative flex min-h-[60px] flex-col items-center justify-center gap-1 border-r border-line transition-colors last:border-r-0',
+                'relative flex min-h-[54px] flex-col items-center justify-center gap-0.5 border-r border-line transition-colors last:border-r-0',
                 active ? 'bg-acid text-black' : 'text-dim active:bg-surface2',
               )}
             >
@@ -82,11 +118,11 @@ export function MobileNav({
                 />
               )}
               <span className="relative">
-                <Icon size={19} />
+                <Icon size={17} />
                 {count !== undefined && count > 0 && (
                   <span
                     className={cx(
-                      'absolute -right-2.5 -top-1.5 font-mono text-[8px] leading-none tracking-[0.06em]',
+                      'absolute -right-2.5 -top-1 font-mono text-[7.5px] leading-none tracking-[0.06em]',
                       active ? 'text-black/70' : 'text-faint',
                     )}
                   >
@@ -94,13 +130,13 @@ export function MobileNav({
                   </span>
                 )}
               </span>
-              <span className="micro">{item.code}</span>
-              {!active && item.code === 'CORE' && (
-                <span className="absolute right-1.5 top-1.5">
-                  <Led signal="acid" size="sm" pulse />
+              <span className="flex items-center gap-1">
+                <span className={cx('micro text-[9px] font-mono', standby && !active && 'text-orangeink')}>
+                  {domain.code}
                 </span>
-              )}
-              <span className="sr-only">{item.label}</span>
+                {standby && !active && <Led signal="orange" size="sm" hollow />}
+              </span>
+              <span className="sr-only">{domain.label}</span>
             </Link>
           )
         })}

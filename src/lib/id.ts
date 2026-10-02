@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // IDENTIFIERS
+ * SPENDSTATE // IDENTIFIERS
  *
  * Records get real UUIDs, but the UI speaks in short deterministic process IDs
  * and hex traces: the same record always renders the same stamp, so screenshots

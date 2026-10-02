@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SEED DATA
+ * SPENDSTATE // SEED DATA
  *
  * Seventeen realistic Indian processes (15 active, 1 suspended, 1 terminated)
  * with pricing people actually pay, staggered ages and a derived payment
@@ -144,6 +144,7 @@ export function buildSeed(today: string = todayISO()): SeedResult {
     const sub: Subscription = {
       id,
       serviceId: service.id,
+      accountId: 'seed-account-bank',
       name: service.name,
       price: spec.price ?? service.price,
       currency: 'INR',
@@ -187,4 +188,81 @@ export function buildSeed(today: string = todayISO()): SeedResult {
   }
 
   return { subscriptions, payments }
+}
+
+/**
+ * Daily-spends demo seed. A plausible month of Indian day-to-day spend across
+ * three weeks before today — groceries, transport, food delivery, a couple of
+ * discretionary purchases and utilities — so the Spends cockpit is alive on
+ * first boot the same way the subscription ledger is.
+ */
+import type { Spend, SpendCategory, SpendMethod } from './types'
+
+interface SpendSeedSpec {
+  /** Days ago the expense happened. */
+  daysAgo: number
+  title: string
+  amount: number
+  category: SpendCategory
+  method: SpendMethod
+  notes?: string
+}
+
+export const SPEND_SEED_SPECS: SpendSeedSpec[] = [
+  { daysAgo: 0, title: 'Zomato — dinner', amount: 389, category: 'food', method: 'upi' },
+  { daysAgo: 0, title: 'Metro card top-up', amount: 200, category: 'transport', method: 'wallet' },
+  { daysAgo: 1, title: 'BigBasket — weekly groceries', amount: 1245, category: 'groceries', method: 'card' },
+  { daysAgo: 1, title: 'Swiggy — lunch', amount: 214, category: 'food', method: 'upi' },
+  { daysAgo: 2, title: 'Amazon — desk lamp', amount: 1499, category: 'shopping', method: 'netbanking' },
+  { daysAgo: 2, title: 'Petrol', amount: 900, category: 'transport', method: 'card' },
+  { daysAgo: 3, title: 'Electricity bill', amount: 1180, category: 'utilities', method: 'netbanking' },
+  { daysAgo: 3, title: 'Pharmacy — vitamins', amount: 465, category: 'health', method: 'upi' },
+  { daysAgo: 4, title: 'BookMyShow — movie', amount: 540, category: 'entertainment', method: 'card' },
+  { daysAgo: 4, title: 'Cafe — coffee + pastry', amount: 326, category: 'food', method: 'cash' },
+  { daysAgo: 5, title: 'Railways — weekend ticket', amount: 1230, category: 'travel', method: 'upi' },
+  { daysAgo: 5, title: 'Salon — haircut', amount: 499, category: 'personal', method: 'cash' },
+  { daysAgo: 6, title: 'DMart — household staples', amount: 892, category: 'groceries', method: 'card' },
+  { daysAgo: 6, title: 'Recharge — mobile plan', amount: 349, category: 'utilities', method: 'upi' },
+  { daysAgo: 7, title: "Domino's — dinner", amount: 445, category: 'food', method: 'upi' },
+  { daysAgo: 8, title: 'Auto fares', amount: 180, category: 'transport', method: 'cash' },
+  { daysAgo: 9, title: 'Myntra — T-shirt', amount: 899, category: 'shopping', method: 'card' },
+  { daysAgo: 10, title: 'BigBasket — groceries', amount: 1380, category: 'groceries', method: 'upi' },
+  { daysAgo: 11, title: "Netflix won't do — cinema", amount: 620, category: 'entertainment', method: 'card' },
+  { daysAgo: 12, title: 'Udemy — course', amount: 899, category: 'education', method: 'netbanking' },
+  { daysAgo: 13, title: 'Swiggy — lunch', amount: 268, category: 'food', method: 'upi' },
+  { daysAgo: 14, title: 'Gym membership — week pass', amount: 700, category: 'health', method: 'upi' },
+  { daysAgo: 15, title: 'Diesel', amount: 1000, category: 'transport', method: 'card' },
+  { daysAgo: 16, title: 'Amazon — headphones', amount: 2299, category: 'shopping', method: 'netbanking' },
+  { daysAgo: 17, title: 'Gas cylinder', amount: 1050, category: 'utilities', method: 'cash' },
+  { daysAgo: 18, title: 'Zomato — weekend feast', amount: 512, category: 'food', method: 'upi' },
+  { daysAgo: 19, title: 'Blinkit — snacks', amount: 320, category: 'groceries', method: 'upi' },
+  { daysAgo: 20, title: 'IMAX — movie', amount: 720, category: 'entertainment', method: 'card' },
+]
+
+/** Demo spends settle to an account based on how they were paid. */
+function spendAccountFor(method: SpendMethod): string {
+  if (method === 'cash') return 'seed-account-cash'
+  if (method === 'wallet') return 'seed-account-wallet'
+  return 'seed-account-bank'
+}
+
+/** Week start (Monday) of `today` in ISO form, used to stress the limiter. */
+export function buildSpendSeed(today: string): Spend[] {
+  const rows: Spend[] = []
+  for (const spec of SPEND_SEED_SPECS) {
+    rows.push({
+      id: `seed-spend-${rows.length}-${spec.daysAgo}`,
+      title: spec.title,
+      amount: spec.amount,
+      currency: 'INR',
+      category: spec.category,
+      method: spec.method,
+      accountId: spendAccountFor(spec.method),
+      date: addDaysISO(today, -spec.daysAgo),
+      notes: spec.notes ?? '',
+      createdAt: `${addDaysISO(today, -spec.daysAgo)}T${String(12 + (spec.daysAgo % 9)).padStart(2, '0')}:0${spec.daysAgo % 10}:00`,
+      updatedAt: `${addDaysISO(today, -spec.daysAgo)}T${String(12 + (spec.daysAgo % 9)).padStart(2, '0')}:0${spec.daysAgo % 10}:00`,
+    })
+  }
+  return rows
 }

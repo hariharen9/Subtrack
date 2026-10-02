@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DATE ENGINE
+ * SPENDSTATE // DATE ENGINE
  *
  * All dates in this system are plain ISO calendar days (YYYY-MM-DD) with no
  * time component and no timezone. Arithmetic runs on UTC internally so DST can
@@ -113,7 +113,7 @@ export function endOfMonthISO(iso: string): string {
 
 /** '2026-09' — the aggregation key for a calendar month. */
 export function monthKey(iso: string): string {
-  return iso.slice(0, 7)
+  return typeof iso === 'string' ? iso.slice(0, 7) : ''
 }
 
 export function monthKeyToISOStart(key: string): string {

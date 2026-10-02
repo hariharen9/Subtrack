@@ -1,12 +1,12 @@
 /**
- * SUBTRACK // QUERY ENGINE
+ * SPENDSTATE // QUERY ENGINE
  *
  * Global search behaves like a system query, not a text filter: terms can be a
  * name, a category, a cycle, a status, an amount (`>500`, `<200`, `649`) or a
  * month (`sep`, `2026-09`, `19/09`). Every term must match, so queries narrow.
  */
-import type { BillingCycle, Category, ProcessStatus, Subscription } from './types'
-import { CATEGORY_LABEL } from './types'
+import type { BillingCycle, Category, ProcessStatus, Subscription, Spend } from './types'
+import { CATEGORY_LABEL, SPEND_CATEGORY_META, SPEND_METHOD_LABEL } from './types'
 import { MONTHS, formatSignalDate, parseISO } from './date'
 import { cycleNoun } from './cycle'
 import { formatMoney } from './money'
@@ -18,13 +18,26 @@ const STATUSES: ProcessStatus[] = ['active', 'suspended', 'terminated']
 export interface QueryIntent {
   raw: string
   terms: string[]
-  amount?: { op: '>' | '<' | '='; value: number }
+  amount?: { op: '>' | '<' | '>=' | '<=' | '='; value: number }
   cycles: BillingCycle[]
   categories: Category[]
   statuses: ProcessStatus[]
   months: string[]
   days: number[]
   years: number[]
+}
+
+/** Shared amount predicate so subscriptions and spends filter identically. */
+function matchesAmount(
+  amount: number,
+  filter: NonNullable<QueryIntent['amount']>,
+): boolean {
+  const { op, value } = filter
+  if (op === '>') return amount > value
+  if (op === '<') return amount < value
+  if (op === '>=') return amount >= value
+  if (op === '<=') return amount <= value
+  return Math.abs(amount - value) <= 0.5
 }
 
 function toMonthIndex(word: string): number | null {
@@ -48,8 +61,7 @@ export function parseQuery(raw: string): QueryIntent {
   for (const token of raw.trim().toLowerCase().split(/\s+/).filter(Boolean)) {
     const amount = token.match(/^(>=|<=|>|<|=)?(\d+(?:\.\d+)?)$/)
     if (amount) {
-      const raw = amount[1] ?? '='
-      const op: '>' | '<' | '=' = raw.startsWith('>') ? '>' : raw.startsWith('<') ? '<' : '='
+      const op = (amount[1] ?? '=') as '>' | '<' | '>=' | '<=' | '='
       intent.amount = { op, value: Number(amount[2]) }
       continue
     }
@@ -178,12 +190,7 @@ export function searchSubscriptions(
     const day = parseISO(sub.nextBillingDate).d
     const monthKey = sub.nextBillingDate.slice(0, 7)
 
-    if (intent.amount) {
-      const { op, value } = intent.amount
-      if (op === '>' && !(sub.price > value)) continue
-      if (op === '<' && !(sub.price < value)) continue
-      if (op === '=' && Math.abs(sub.price - value) > 0.5) continue
-    }
+    if (intent.amount && !matchesAmount(sub.price, intent.amount)) continue
 
     if (intent.months.length) {
       const ok = intent.months.some((m) =>
@@ -225,5 +232,96 @@ export function searchSubscriptions(
   return hits.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score
     return a.sub.name.localeCompare(b.sub.name)
+  })
+}
+
+/* ── Spend Search ────────────────────────────────────────────────────── */
+
+export interface SpendSearchHit {
+  spend: Spend
+  score: number
+  via: string[]
+}
+
+function spendSearchableText(spend: Spend, base: string): { field: string; text: string }[] {
+  const meta = SPEND_CATEGORY_META[spend.category]
+  return [
+    { field: 'TITLE', text: spend.title },
+    { field: 'CAT', text: meta?.label ?? spend.category },
+    { field: 'CAT', text: meta?.code ?? '' },
+    { field: 'METHOD', text: SPEND_METHOD_LABEL[spend.method] ?? spend.method },
+    { field: 'AMOUNT', text: formatMoney(spend.amount, spend.currency).replace(/[^\d.]/g, '') },
+    { field: 'AMOUNT', text: String(spend.amount) },
+    { field: 'DATE', text: formatSignalDate(spend.date) },
+    { field: 'DATE', text: spend.date },
+    { field: 'NOTES', text: spend.notes ?? '' },
+    { field: 'CCY', text: spend.currency },
+    { field: 'BASE', text: String(base) },
+  ]
+}
+
+export function searchSpends(
+  spends: Spend[],
+  raw: string,
+  base: string,
+): SpendSearchHit[] {
+  const intent = parseQuery(raw)
+
+  const hits: SpendSearchHit[] = []
+  for (const spend of spends) {
+    // Hard filters
+    if (intent.categories.length) {
+      const cat = spend.category as string
+      if (!intent.categories.some((c) => cat.startsWith(c))) continue
+    }
+
+    if (intent.amount && !matchesAmount(spend.amount, intent.amount)) continue
+
+    const monthKey = spend.date.slice(0, 7)
+    if (intent.months.length) {
+      const ok = intent.months.some((m) =>
+        m.startsWith('-') ? monthKey.endsWith(m) : monthKey === m,
+      )
+      if (!ok) continue
+    }
+
+    if (intent.days.length) {
+      const day = parseISO(spend.date).d
+      if (!intent.days.includes(day)) continue
+    }
+    if (intent.years.length) {
+      const year = parseISO(spend.date).y
+      if (!intent.years.includes(year)) continue
+    }
+
+    let total = 0
+    let matchedAll = true
+    const via = new Set<string>()
+
+    for (const term of intent.terms) {
+      let best = 0
+      let bestField = ''
+      for (const { field, text } of spendSearchableText(spend, base)) {
+        const score = fuzzyScore(text, term)
+        if (score > best) {
+          best = score
+          bestField = field
+        }
+      }
+      if (best === 0) {
+        matchedAll = false
+        break
+      }
+      total += best
+      via.add(bestField)
+    }
+
+    if (!matchedAll) continue
+    hits.push({ spend, score: intent.terms.length ? total : 1, via: [...via] })
+  }
+
+  return hits.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score
+    return a.spend.title.localeCompare(b.spend.title)
   })
 }

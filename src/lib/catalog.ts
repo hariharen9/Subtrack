@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // SERVICE CATALOG
+ * SPENDSTATE // SERVICE CATALOG
  *
  * Known services, with realistic Indian pricing. Picking one from the console
  * pre-fills glyph, accent, category and the cycle people actually buy — so the
@@ -900,7 +900,7 @@ export const SERVICE_CATALOG: CatalogService[] = [
 
 export const CATALOG_BY_ID = new Map(SERVICE_CATALOG.map((s) => [s.id, s]))
 
-export function searchCatalog(query: string, limit = 60): CatalogService[] {
+export function searchCatalog(query: string, limit = SERVICE_CATALOG.length): CatalogService[] {
   const q = query.trim().toLowerCase()
   if (!q) return SERVICE_CATALOG.slice(0, limit)
   const scored = SERVICE_CATALOG.map((service) => {

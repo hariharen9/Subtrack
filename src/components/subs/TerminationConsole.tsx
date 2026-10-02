@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // TERMINATION CONSOLE (GLOBAL)
+ * SPENDSTATE // TERMINATION CONSOLE (GLOBAL)
  *
  * Lives beside the authoring console as a shell-level overlay, so a termination
  * can be armed from anywhere — the process panel, the archive rail or the
@@ -8,7 +8,7 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { purgeSubscription, setProcessStatus } from '@/lib/db'
+import { purgeSubscription, setProcessStatus } from '@/lib/repository'
 import { useSubscriptions } from '@/hooks/useSystem'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { TerminateDialog } from './TerminateDialog'

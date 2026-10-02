@@ -1,8 +1,8 @@
 /**
- * SUBTRACK // CYCLE DATE PICKER
+ * SPENDSTATE // CYCLE DATE PICKER
  *
  * A custom calendar, because a native date input cannot speak this system's
- * language. It prints the date the way SUBTRACK prints dates (19 SEP 2026),
+ * language. It prints the date the way SPENDSTATE prints dates (19 SEP 2026),
  * marks the scheduled day, and offers relative jumps for the common cases:
  * today, +7 days, +1 month (the usual monthly anchor), +1 year.
  */

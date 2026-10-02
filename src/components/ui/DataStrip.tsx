@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // DATA STRIP
+ * SPENDSTATE // DATA STRIP
  *
  * The horizontal information rail. Instead of scattering statistics into cards,
  * the system prints them as a strip of labelled readouts separated by hard
@@ -32,6 +32,7 @@ export function DataStrip({
 }) {
   return (
     <div
+      data-lenis-prevent={scroll ? '' : undefined}
       className={cx(
         'flex w-full items-stretch',
         scroll ? 'no-scrollbar overflow-x-auto' : 'flex-wrap',

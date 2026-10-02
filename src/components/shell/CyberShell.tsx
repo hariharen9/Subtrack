@@ -1,68 +1,53 @@
 /**
- * SUBTRACK // CYBER SHELL
+ * SPENDSTATE // CYBER SHELL
  *
- * The frame everything runs inside: navigation rack, instrument header, content
- * well, mobile console and the persistent overlays (log, palette, authoring
- * console, update notice). Pages only ever render their own content well.
+ * The frame everything runs inside: navigation rack, instrument header, the
+ * in-domain chrome strip, content well, mobile console and the persistent
+ * overlays (log, palette, authoring console, update notice). Pages only ever
+ * render their own content well.
  */
-import { Suspense, useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { usePayments, useSystem } from '@/hooks/useSystem'
 import { useHotkeys } from '@/hooks/usePlatform'
 import { useUI } from '@/store/ui'
-import { NAV_ITEMS } from '@/app/nav'
+import { DOMAINS } from '@/app/nav'
 import { cx } from '@/lib/cx'
 import { FieldOverlay } from './FieldOverlay'
 import { SystemHeader } from './SystemHeader'
 import { NavigationRail } from './NavigationRail'
+import { DomainFrame } from './DomainFrame'
 import { MobileNav } from './MobileNav'
 import { SystemFooter } from './SystemFooter'
 import { SystemToaster } from './SystemToaster'
 import { CommandPalette } from './CommandPalette'
 import { UpdatePrompt } from './UpdatePrompt'
 import { SubscriptionComposer } from '@/components/subs/SubscriptionComposer'
+import { SpendComposer } from '@/components/spends/SpendComposer'
+import { CardComposer } from '@/components/cards/CardComposer'
+import { LoanComposer } from '@/components/debt/LoanComposer'
+import { IncomeComposer } from '@/components/income/IncomeComposer'
+import { AccountComposer } from '@/components/accounts/AccountComposer'
 import { TerminationConsole } from '@/components/subs/TerminationConsole'
 import { BootScreen } from '@/components/ui/Skeleton'
 
-/**
- * Route transition: a 200ms lift plus a one-shot chromatic sweep. The sweep is
- * the only glitch in the product, and it lasts exactly one route change.
- */
 function RouteStage() {
   const location = useLocation()
   const reduced = useReducedMotion()
-  // const calm = useUI((s) => s.calmMode)
-
-  useEffect(() => {
-    if (location.hash) return
-    window.scrollTo({ top: 0, behavior: 'auto' })
-  }, [location.pathname, location.hash])
 
   return (
     <>
-      {/* Lemon/acid chromatic sweep overlay on route change (commented out per user request):
-      {!reduced && !calm && (
-        <span
-          key={location.pathname}
-          aria-hidden="true"
-          className="glitch-sweep pointer-events-none fixed inset-0 z-[45] bg-acid/10 mix-blend-screen"
-        />
-      )}
-      */}
-      <AnimatePresence mode="wait" initial={false}>
+      <DomainFrame />
+      <div className="mt-1">
         <motion.div
           key={location.pathname}
-          initial={{ opacity: 0, y: reduced ? 0 : 10 }}
+          initial={{ opacity: 0, y: reduced ? 0 : 6 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: reduced ? 0 : -6 }}
-          transition={{ duration: reduced ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: reduced ? 0 : 0.15, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Suspense fallback={<BootScreen label="LOADING MODULE" />}>
-            <Outlet />
-          </Suspense>
+          <Outlet />
         </motion.div>
-      </AnimatePresence>
+      </div>
     </>
   )
 }
@@ -78,21 +63,34 @@ export function CyberShell() {
   const togglePalette = useUI((s) => s.togglePalette)
   const setPaletteOpen = useUI((s) => s.setPaletteOpen)
   const openComposer = useUI((s) => s.openComposer)
+  const openSpendComposer = useUI((s) => s.openSpendComposer)
+  const openLoanComposer = useUI((s) => s.openLoanComposer)
+  const openIncomeComposer = useUI((s) => s.openIncomeComposer)
+  const openAccountComposer = useUI((s) => s.openAccountComposer)
+  const openCardComposer = useUI((s) => s.openCardComposer)
   const toggleTheme = useUI((s) => s.toggleTheme)
+  const uiMode = useUI((s) => s.uiMode)
+  const toggleUiMode = useUI((s) => s.toggleUiMode)
 
   useHotkeys([
     { key: 'k', mod: true, handler: (event) => { event.preventDefault(); togglePalette() } },
     { key: '/', handler: (event) => { event.preventDefault(); setPaletteOpen(true) } },
     { key: 'n', handler: () => openComposer() },
+    { key: 'x', handler: () => openSpendComposer() },
+    { key: 'l', handler: () => openLoanComposer() },
+    { key: 'i', handler: () => openIncomeComposer() },
+    { key: 'a', handler: () => openAccountComposer() },
+    { key: 'c', handler: () => openCardComposer({ mode: 'txn' }) },
     { key: 't', handler: () => toggleTheme() },
-    ...NAV_ITEMS.map((item) => ({
+    { key: 'm', handler: () => toggleUiMode() },
+    ...DOMAINS.map((item) => ({
       key: item.key,
       handler: () => navigate(item.path),
     })),
   ])
 
   return (
-    <div className={cx('relative min-h-dvh', !field && 'field-off')}>
+    <div className={cx('relative min-h-dvh', (!field || uiMode === 'minimal') && 'field-off')}>
       <a
         href="#main"
         className="micro sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[90] focus:border focus:border-acid focus:bg-surface focus:px-3 focus:py-2 focus:text-fg"
@@ -100,14 +98,14 @@ export function CyberShell() {
         SKIP TO CONTENT
       </a>
 
-      {field && <FieldOverlay />}
+      {field && uiMode !== 'minimal' && <FieldOverlay />}
 
       <NavigationRail activePath={pathname} processCount={summary.active.length} />
 
-      <div className="lg:pl-[88px]">
+      <div className="flex min-h-dvh flex-col lg:pl-[88px]">
         <SystemHeader summary={summary} />
 
-        <main id="main" className="relative z-10 pb-[104px] lg:pb-0">
+        <main id="main" className="relative z-10 flex-1 pb-[112px] lg:pb-0">
           {booted ? (
             <RouteStage />
           ) : (
@@ -125,12 +123,16 @@ export function CyberShell() {
         activePath={pathname}
         views={summary.views}
         processCount={summary.active.length}
-        chargesThisMonth={summary.incoming30.length}
       />
 
       <SystemToaster />
       <CommandPalette />
       <SubscriptionComposer />
+      <SpendComposer />
+      <CardComposer />
+      <LoanComposer />
+      <IncomeComposer />
+      <AccountComposer />
       <TerminationConsole />
       <UpdatePrompt />
     </div>

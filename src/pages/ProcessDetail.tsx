@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // PROCESS DIAGNOSTIC
+ * SPENDSTATE // PROCESS DIAGNOSTIC
  *
  * Opening a process should feel like entering a diagnostic panel, not loading a
  * record page: identity, economics, schedule, ledger, per-process signal and the
@@ -15,15 +15,16 @@ import {
   useSystem,
 } from '@/hooks/useSystem'
 import { useUI, TOAST_VERBS } from '@/store/ui'
-import { executeCycle, setProcessStatus, markUsed } from '@/lib/db'
+import { executeCycle, setProcessStatus, markUsed, updatePayment, deletePayment } from '@/lib/repository'
 import { viewOf, paymentSeriesFor } from '@/lib/analytics'
 import { cycleNoun, cycleSuffix, occurrenceAt } from '@/lib/cycle'
 import { formatMoney, splitMoney } from '@/lib/money'
 import { diffDays, formatSignalDate, todayISO } from '@/lib/date'
 import { CATEGORY_CODE, CATEGORY_LABEL, CATEGORY_SIGNAL } from '@/lib/types'
+import type { Payment } from '@/lib/types'
 import { pidOf, traceOf, txnRef } from '@/lib/id'
 import { CutPanel } from '@/components/ui/CutPanel'
-import { CyberButton } from '@/components/ui/CyberButton'
+import { CyberButton, IconButton } from '@/components/ui/CyberButton'
 import { DataStrip } from '@/components/ui/DataStrip'
 import { SectionHeader, HashRule } from '@/components/ui/Micro'
 import { EmptyState } from '@/components/ui/Skeleton'
@@ -31,7 +32,7 @@ import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { Led, SIGNAL_TEXT, StatusChip, STATUS_META } from '@/components/ui/Signal'
 import { ServiceBadge } from '@/components/brand/ServiceBadge'
 import { SpendingSignal } from '@/components/charts/SpendingSignal'
-import { IconArrowRight, IconCheck, IconChevronLeft, IconEdit, IconPause, IconPlay, IconTerminate } from '@/components/ui/Icons'
+import { IconArrowRight, IconCheck, IconChevronLeft, IconClose, IconEdit, IconPause, IconPlay, IconTerminate } from '@/components/ui/Icons'
 import { cx } from '@/lib/cx'
 
 /** '8 MONTHS AGO' / '12 DAYS AGO' — plain language for record ages. */
@@ -54,7 +55,39 @@ export default function ProcessDetail() {
   const pushToast = useUI((s) => s.pushToast)
   const openTermination = useUI((s) => s.openTermination)
   const [busy, setBusy] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDate, setEditDate] = useState('')
+  const [editAmount, setEditAmount] = useState('')
+  const [armedId, setArmedId] = useState<string | null>(null)
   const today = todayISO()
+
+  const startEdit = (payment: Payment) => {
+    setArmedId(null)
+    setEditingId(payment.id)
+    setEditDate(payment.date)
+    setEditAmount(String(payment.amount))
+  }
+
+  const saveCharge = async (payment: Payment) => {
+    const amount = Number(editAmount)
+    if (!editDate || !Number.isFinite(amount) || amount < 0) {
+      pushToast({ kind: 'warn', label: 'INVALID CHARGE', text: 'Enter a valid date and amount.' })
+      return
+    }
+    await updatePayment(payment.id, { date: editDate, amount })
+    pushToast({
+      kind: 'ok',
+      label: 'CHARGE UPDATED',
+      text: `${formatSignalDate(editDate)} · ${formatMoney(amount, payment.currency)}`,
+    })
+    setEditingId(null)
+  }
+
+  const removeCharge = async (id: string) => {
+    await deletePayment(id)
+    pushToast({ kind: 'info', label: 'CHARGE REMOVED', text: 'One ledger row deleted — the schedule is untouched.' })
+    setArmedId(null)
+  }
 
   const view = useMemo(
     () => (sub ? viewOf(sub, base, today, summary.monthlyBurn) : undefined),
@@ -370,7 +403,7 @@ export default function ProcessDetail() {
               signal="blue"
               right={<span className="micro text-faint">{ledger.length} RECORDS</span>}
             />
-            <div className="max-h-[420px] overflow-y-auto">
+            <div className="max-h-[420px] overflow-y-auto" data-lenis-prevent>
               <table className="w-full border-collapse text-left">
                 <thead className="sticky top-0 z-10 bg-surface">
                   <tr className="border-b border-line">
@@ -378,40 +411,97 @@ export default function ProcessDetail() {
                     <th className="tech-label px-2 py-2 font-normal">Reference</th>
                     <th className="tech-label px-2 py-2 font-normal">Origin</th>
                     <th className="tech-label px-3 py-2 text-right font-normal md:px-4">Amount</th>
+                    <th className="tech-label px-2 py-2 text-right font-normal">&#183;</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ledger.map((payment) => (
-                    <tr key={payment.id} className="border-b border-line last:border-b-0 hover:bg-surface2">
-                      <td className="px-3 py-2 md:px-4">
-                        <span className="meta block text-fg">{formatSignalDate(payment.date)}</span>
-                        <span className="micro block text-faint">
-                          {payment.date.slice(0, 7)}
-                        </span>
-                      </td>
-                      <td className="px-2 py-2">
-                        <span className="pid">{txnRef(payment.date, payment.id)}</span>
-                      </td>
-                      <td className="px-2 py-2">
-                        <span
-                          className={cx(
-                            'micro',
-                            payment.origin === 'confirmed' ? 'text-acidink' : 'text-faint',
+                  {ledger.map((payment) => {
+                    const editing = editingId === payment.id
+                    return (
+                      <tr key={payment.id} className="border-b border-line last:border-b-0 hover:bg-surface2">
+                        <td className="px-3 py-2 md:px-4">
+                          {editing ? (
+                            <input
+                              type="date"
+                              value={editDate}
+                              onChange={(e) => setEditDate(e.target.value)}
+                              aria-label="Charge date"
+                              className="field h-8 w-[9.5rem] text-[11px]"
+                            />
+                          ) : (
+                            <>
+                              <span className="meta block text-fg">{formatSignalDate(payment.date)}</span>
+                              <span className="micro block text-faint">{payment.date.slice(0, 7)}</span>
+                            </>
                           )}
-                        >
-                          {payment.origin === 'confirmed' ? 'CONFIRMED' : 'SCHEDULED'}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-right md:px-4">
-                        <span className="meta text-fg">
-                          {formatMoney(payment.amount, payment.currency)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-2 py-2">
+                          <span className="pid">{txnRef(payment.date, payment.id)}</span>
+                        </td>
+                        <td className="px-2 py-2">
+                          <span
+                            className={cx(
+                              'micro',
+                              payment.origin === 'confirmed' ? 'text-acidink' : 'text-faint',
+                            )}
+                          >
+                            {payment.origin === 'confirmed' ? 'CONFIRMED' : 'SCHEDULED'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-right md:px-4">
+                          {editing ? (
+                            <input
+                              type="number"
+                              value={editAmount}
+                              onChange={(e) => setEditAmount(e.target.value)}
+                              aria-label="Charge amount"
+                              className="field h-8 w-[7rem] text-right text-[11px]"
+                            />
+                          ) : (
+                            <span className="meta text-fg">
+                              {formatMoney(payment.amount, payment.currency)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-2 py-2">
+                          <span className="flex items-center justify-end gap-1">
+                            {editing ? (
+                              <>
+                                <IconButton label="Save charge" size="sm" className="text-acidink" onClick={() => saveCharge(payment)}>
+                                  <IconCheck size={13} />
+                                </IconButton>
+                                <IconButton label="Cancel edit" size="sm" onClick={() => setEditingId(null)}>
+                                  <IconClose size={13} />
+                                </IconButton>
+                              </>
+                            ) : armedId === payment.id ? (
+                              <>
+                                <span className="micro text-redink">DELETE?</span>
+                                <IconButton label="Confirm delete charge" size="sm" className="text-redink" onClick={() => removeCharge(payment.id)}>
+                                  <IconCheck size={13} />
+                                </IconButton>
+                                <IconButton label="Cancel delete" size="sm" onClick={() => setArmedId(null)}>
+                                  <IconClose size={13} />
+                                </IconButton>
+                              </>
+                            ) : (
+                              <>
+                                <IconButton label="Edit charge" size="sm" onClick={() => startEdit(payment)}>
+                                  <IconEdit size={13} />
+                                </IconButton>
+                                <IconButton label="Delete charge" size="sm" className="hover:text-redink" onClick={() => setArmedId(payment.id)}>
+                                  <IconTerminate size={13} />
+                                </IconButton>
+                              </>
+                            )}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
                   {ledger.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-3 py-8 text-center md:px-4">
+                      <td colSpan={5} className="px-3 py-8 text-center md:px-4">
                         <span className="micro text-faint">
                           NO CHARGES RECORDED YET — HISTORY STARTS AT THE FIRST CYCLE
                         </span>

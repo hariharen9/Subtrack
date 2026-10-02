@@ -1,8 +1,10 @@
 @import 'tailwindcss';
+@import 'lenis/dist/lenis.css';
 @import './tokens.css';
 @import './fonts.css';
 @import './base.css';
 @import './components.css';
+@import './minimal.css';
 
 /* Class-based theming: the app owns the theme, the OS only suggests it. */
 @custom-variant day (&:where([data-theme='day'], [data-theme='day'] *));

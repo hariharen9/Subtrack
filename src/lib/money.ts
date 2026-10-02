@@ -1,5 +1,5 @@
 /**
- * SUBTRACK // MONEY
+ * SPENDSTATE // MONEY
  *
  * One rule: never build a currency string by hand. Every amount in the UI goes
  * through Intl.NumberFormat, so ₹1,49,760 groups the Indian way, ¥1,200 has no
