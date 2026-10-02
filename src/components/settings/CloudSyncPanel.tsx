@@ -13,6 +13,8 @@ import { useState } from 'react'
 import { FcGoogle } from 'react-icons/fc'
 import {
   LuCloud,
+  LuCloudDownload,
+  LuCloudUpload,
   LuShieldCheck,
   LuLockKeyhole,
   LuEyeOff,
@@ -30,6 +32,8 @@ import { cx } from '@/lib/cx'
 const STATUS_SIGNAL: Record<string, 'acid' | 'blue' | 'orange' | 'red'> = {
   off: 'blue',
   connecting: 'orange',
+  checking: 'orange',
+  choice: 'orange',
   syncing: 'orange',
   ready: 'acid',
   error: 'red',
@@ -38,6 +42,8 @@ const STATUS_SIGNAL: Record<string, 'acid' | 'blue' | 'orange' | 'red'> = {
 const STATUS_LABEL: Record<string, string> = {
   off: 'LOCAL ONLY',
   connecting: 'CONNECTING',
+  checking: 'CHECKING',
+  choice: 'DECIDE',
   syncing: 'SYNCING',
   ready: 'IN SYNC',
   error: 'FAULT',
@@ -88,6 +94,7 @@ export function CloudSyncPanel() {
   const issues = useCloud((s) => s.issues)
   const lastSync = useCloud((s) => s.lastSync)
   const progress = useCloud((s) => s.progress)
+  const needsChoice = useCloud((s) => s.needsChoice)
 
   const enable = useCloud((s) => s.enable)
   const disable = useCloud((s) => s.disable)
@@ -96,6 +103,8 @@ export function CloudSyncPanel() {
   const emailSignIn = useCloud((s) => s.emailSignIn)
   const signOut = useCloud((s) => s.signOut)
   const syncNow = useCloud((s) => s.syncNow)
+  const restoreFromCloud = useCloud((s) => s.restoreFromCloud)
+  const uploadThisDevice = useCloud((s) => s.uploadThisDevice)
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
@@ -245,8 +254,71 @@ export function CloudSyncPanel() {
         </div>
       )}
 
+      {/* ── ENABLED · CHECKING ───────────────────────────────────────────── */}
+      {enabled && user && status === 'checking' && !needsChoice && (
+        <div className="px-3 py-4 md:px-4">
+          <span className="micro flex items-center gap-2 text-faint">
+            <Led signal="orange" size="sm" pulse />
+            CHECKING THIS ACCOUNT FOR EXISTING DATA…
+          </span>
+        </div>
+      )}
+
+      {/* ── ENABLED · FIRST-LINK DECISION ────────────────────────────────── */}
+      {enabled && user && needsChoice && (
+        <div className="px-3 py-3.5 md:px-4">
+          <span className="tech-label flex items-center gap-1.5 text-orangeink">
+            <LuTriangleAlert size={12} /> THIS ACCOUNT ALREADY HAS DATA
+          </span>
+          <p className="meta mt-1.5 text-dim">
+            {user.email ?? 'This account'} is already in use on another device, and this device is
+            showing demo data. Choose which copy to keep — they are never merged.
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => void restoreFromCloud()}
+              className="flex cursor-pointer items-start gap-3 border border-acid bg-acidsoft/40 px-3 py-2.5 text-left transition-colors hover:bg-acidsoft"
+            >
+              <span className="grid h-7 w-7 shrink-0 place-items-center border border-acid text-acidink">
+                <LuCloudDownload size={14} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[12px] font-semibold text-fg">
+                  RESTORE FROM CLOUD <span className="text-acidink">· RECOMMENDED</span>
+                </span>
+                <span className="meta block text-dim">
+                  Replace this device's demo data with your real ledger. The other device is untouched.
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => void uploadThisDevice()}
+              className="flex cursor-pointer items-start gap-3 border border-red/40 px-3 py-2.5 text-left transition-colors hover:bg-redsoft/40"
+            >
+              <span className="grid h-7 w-7 shrink-0 place-items-center border border-red/40 text-redink">
+                <LuCloudUpload size={14} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[12px] font-semibold text-fg">OVERWRITE CLOUD WITH THIS DEVICE</span>
+                <span className="meta block text-dim">
+                  Push this device's data up, replacing what the account holds. Only if this is the copy you want.
+                </span>
+              </span>
+            </button>
+          </div>
+          <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5">
+            <span className="micro text-faint">NOTHING IS WRITTEN UNTIL YOU CHOOSE</span>
+            <CyberButton variant="ghost" size="sm" onClick={() => void signOut()}>
+              CANCEL
+            </CyberButton>
+          </div>
+        </div>
+      )}
+
       {/* ── ENABLED · SIGNED IN ──────────────────────────────────────────── */}
-      {enabled && user && (
+      {enabled && user && !needsChoice && status !== 'checking' && (
         <div className="px-3 py-3.5 md:px-4">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center border border-acid bg-acidsoft text-[14px] font-bold text-acidink">

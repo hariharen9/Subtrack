@@ -470,6 +470,8 @@ The UI never imports `db.ts` for **writes**. Every mutation is imported from `@/
 
 **Migration**: `push()` *is* the one-time Dexie → Firestore migration, and it is idempotent — a per-document hash cache means a re-run writes only what changed, and every write is a merge. Documents containing a Blob/File, or serialising over 1 MiB, are skipped and **reported** in the sync panel rather than silently dropped. `undefined` is stripped and dates are normalised to ISO (Firestore Timestamps are converted back to ISO on pull).
 
+**First link (multi-device safety)**: a fresh device boots with demo data, so signing in must never blind-merge it into a real ledger. On sign-in the device checks the marker document `users/{uid}/_sync/state` (written by the first successful push). If it exists, listeners stay **off** and the panel asks the user to **Restore from cloud** (`clearSyncedTables()` → pull → prime) or **Overwrite the cloud** — the two copies are never merged. Only an empty cloud is pushed automatically. The account this device is linked to is remembered locally as `spendstate.cloudLinkedUid`; the opt-in flag stays `spendstate.cloudSync`.
+
 **Rules**: `firestore.rules` is owner-only — `users/{uid}/**` is readable/writable only by that uid, and every other path is denied. `pnpm test:rules` runs the assertions in `scripts/test-rules.mjs` against the Firestore emulator.
 
 ## 5. Calculation Engine & Financial Analytics (`src/lib/analytics.ts`)

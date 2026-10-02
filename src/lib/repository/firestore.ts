@@ -32,6 +32,9 @@ import {
   persistentMultipleTabManager,
   collection,
   doc,
+  getDoc,
+  getDocs,
+  setDoc,
   writeBatch,
   onSnapshot,
   type DocumentData,
@@ -39,7 +42,7 @@ import {
   type QuerySnapshot,
   type Unsubscribe,
 } from 'firebase/firestore'
-import { db as dexie } from '../db'
+import { db as dexie, clearSyncedTables } from '../db'
 import { SYNC_TABLES, type SyncTable } from './types'
 import type { FirebaseConfig } from './env'
 
@@ -71,6 +74,15 @@ interface AnyTable {
 
 const FIRESTORE_DOC_LIMIT = 1_048_576 // 1 MiB
 const BATCH_LIMIT = 450 // ≤ 500 per the Firestore cap, with headroom
+
+/**
+ * A small marker document written on the first successful push. Its presence is
+ * how a second device knows the account already holds data — and must therefore
+ * choose between restoring from the cloud or overwriting it, never silently
+ * merging a fresh demo dataset into a real ledger.
+ */
+const MARKER_COLLECTION = '_sync'
+const MARKER_DOC = 'state'
 
 function tableOf(name: SyncTable): AnyTable {
   return (dexie as unknown as Record<string, AnyTable>)[name]
@@ -164,6 +176,7 @@ class CloudSync {
   private timer: ReturnType<typeof setInterval> | null = null
   private applyingRemote = false
   private primed = false
+  private started = false
 
   constructor(
     private readonly db: Firestore,
@@ -231,8 +244,48 @@ class CloudSync {
       this.known.set(table, currentIds)
     }
 
+    // Mark the cloud as initialised so other devices can detect existing data.
+    await setDoc(
+      doc(this.db, 'users', this.uid, MARKER_COLLECTION, MARKER_DOC),
+      { initialisedAt: new Date().toISOString(), tables: SYNC_TABLES.length },
+      { merge: true },
+    )
+
     this.primed = true
     return report
+  }
+
+  /** True when this account already holds data from another device. */
+  async hasRemoteData(): Promise<boolean> {
+    const snap = await getDoc(doc(this.db, 'users', this.uid, MARKER_COLLECTION, MARKER_DOC))
+    return snap.exists()
+  }
+
+  /**
+   * Replace the local volume with what is in the cloud. Clears the local synced
+   * tables (marking seeds so the demo cannot return), pulls every document, then
+   * primes the change-tracking maps so nothing is echoed back up.
+   */
+  async restore(): Promise<SyncReport> {
+    await clearSyncedTables()
+    let pulled = 0
+    for (const table of SYNC_TABLES) {
+      const snap = await getDocs(this.col(table))
+      const rows: Record<string, unknown>[] = []
+      snap.forEach((d) => {
+        rows.push({ ...(fromFirestore(d.data()) as Record<string, unknown>), id: d.id })
+      })
+      const hashes = new Map<string, string>()
+      for (const row of rows) hashes.set(String(row.id), JSON.stringify(clean(row)))
+      this.hashes.set(table, hashes)
+      this.known.set(table, new Set(snap.docs.map((d) => d.id)))
+      if (rows.length) {
+        await tableOf(table).bulkPut(rows)
+        pulled += rows.length
+      }
+    }
+    this.primed = true
+    return { written: pulled, deleted: 0, skipped: 0, issues: [] }
   }
 
   /** Pull remote changes into Dexie — Dexie remains the app's read layer. */
@@ -268,6 +321,8 @@ class CloudSync {
   }
 
   start(): void {
+    if (this.started) return
+    this.started = true
     for (const table of SYNC_TABLES) {
       this.unsubs.push(
         onSnapshot(
@@ -293,6 +348,7 @@ class CloudSync {
     this.unsubs.splice(0).forEach((unsub) => unsub())
     if (this.timer) clearInterval(this.timer)
     this.timer = null
+    this.started = false
     window.removeEventListener('focus', this.onFocus)
   }
 }
@@ -304,10 +360,18 @@ export interface CloudHandle {
   signInEmail(email: string, password: string): Promise<void>
   signOutUser(): Promise<void>
   onAuth(cb: (user: CloudUser | null) => void): () => void
+  /** Begin mirroring. Only called once the sync direction has been decided. */
   start(): void
   stop(): void
+  /** True when this account already holds data from another device. */
+  hasRemoteData(): Promise<boolean>
+  /** Replace the local volume with the cloud copy. */
+  restore(): Promise<SyncReport>
+  /** Push local changes up (the migration when run against an empty cloud). */
   syncNow(onProgress?: (done: number, total: number) => void): Promise<SyncReport>
 }
+
+const EMPTY_REPORT: SyncReport = { written: 0, deleted: 0, skipped: 0, issues: [] }
 
 function toCloudUser(user: User | null): CloudUser | null {
   if (!user) return null
@@ -325,43 +389,50 @@ export function createCloudHandle(config: FirebaseConfig): CloudHandle {
 
   let sync: CloudSync | null = null
 
-  const startSync = () => {
+  /**
+   * Create the engine for the current user *without* starting it. Listeners stay
+   * off until the sync direction is known, so a fresh device never pulls cloud
+   * data into its demo volume (or pushes demo data into a real ledger) before
+   * the user has chosen.
+   */
+  const ensureSync = (): CloudSync | null => {
     const uid = auth.currentUser?.uid
-    if (!uid || sync) return
-    sync = new CloudSync(db, uid)
-    sync.start()
+    if (!uid) return null
+    if (!sync) sync = new CloudSync(db, uid)
+    return sync
   }
 
   return {
     get user() {
       return toCloudUser(auth.currentUser)
     },
-    signInGoogle: () => signInWithPopup(auth, provider).then(() => startSync()),
+    signInGoogle: () => signInWithPopup(auth, provider).then(() => undefined),
     signUpEmail: (email, password) =>
-      createUserWithEmailAndPassword(auth, email, password).then(() => startSync()),
+      createUserWithEmailAndPassword(auth, email, password).then(() => undefined),
     signInEmail: (email, password) =>
-      signInWithEmailAndPassword(auth, email, password).then(() => startSync()),
+      signInWithEmailAndPassword(auth, email, password).then(() => undefined),
     signOutUser: async () => {
       sync?.stop()
       sync = null
       await firebaseSignOut(auth)
     },
-    onAuth: (cb) =>
-      onAuthStateChanged(auth, (user) => {
-        if (user) startSync()
-        cb(toCloudUser(user))
-      }),
-    start: startSync,
+    onAuth: (cb) => onAuthStateChanged(auth, (user) => cb(toCloudUser(user))),
+    start: () => ensureSync()?.start(),
     stop: () => {
       sync?.stop()
       sync = null
     },
+    hasRemoteData: () => {
+      const active = ensureSync()
+      return active ? active.hasRemoteData() : Promise.resolve(false)
+    },
+    restore: () => {
+      const active = ensureSync()
+      return active ? active.restore() : Promise.resolve(EMPTY_REPORT)
+    },
     syncNow: (onProgress) => {
-      if (!sync) {
-        startSync()
-      }
-      if (!sync) return Promise.resolve({ written: 0, deleted: 0, skipped: 0, issues: [] })
-      return sync.push(onProgress)
+      const active = ensureSync()
+      return active ? active.push(onProgress) : Promise.resolve(EMPTY_REPORT)
     },
   }
 }

@@ -162,6 +162,7 @@ SpendState runs entirely on your device by default. Sync is built in and needs *
 
 - **Just sign in.** Google or email/password; the mirror starts on your first sign-in.
 - **Nothing to configure.** The app ships already connected to its own Firebase project.
+- **New device, no surprises.** Your phone boots with demo data; sign in and it detects that your account already holds a ledger, then asks — **restore from cloud** (recommended) or **overwrite**. Demo and real data are never merged.
 - **Your data is mirrored, not moved.** Dexie stays the engine; the cloud is a two-way copy at `users/{uid}/{table}/{id}`, written in batches of ≤500 with merge, so re-running the migration only writes what changed.
 - **Isolated per account.** Owner-only rules mean your subtree is readable only by your account; every other user and every signed-out client is denied. `pnpm test:rules` proves it with 9 assertions against the local emulator.
 - **Turn it off and nothing is lost.** The opt-in flag is local; the mirror detaches and Dexie keeps every record.

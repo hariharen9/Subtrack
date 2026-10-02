@@ -4,14 +4,26 @@
  * UI state for the optional cloud backend. The opt-in flag lives in
  * localStorage (`spendstate.cloudSync`) — it is local, never synced, and turning
  * cloud sync off returns the app to Dexie without touching local data.
+ *
+ * It also owns the **first-link decision**. A fresh device has demo data; if the
+ * account already holds real data, we must not merge the two — the user chooses
+ * to restore from the cloud or to overwrite it.
  */
 import { create } from 'zustand'
 import * as cloud from '@/lib/repository/cloud'
 import type { CloudUser, SyncIssue } from '@/lib/repository/cloud'
 
 const FLAG = 'spendstate.cloudSync'
+const LINK_KEY = 'spendstate.cloudLinkedUid'
 
-export type CloudStatus = 'off' | 'connecting' | 'syncing' | 'ready' | 'error'
+export type CloudStatus =
+  | 'off'
+  | 'connecting'
+  | 'checking'
+  | 'choice'
+  | 'syncing'
+  | 'ready'
+  | 'error'
 
 interface CloudState {
   available: boolean
@@ -22,6 +34,8 @@ interface CloudState {
   issues: SyncIssue[]
   lastSync: string | null
   progress: { done: number; total: number } | null
+  /** True when the account already has data and a direction must be chosen. */
+  needsChoice: boolean
 
   init: () => void
   enable: () => void
@@ -31,6 +45,8 @@ interface CloudState {
   emailSignIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   syncNow: () => Promise<void>
+  restoreFromCloud: () => Promise<void>
+  uploadThisDevice: () => Promise<void>
 }
 
 let unsubscribeAuth: (() => void) | null = null
@@ -52,6 +68,23 @@ function writeFlag(on: boolean): void {
   }
 }
 
+function linkedUid(): string | null {
+  try {
+    return localStorage.getItem(LINK_KEY)
+  } catch {
+    return null
+  }
+}
+
+function setLinked(uid: string | null): void {
+  try {
+    if (uid) localStorage.setItem(LINK_KEY, uid)
+    else localStorage.removeItem(LINK_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 function describe(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error) {
     const code = String((error as { code: unknown }).code)
@@ -61,13 +94,39 @@ function describe(error: unknown): string {
 }
 
 export const useCloud = create<CloudState>()((set, get) => {
+  /**
+   * Decide the sync direction for the signed-in account. A device that was
+   * already linked to this account simply mirrors; a fresh device either pushes
+   * (empty cloud) or asks the user which way the data should flow.
+   */
+  const decideDirection = async (uid: string) => {
+    if (linkedUid() === uid) {
+      await get().syncNow()
+      return
+    }
+    set({ status: 'checking', message: null })
+    try {
+      if (await cloud.hasRemoteData()) {
+        set({ status: 'choice', needsChoice: true })
+        return
+      }
+      // Empty cloud — this device is the first. Push and link.
+      await get().uploadThisDevice()
+    } catch (error) {
+      set({ status: 'error', message: describe(error) })
+    }
+  }
+
   /** Subscribe to auth state once, lazily. */
   const attach = () => {
     if (unsubscribeAuth) return
     unsubscribeAuth = cloud.onAuth((user) => {
       set({ user })
-      if (user) void get().syncNow()
-      else set({ status: 'off' })
+      if (!user) {
+        set({ status: 'off', needsChoice: false })
+        return
+      }
+      void decideDirection(user.uid)
     })
   }
 
@@ -80,33 +139,26 @@ export const useCloud = create<CloudState>()((set, get) => {
     issues: [],
     lastSync: null,
     progress: null,
+    needsChoice: false,
 
     /** Called at boot: re-attach silently if the user previously opted in. */
     init: () => {
       if (!cloud.cloudAvailable() || !readFlag()) return
-      attach()
       set({ enabled: true, status: 'connecting' })
-      void cloud
-        .startCloud()
-        .then(() => set({ status: 'ready' }))
-        .catch((error) => set({ status: 'error', message: describe(error) }))
+      attach()
     },
 
     enable: () => {
       writeFlag(true)
       set({ enabled: true, status: 'connecting', message: null })
       attach()
-      void cloud
-        .startCloud()
-        .then(() => set({ status: 'ready' }))
-        .catch((error) => set({ status: 'error', message: describe(error) }))
     },
 
     disable: () => {
       writeFlag(false)
       cloud.stopCloud()
       // Local data is never deleted — Dexie is the engine again.
-      set({ enabled: false, user: null, status: 'off', message: null, progress: null })
+      set({ enabled: false, user: null, status: 'off', message: null, progress: null, needsChoice: false })
     },
 
     google: async () => {
@@ -114,7 +166,6 @@ export const useCloud = create<CloudState>()((set, get) => {
       set({ status: 'connecting', message: null })
       try {
         await cloud.signInGoogle()
-        await get().syncNow()
       } catch (error) {
         set({ status: 'error', message: describe(error) })
       }
@@ -125,7 +176,6 @@ export const useCloud = create<CloudState>()((set, get) => {
       set({ status: 'connecting', message: null })
       try {
         await cloud.signUpEmail(email, password)
-        await get().syncNow()
       } catch (error) {
         set({ status: 'error', message: describe(error) })
       }
@@ -136,7 +186,6 @@ export const useCloud = create<CloudState>()((set, get) => {
       set({ status: 'connecting', message: null })
       try {
         await cloud.signInEmail(email, password)
-        await get().syncNow()
       } catch (error) {
         set({ status: 'error', message: describe(error) })
       }
@@ -144,21 +193,46 @@ export const useCloud = create<CloudState>()((set, get) => {
 
     signOut: async () => {
       await cloud.signOutCloud()
-      set({ user: null, status: 'off', message: null })
+      set({ user: null, status: 'off', message: null, needsChoice: false })
     },
 
-    /** The one-time (idempotent) Dexie → Firestore migration. */
+    /** Normal mirror sync for an already-linked device (also the migration). */
     syncNow: async () => {
-      if (!get().user && !cloud.currentUser()) return
+      const user = get().user
+      if (!user) return
       set({ status: 'syncing', progress: { done: 0, total: 0 } })
       try {
         const report = await cloud.migrateToCloud((done, total) => set({ progress: { done, total } }))
-        set({
-          status: 'ready',
-          issues: report.issues,
-          lastSync: new Date().toISOString(),
-          progress: null,
-        })
+        setLinked(user.uid)
+        set({ status: 'ready', needsChoice: false, issues: report.issues, lastSync: new Date().toISOString(), progress: null })
+      } catch (error) {
+        set({ status: 'error', message: describe(error), progress: null })
+      }
+    },
+
+    /** New device: replace this device's local volume with the cloud copy. */
+    restoreFromCloud: async () => {
+      const user = get().user
+      if (!user) return
+      set({ status: 'syncing', needsChoice: false, progress: { done: 0, total: 0 } })
+      try {
+        const report = await cloud.restoreThisDevice()
+        setLinked(user.uid)
+        set({ status: 'ready', issues: report.issues, lastSync: new Date().toISOString(), progress: null })
+      } catch (error) {
+        set({ status: 'error', message: describe(error), progress: null })
+      }
+    },
+
+    /** First device: push this device's data up and take ownership of the cloud. */
+    uploadThisDevice: async () => {
+      const user = get().user
+      if (!user) return
+      set({ status: 'syncing', needsChoice: false, progress: { done: 0, total: 0 } })
+      try {
+        const report = await cloud.uploadThisDevice()
+        setLinked(user.uid)
+        set({ status: 'ready', issues: report.issues, lastSync: new Date().toISOString(), progress: null })
       } catch (error) {
         set({ status: 'error', message: describe(error), progress: null })
       }

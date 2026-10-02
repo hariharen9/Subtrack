@@ -849,6 +849,30 @@ export async function wipeAll(): Promise<void> {
   })
 }
 
+/**
+ * Clears every synced table but keeps device-local settings, and marks each seed
+ * as already run so the demo dataset cannot re-appear. Used when a device
+ * restores its volume from the cloud instead of uploading its local data.
+ */
+export async function clearSyncedTables(): Promise<void> {
+  await db.transaction('rw', [db.subscriptions, db.payments, db.spends, db.loans, db.loanPayments, db.creditCards, db.cardTransactions, db.incomes, db.accounts, db.transfers, db.meta], async () => {
+    await db.subscriptions.clear()
+    await db.payments.clear()
+    await db.spends.clear()
+    await db.loans.clear()
+    await db.loanPayments.clear()
+    await db.creditCards.clear()
+    await db.cardTransactions.clear()
+    await db.incomes.clear()
+    await db.accounts.clear()
+    await db.transfers.clear()
+    const stamp = nowStamp()
+    for (const key of ['seeded', 'spends.seeded', 'debt.seeded', 'cards.seeded', 'income.seeded', 'accounts.seeded']) {
+      await db.meta.put({ key, value: stamp })
+    }
+  })
+}
+
 /** Re-arms the one-shot boot guards so a demo reset can re-run every seed.
  *  The orchestration itself lives in `seed-reset.ts` to avoid a module cycle. */
 export function resetSubscriptionSeed(): void {

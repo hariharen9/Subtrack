@@ -118,3 +118,37 @@ export async function migrateToCloud(
   const active = await ensureHandle()
   return active.syncNow(onProgress)
 }
+
+/**
+ * True when the signed-in account already holds data (from another device).
+ * Used to decide the sync direction instead of blindly merging a fresh demo
+ * dataset into a real ledger.
+ */
+export async function hasRemoteData(): Promise<boolean> {
+  const active = await ensureHandle()
+  return active.hasRemoteData()
+}
+
+/**
+ * First device, or an empty cloud: push this device's data up, then attach the
+ * mirror. The push writes the marker that tells other devices data exists.
+ */
+export async function uploadThisDevice(): Promise<SyncReport> {
+  const active = await ensureHandle()
+  const report = await active.syncNow()
+  await startCloud()
+  return report
+}
+
+/**
+ * A device that already has local data (typically the demo seed) linking to an
+ * account that already holds real data: replace the local volume with the cloud
+ * copy, then attach the mirror. Listeners stay off until the pull is done, so
+ * nothing local is echoed up and nothing is merged.
+ */
+export async function restoreThisDevice(): Promise<SyncReport> {
+  const active = await ensureHandle()
+  const report = await active.restore()
+  await startCloud()
+  return report
+}
