@@ -37,9 +37,11 @@ import type {
   AccountType,
   LoanType,
   CardNetwork,
+  IncomeCategory,
 } from './types'
 import { getCategorySignal } from './types'
 import { CURRENCIES } from './money'
+import { INCOME_CATEGORIES } from './types'
 import { amortize } from './debt'
 import { matchCatalog } from './catalog'
 import { newId } from './id'
@@ -131,6 +133,54 @@ const SW_FREQUENCY: Record<string, BillingCycle> = {
   weekly: 'weekly',
   monthly: 'monthly',
   yearly: 'yearly',
+}
+
+/**
+ * SpendState reads Income.category non-defensively (`INCOME_CATEGORY_META[cat].label`),
+ * and IncomeCategory is a strict 7-value union with no free-form escape. SpendWiser
+ * incomes carry arbitrary user categories, so we map onto the known vocabulary and
+ * default anything unrecognised to 'other' — guaranteeing a migrated income can never
+ * crash an insights render.
+ */
+const INCOME_BY_KEY: Record<string, IncomeCategory> = (() => {
+  const map: Record<string, IncomeCategory> = {}
+  for (const c of INCOME_CATEGORIES) {
+    map[c.id] = c.id
+    map[c.id.toLowerCase()] = c.id
+    map[c.label.toLowerCase()] = c.id
+    if (c.label.includes(' / ')) {
+      // also register the second half of a two-part label, e.g. "Gift / Bonus"
+      for (const part of c.label.split(' / ')) map[part.toLowerCase()] = c.id
+    }
+  }
+  // Extra common synonyms an old app might have used.
+  for (const [alias, id] of [
+    ['sal', 'salary'],
+    ['wages', 'salary'],
+    ['payslip', 'salary'],
+    ['free', 'freelance'],
+    ['side hustle', 'freelance'],
+    ['biz', 'business'],
+    ['inv', 'investment'],
+    ['investments', 'investment'],
+    ['interest', 'investment'],
+    ['dividend', 'investment'],
+    ['rent', 'rental'],
+    ['rental income', 'rental'],
+    ['bonus', 'gift'],
+    ['gift/bonus', 'gift'],
+    ['everything else', 'other'],
+  ] as [string, IncomeCategory][]) {
+    map[alias] = id
+  }
+  return map
+})()
+
+function mapIncomeCategory(cat: string): IncomeCategory {
+  const raw = (cat || '').trim()
+  if (!raw) return 'other'
+  const key = raw.toLowerCase()
+  return INCOME_BY_KEY[key] ?? INCOME_BY_KEY[raw] ?? 'other'
 }
 
 const SIGNAL_HEX: Record<string, string> = {
@@ -475,7 +525,7 @@ export function convertSpendWiserToSnapshot(raw: SpendWiserMigrationExport): Con
         title: str(t, 'name'),
         amount: abs,
         currency: base,
-        category: (cat || 'other') as Income['category'],
+        category: mapIncomeCategory(cat),
         method: 'other',
         accountId: swAccount,
         date,
