@@ -5,6 +5,7 @@
  * here. JSON is the canonical snapshot; CSV is offered for spreadsheets.
  */
 import { exportSnapshot, importSnapshot, type Snapshot } from './db'
+import { importFromSpendwiser, type SpendWiserMigrationExport } from './migrateFromSpendwiser'
 import { useUI, TOAST_VERBS } from '@/store/ui'
 import { useSubscriptions } from '@/hooks/useSystem'
 import type { Payment } from './types'
@@ -138,6 +139,57 @@ export function openImportDialog(): void {
           TOAST_VERBS.info(
             'SNAPSHOT RESTORED',
             `${report.subscriptions} subscriptions · ${report.payments} charges · ${report.spends ?? 0} spends`,
+          ),
+        )
+    } catch (error) {
+      useUI
+        .getState()
+        .pushToast(
+          TOAST_VERBS.error('IMPORT FAILED', error instanceof Error ? error.message : 'Unreadable file'),
+        )
+    }
+  })
+  input.click()
+}
+
+/**
+ * Import a SpendWiser migration export (one-time, file-based handoff).
+ * Reuses the Snapshot path via the converter. Confirms replace up front,
+ * consistent with the rest of the Danger Zone.
+ */
+export function openImportFromSpendwiserDialog(): void {
+  const confirmed = window.confirm(
+    'Import a SpendWiser export? This replaces the current local volume. Export a snapshot first if you are unsure.',
+  )
+  if (!confirmed) return
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'application/json,.json'
+  input.style.display = 'none'
+  document.body.appendChild(input)
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0]
+    input.remove()
+    if (!file) return
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text) as SpendWiserMigrationExport
+      if (parsed?.app !== 'spendwiser') throw new Error('Not a SpendWiser export')
+      const report = await importFromSpendwiser(parsed)
+      if (report.settings) {
+        const ui = useUI.getState()
+        ui.setBaseCurrency(report.settings.baseCurrency)
+        ui.setTheme(report.settings.theme)
+      }
+      const lossLine = report.losses.length
+        ? ` · dropped: ${report.losses.join(', ')}`
+        : ''
+      useUI
+        .getState()
+        .pushToast(
+          TOAST_VERBS.info(
+            'SPENDWISER IMPORTED',
+            `${report.subscriptions} subscriptions · ${report.payments} charges · ${report.spends ?? 0} spends${lossLine}`,
           ),
         )
     } catch (error) {

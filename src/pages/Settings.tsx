@@ -17,7 +17,7 @@ import { downloadFile } from '@/lib/portability'
 import { wipeAll, reconcileSchedules } from '@/lib/repository'
 import { DB_SCHEMA_VERSION } from '@/lib/db'
 import { resetToSeed } from '@/lib/seed-reset'
-import { exportJson, openImportDialog, toCsv } from '@/lib/portability'
+import { exportJson, openImportDialog, openImportFromSpendwiserDialog, toCsv } from '@/lib/portability'
 import { pidOf, traceOf } from '@/lib/id'
 import { todayISO } from '@/lib/date'
 import { CutPanel } from '@/components/ui/CutPanel'
@@ -401,6 +401,14 @@ export default function Settings() {
                 onClick={() => openImportDialog()}
               >
                 IMPORT SNAPSHOT
+              </CyberButton>
+              <CyberButton
+                variant="ghost"
+                size="sm"
+                leading={<IconUpload size={14} />}
+                onClick={() => openImportFromSpendwiserDialog()}
+              >
+                IMPORT FROM SPENDWISER
               </CyberButton>
             </div>
             <div className="border-t border-line px-3 py-3 md:px-4">
