@@ -31,8 +31,8 @@ const STAGGER = { hidden: {}, show: { transition: { staggerChildren: 0.022, dela
 const ITEM = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 460, damping: 34 } } }
 
 const LOAN_TYPE_SIGNAL: Record<string, string> = {
-  home: 'text-blueink', car: 'text-orangeink', personal: 'text-magentaink',
-  education: 'text-magentaink', business: 'text-acidink', gold: 'text-orangeink', other: 'text-dim',
+  home: 'text-blueink', vehicle: 'text-acidink', personal: 'text-orangeink',
+  education: 'text-magentaink', gold: 'text-orangeink', credit_card: 'text-redink', other: 'text-dim',
 }
 
 const STATUS_OPTIONS: { value: LoanStatus; label: string }[] = [

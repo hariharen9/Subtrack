@@ -375,6 +375,47 @@ export async function purgeSubscription(id: string): Promise<void> {
   })
 }
 
+/**
+ * Correct a single recorded charge — its date and/or amount — without touching
+ * the rest of the ledger. Marked CONFIRMED so a hand-edited row is never shown
+ * as a derived schedule entry.
+ */
+export async function updatePayment(
+  id: string,
+  patch: Partial<Pick<Payment, 'date' | 'amount' | 'name'>>,
+): Promise<void> {
+  await db.payments.update(id, { ...patch, origin: 'confirmed' })
+}
+
+/** Remove one recorded charge on its own. The subscription and schedule stay put. */
+export async function deletePayment(id: string): Promise<void> {
+  await db.payments.delete(id)
+}
+
+/** Correct a single recorded EMI — its date and/or amount. */
+export async function updateLoanPayment(
+  id: string,
+  patch: Partial<Pick<LoanPayment, 'date' | 'amount'>>,
+): Promise<void> {
+  await db.loanPayments.update(id, patch)
+}
+
+/**
+ * Remove one recorded EMI and renumber the remaining ones for that loan so the
+ * sequence stays contiguous and "EMIs paid" keeps its meaning.
+ */
+export async function deleteLoanPayment(id: string): Promise<void> {
+  await db.transaction('rw', db.loanPayments, async () => {
+    const row = await db.loanPayments.get(id)
+    if (!row) return
+    await db.loanPayments.delete(id)
+    const rest = await db.loanPayments.where('loanId').equals(row.loanId).sortBy('date')
+    for (let i = 0; i < rest.length; i++) {
+      if (rest[i].emiNumber !== i + 1) await db.loanPayments.update(rest[i].id, { emiNumber: i + 1 })
+    }
+  })
+}
+
 /** Reassign subscriptions and payments from an old category to a fallback category. */
 export async function migrateSubCategory(fromCategory: string, toCategory: string = 'other'): Promise<void> {
   await db.transaction('rw', db.subscriptions, db.payments, async () => {

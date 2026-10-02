@@ -329,7 +329,7 @@ export interface CardView {
 }
 
 /** Balance: purchases, fees and interest add; payments, refunds and rewards subtract. */
-function computeBalance(txns: CardTransaction[], base: string): number {
+export function cardBalance(txns: CardTransaction[], base: string): number {
   let balance = 0
   for (const t of txns) {
     const amt = convert(t.amount, t.currency, base)
@@ -374,7 +374,7 @@ export function viewOfCard(
   // Last closed statement — full derivation, replaces the old one-line sum
   const statement = statementFor(card, txns, base, cycleStart, today)
 
-  const balance = computeBalance(txns, base)
+  const balance = cardBalance(txns, base)
   const limit = convert(card.creditLimit, card.currency, base)
   const available = Math.max(0, limit - balance)
   const utilisation = limit > 0 ? Math.min(1, balance / limit) : 0

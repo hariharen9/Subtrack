@@ -37,6 +37,7 @@ import { ensureIncomeSeeded } from '@/lib/income-seed'
 import { ensureAccountsSeeded } from '@/lib/account-seed'
 import { useUI } from '@/store/ui'
 import { SmoothScroll } from '@/components/shell/SmoothScroll'
+import { ErrorBoundary } from '@/components/shell/ErrorBoundary'
 
 /**
  * Applies the active skin to <html>, mirrors it where the pre-paint boot script
@@ -118,7 +119,8 @@ export default function App() {
       <MotionConfig reducedMotion="user">
         <ThemeSync />
         <BootSequence />
-        <Routes>
+        <ErrorBoundary>
+          <Routes>
           <Route element={<CyberShell />}>
             {/* [01] Master Command — the OS cockpit */}
             <Route index element={<MasterCommand />} />
@@ -163,6 +165,7 @@ export default function App() {
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
+        </ErrorBoundary>
       </MotionConfig>
     </BrowserRouter>
   )

@@ -4,14 +4,16 @@
  * Per-loan diagnostic board — identity, economics, amortization schedule,
  * payment history, and interest breakdown.
  */
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useLoan, useLoanPayments, useDebtSystem } from '@/hooks/useDebt'
 import { useUI } from '@/store/ui'
+import { updateLoanPayment, deleteLoanPayment } from '@/lib/db'
 import { formatMoney, formatCompact } from '@/lib/money'
 import { formatSignalDate, todayISO } from '@/lib/date'
 import { LOAN_TYPE_META } from '@/lib/types'
+import type { LoanPayment } from '@/lib/types'
 import { viewOf, amortize } from '@/lib/debt'
 import { CutPanel } from '@/components/ui/CutPanel'
 import { DataStrip } from '@/components/ui/DataStrip'
@@ -19,8 +21,8 @@ import { SectionHeader } from '@/components/ui/Micro'
 import { EmptyState } from '@/components/ui/Skeleton'
 import { Led, SIGNAL_TEXT } from '@/components/ui/Signal'
 import { AmortizationCurve, EMISplitDonut } from '@/components/charts/DebtCurve'
-import { CyberButton } from '@/components/ui/CyberButton'
-import { IconChevronLeft } from '@/components/ui/Icons'
+import { CyberButton, IconButton } from '@/components/ui/CyberButton'
+import { IconCheck, IconChevronLeft, IconClose, IconEdit, IconTerminate } from '@/components/ui/Icons'
 import { cx } from '@/lib/cx'
 
 const STAGGER = { hidden: {}, show: { transition: { staggerChildren: 0.05, delayChildren: 0.04 } } }
@@ -32,7 +34,36 @@ export default function LoanDetail() {
   const payments = useLoanPayments(id)
   const { summary } = useDebtSystem()
   const base = useUI((s) => s.baseCurrency)
+  const pushToast = useUI((s) => s.pushToast)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDate, setEditDate] = useState('')
+  const [editAmount, setEditAmount] = useState('')
+  const [armedId, setArmedId] = useState<string | null>(null)
   const today = todayISO()
+
+  const startEditEmi = (p: LoanPayment) => {
+    setArmedId(null)
+    setEditingId(p.id)
+    setEditDate(p.date)
+    setEditAmount(String(p.amount))
+  }
+
+  const saveEmi = async (p: LoanPayment) => {
+    const amount = Number(editAmount)
+    if (!editDate || !Number.isFinite(amount) || amount < 0) {
+      pushToast({ kind: 'warn', label: 'INVALID EMI', text: 'Enter a valid date and amount.' })
+      return
+    }
+    await updateLoanPayment(p.id, { date: editDate, amount })
+    pushToast({ kind: 'ok', label: 'EMI UPDATED', text: `${formatSignalDate(editDate)} · ${formatMoney(amount, p.currency)}` })
+    setEditingId(null)
+  }
+
+  const removeEmi = async (id: string) => {
+    await deleteLoanPayment(id)
+    pushToast({ kind: 'info', label: 'EMI REMOVED', text: 'Remaining EMIs renumbered.' })
+    setArmedId(null)
+  }
 
   const view = useMemo(
     () => loan ? viewOf(loan, payments, base, today, summary.totalOutstanding) : undefined,
@@ -189,21 +220,79 @@ export default function LoanDetail() {
             {payments.length ? (
               <div className="max-h-[500px] overflow-y-auto" data-lenis-prevent>
                 <div className="divide-y divide-line">
-                  {[...payments].sort((a, b) => b.emiNumber - a.emiNumber).map((p) => (
-                    <div key={p.id} className="flex items-center gap-3 px-3 py-2 md:px-4">
-                      <span className="micro w-6 font-mono text-faint">#{p.emiNumber}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="micro block text-fg">{formatSignalDate(p.date)}</span>
-                        <span className="micro block text-faint">
-                          P: {formatMoney(p.principalComponent, loan.currency)} · I: {formatMoney(p.interestComponent, loan.currency)}
+                  {[...payments].sort((a, b) => b.emiNumber - a.emiNumber).map((p) => {
+                    const editing = editingId === p.id
+                    return (
+                      <div key={p.id} className="flex items-center gap-3 px-3 py-2 md:px-4">
+                        <span className="micro w-6 font-mono text-faint">#{p.emiNumber}</span>
+                        <span className="min-w-0 flex-1">
+                          {editing ? (
+                            <input
+                              type="date"
+                              value={editDate}
+                              onChange={(e) => setEditDate(e.target.value)}
+                              aria-label="EMI date"
+                              className="field h-8 w-[9.5rem] text-[11px]"
+                            />
+                          ) : (
+                            <>
+                              <span className="micro block text-fg">{formatSignalDate(p.date)}</span>
+                              <span className="micro block text-faint">
+                                P: {formatMoney(p.principalComponent, loan.currency)} · I: {formatMoney(p.interestComponent, loan.currency)}
+                              </span>
+                            </>
+                          )}
                         </span>
-                      </span>
-                      <span className="text-right shrink-0">
-                        <span className="numeral block text-[12px] text-fg">{formatMoney(p.amount, loan.currency)}</span>
-                        <span className="micro block text-faint">BAL: {formatCompact(p.balanceAfter, loan.currency)}</span>
-                      </span>
-                    </div>
-                  ))}
+                        <span className="text-right shrink-0">
+                          {editing ? (
+                            <input
+                              type="number"
+                              value={editAmount}
+                              onChange={(e) => setEditAmount(e.target.value)}
+                              aria-label="EMI amount"
+                              className="field h-8 w-[7rem] text-right text-[11px]"
+                            />
+                          ) : (
+                            <>
+                              <span className="numeral block text-[12px] text-fg">{formatMoney(p.amount, loan.currency)}</span>
+                              <span className="micro block text-faint">BAL: {formatCompact(p.balanceAfter, loan.currency)}</span>
+                            </>
+                          )}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1">
+                          {editing ? (
+                            <>
+                              <IconButton label="Save EMI" size="sm" className="text-acidink" onClick={() => saveEmi(p)}>
+                                <IconCheck size={13} />
+                              </IconButton>
+                              <IconButton label="Cancel edit" size="sm" onClick={() => setEditingId(null)}>
+                                <IconClose size={13} />
+                              </IconButton>
+                            </>
+                          ) : armedId === p.id ? (
+                            <>
+                              <span className="micro text-redink">DEL?</span>
+                              <IconButton label="Confirm delete EMI" size="sm" className="text-redink" onClick={() => removeEmi(p.id)}>
+                                <IconCheck size={13} />
+                              </IconButton>
+                              <IconButton label="Cancel delete" size="sm" onClick={() => setArmedId(null)}>
+                                <IconClose size={13} />
+                              </IconButton>
+                            </>
+                          ) : (
+                            <>
+                              <IconButton label="Edit EMI" size="sm" onClick={() => startEditEmi(p)}>
+                                <IconEdit size={13} />
+                              </IconButton>
+                              <IconButton label="Delete EMI" size="sm" className="hover:text-redink" onClick={() => setArmedId(p.id)}>
+                                <IconTerminate size={13} />
+                              </IconButton>
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             ) : (

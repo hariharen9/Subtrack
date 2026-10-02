@@ -1,160 +1,301 @@
-# SPENDSTATE // FINANCIAL OPERATING SYSTEM `v0.0.1`
+<div align="center">
 
 ```
-  ____  _   _ ____ _____ ____      _    ____ _  __
- / ___|| | | | __ )_   _|  _ \    / \  / ___| |/ /
- \___ \| | | |  _ \ | | | |_) |  / _ \| |   | ' / 
-  ___) | |_| | |_) || | |  _ <  / ___ \ |___| . \ 
- |____/ \___/|____/ |_| |_| \_\/_/   \_\____|_|\_\
- // LOCAL-FIRST · OFFLINE-READY · FINANCIAL OPERATING SYSTEM
+  ▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄
+ ██▀▀▀▀▀   ██▀▀▀▀▀     S P E N D S T A T E
+ ▀██████▄  ▀██████▄    ───────────────────────────────
+ ▄▄▄▄▄▄██  ▄▄▄▄▄▄██    F I N A N C I A L   O S
+ ▀▀▀▀▀▀▀   ▀▀▀▀▀▀▀
 ```
 
-**SpendState is a deterministic, local-first Financial Operating System — a shell of independent financial engines, the first of which (Subscriptions) is fully live.**
+**The personal-finance operating system that runs entirely on your device.**
 
-The shell treats every financial engine as a domain with its own cockpit. Subscriptions — already live — treats each recurring service as an **active background process** running on your personal financial volume:
-- **Subscriptions are Processes**: Each service is an active background process with an identity (`SUB-XXXXX`), status (`active`, `suspended`, `terminated`), and cycle interval.
-- **Money is Resource Consumption**: Charges represent compute/resource cycles. SpendState normalizes all billing schedules into **Burn Rate** (daily, monthly, annual).
-- **Renewals are Scheduled Events**: Future billing dates are derived deterministically as `anchor + k × interval` — no calendar day drift.
-- **Your Device is the Host Volume**: Zero telemetry, zero cloud databases, zero accounts. 100% offline-first IndexedDB storage via Dexie.js. Credit Cards, Loans & EMIs, and Daily Spends are queued behind it.
+![status](https://img.shields.io/badge/status-v0.0.1_·_feature--complete-1A1A1A?style=flat-square)
+![local-first](https://img.shields.io/badge/local--first-100%25_offline-1A1A1A?style=flat-square)
+![telemetry](https://img.shields.io/badge/telemetry-none-1A1A1A?style=flat-square)
+![storage](https://img.shields.io/badge/storage-IndexedDB_·_Dexie_4-1A1A1A?style=flat-square)
+![react](https://img.shields.io/badge/React-19-1A1A1A?style=flat-square&logo=react&logoColor=61DAFB)
+![typescript](https://img.shields.io/badge/TypeScript-7_strict-1A1A1A?style=flat-square&logo=typescript&logoColor=3178C6)
+![vite](https://img.shields.io/badge/Vite-8-1A1A1A?style=flat-square&logo=vite&logoColor=FFD62E)
+![tailwind](https://img.shields.io/badge/Tailwind-4-1A1A1A?style=flat-square&logo=tailwindcss&logoColor=38BDF8)
+
+</div>
+
+> **Your subscriptions aren't line items on a spreadsheet. They're processes running on your money — and SpendState is the operating system that watches them.**
 
 ---
 
-## Quick Start
+## ▍ The pitch
 
-```bash
-pnpm install          # or npm install
-pnpm dev              # start development server (http://localhost:5173)
-pnpm build            # strict TypeScript check + production bundle
-pnpm preview          # preview production PWA locally
-pnpm icons            # regenerate PWA vector icons and textures
-```
+Every finance app asks you to trust a server. SpendState asks you to trust your browser.
+
+It's a **Financial Operating System**: a set of independent financial *engines* — subscriptions, credit cards, loans, day-to-day spends, income, accounts — running on a single, deterministic ledger that lives in **your** IndexedDB. No cloud. No account. No sign-up. No telemetry. Turn off the Wi-Fi, unplug the router, open the tab — everything still works, because there was never anything to fetch.
+
+It doesn't guess with "AI insights". Every number is arithmetic you could do on paper: burn rate is `price × cycle factor`, the next renewal is `anchor + k × interval`, and your net worth is a subtraction you can audit row by row.
+
+And it looks like an instrument, not a form. SpendState is built in a **hardware cyber-brutalist** idiom — chamfered panels, monospace telemetry, signal LEDs, hard rules — because money is telemetry, and telemetry deserves a console.
 
 > [!TIP]
-> On first boot, SpendState automatically seeds a realistic dataset of 17 subscriptions (15 active, 1 suspended, 1 terminated) with a reconstructed transaction ledger so you can explore the analytics immediately.
+> **First boot seeds a full, internally-consistent demo** — 17 subscriptions with reconstructed billing history, three weeks of daily spends, 3 credit cards, 5 amortising loans, an income ledger and 5 linked accounts. Everything is live and explorable in under a second. Reset it away whenever you like.
 
 ---
 
-## Financial OS Domains & Subsystems
+## ▍ What you get
 
-The application is a **Financial Operating System shell** around independent domain engines. Each domain owns a cockpit (sub-navigation) rendered by the shell; the composition is data-driven in `src/app/nav.ts`, so adding an engine means one entry + one page.
-
-| Domain | Route | Status | Purpose & Capabilities |
-| :--- | :--- | :--- | :--- |
-| **`CMD`** Master Command | `/` | **Live** | The OS cockpit: Total System Burn roll-up, per-engine burn tags, subsystem status matrix (LIVE/STANDBY), next critical outflow, and burn composition across live engines. |
-| **`SUBS`** Subscriptions | `/subs` | **Live** | The SpendState engine — monthly burn hero, segmented load rail, spending signal, category breakdown, concentration gauges, 30-day incoming stream. |
-| — Registry | `/subs/flow` | Live | Searchable subscription index with fuzzy query parsing and multi-density grid/list views. |
-| — Process Diagnostic | `/subs/flow/:id` | Live | Per-process execution history, renewal projection, schedule controls, and termination console. |
-| — Payment Matrix | `/subs/time` | Live | 6-week daily cashflow grid, 13-month calendar horizon rail, and day inspector. |
-| — System Insights | `/subs/data` | Live | Category distribution, concentration gauges, dormant spend scanner, cycle telemetry. |
-| **`CRD`** Credit Cards | `/cards` | Standby *(v0.2.0)* | Statement cut-off mapping, 45-day zero-interest grace tracker, aggregate limit utilisation gauges. |
-| **`DEBT`** Loans & EMIs | `/loans` | Standby *(v0.3.0)* | Principal vs interest decay amortization, debt runway metrics, prepayment payoff simulators. |
-| **`SPND`** Daily Spends | `/spends` | Standby *(v0.4.0)* | Micro-transaction ledger, discretionary burn velocity, weekly spending limiters. |
-| **`SYS`** System Host | `/sys` | **Live** | Skin selector, base currency & static FX, JSON vault backup/import, CSV export, maintenance tools. |
-
-Legacy routes `/flow`, `/time`, `/data` redirect into `/subs/*`; `/flow/:id` renders directly so deep links keep working.
+| | |
+| :-- | :-- |
+| **🔒 Local-first, offline-only** | Every write lands in IndexedDB. The shell is precached by a service worker, so the whole OS boots with zero network. |
+| **🧮 Deterministic arithmetic** | Static FX table, anchor-based cycle dates, UTC day math. The same inputs produce the same numbers, forever — no timezone drift, no month-boundary bugs. |
+| **🖥️ Six live engines** | Subscriptions · Credit Cards · Loans & EMIs · Daily Spends · Income · Accounts. Not "coming soon" — shipped. |
+| **🧭 Master Command** | One cockpit that rolls every engine into a single total burn, net cashflow and net worth. |
+| **🪪 The account spine** | Balances are **derived, never stored** — computed from income, spends, subscription charges, EMIs, card settlements and transfers. |
+| **⌨️ Keyboard-native** | `⌘K` command palette, `/` search, single-letter actions, `1–6` domain jumps. |
+| **🎨 Two skins, two modes** | Night (OLED brutalism) and Daylight (editorial paper), plus a calm **Minimal / Zen** mode. |
+| **📦 Portability** | One-click JSON snapshot export/import and CSV ledgers — your data leaves as easily as it arrives. |
+| **📴 Installable PWA** | Install to desktop or phone; runs like a native app, updates on your command. |
 
 ---
 
-## Key Features
+## ▍ The mental model
 
-- **Cyber-Brutalist Aesthetic**: Hardware-inspired interface featuring chamfered cut-corner panels, monospace telemetry, LED status signals, hard rules, and micro typography.
-- **Dual Visual Skins**: High-contrast Night mode (reference OLED dark) and Daylight mode (crisp editorial paper reprint) with smooth 200ms skin transitions.
-- **Command Palette (`Ctrl+K` / `⌘K`)**: Fast search across subscriptions, categories, statuses, price thresholds (`>500`), and quick-action shortcuts.
-- **Spending Signal & Velocity**: Interactive SVG waveform comparing normalized run-rate vs. actual recorded cash spikes with 3-month predictive forecasting.
-- **Deterministic Math**: Static FX currency conversion and anchor-based date derivations ensure reproducible arithmetic with zero timezone or month-boundary drift.
-- **PWA & Offline Resilience**: Service Worker asset caching, self-hosted variable typography (`Space Grotesk`, `JetBrains Mono`), and local persistence.
+SpendState borrows the language of operating systems because recurring money really does behave like one.
+
+- **Subscriptions are processes.** Each one has an identity (`SUB-41207`), a state (`active` / `suspended` / `terminated`), a cycle schedule and a resource-consumption rate.
+- **Money is resource consumption.** Every billing cadence — weekly, monthly, quarterly, yearly, custom — normalises into **Burn Rate**: currency consumed per month and per day.
+- **Renewals are scheduled events.** A renewal is never a surprise. It's `anchor + k × interval`, computed deterministically, so a subscription anchored on the 31st keeps charging on the 31st.
+- **Your device is the host volume.** There is no remote backend, no user account, no cloud database, no analytics pixel. The state is *here*.
+
+> **Terminology:** user-facing copy always says **"Subscriptions"**. The word **"process"** appears only in the OS metaphor — identifiers, comments, internal semantics.
 
 ---
 
-## The Roadmap: Live Engines → Full Financial OS
+## ▍ The engines
 
-The OS shell is live today with the Subscriptions engine running inside it. The remaining engines are already scaffolded as **standby decks** in the navigation (`/cards`, `/loans`, `/spends`) — visible as honest "core pending" telemetry shells until their arithmetic ships. The same deterministic math, static FX and local IndexedDB volume will power them:
+The shell is data-driven: each engine is an entry in `src/app/nav.ts` with its own cockpit, sub-navigation and identity. Adding a seventh engine is one entry plus one page — nothing else in the OS changes.
+
+| Domain | Route | State | What it does |
+| :-- | :-- | :-- | :-- |
+| **`CMD`** Master Command | `/` | `LIVE` | The OS cockpit — total system burn, net cashflow, net worth, per-engine burn tags, subsystem matrix, next critical outflow, burn composition. |
+| **`SPND`** Daily Spends | `/spends` | `LIVE` | Variable-cash ledger — spent-today hero, 28-day velocity, weekly discretionary limiter, category mix, income log. |
+| **`SUBS`** Subscriptions | `/subs` | `LIVE` | The founding engine — burn hero, segmented load rail, spending signal, incoming stream, diagnostic boards. |
+| **`CRD`** Credit Cards | `/cards` | `LIVE` | Statement cycles, utilisation, minimum due, carry cost, rewards velocity, full transaction registry. |
+| **`DEBT`** Loans & EMIs | `/loans` | `LIVE` | Amortisation schedules, principal/interest decay, debt-free projection, per-EMI history. |
+| **`SYS`** System Host | `/sys` | `LIVE` | Skin, currency & FX reference, horizon, vault export/import, category taxonomy, danger zone. |
+
+Each engine exposes up to four modules — `CORE` (overview) · `FLOW` (registry) · `DATA` (insights) · and engine-specific boards like `TIME` (payment matrix) or `PATTERNS` (forensics).
+
+**Two things are not engines, by design:**
+- **Income** is a low-volume *log* — logging your salary should feel as pleasant as logging a spend. It lives inside the Spends domain (`?log=income`) and surfaces as **net cashflow** on Master Command.
+- **Accounts** are the *spine* — surfaced as a full balance-sheet section inside Master Command, not a route of their own.
+
+---
+
+## ▍ The spine: accounts & net worth
+
+An account is a money-holding container — bank, savings, cash, wallet, investment or credit. Its balance is **never stored**: it's the signed sum of every movement posted into it.
 
 ```
-+-----------------------------------------------------------------------------------+
-|                        SPENDSTATE // FUTURE SYSTEM TOPOLOGY                         |
-|                                                                                   |
-|  +-----------------------------------------------------------------------------+  |
-|  |                           CORE CASHFLOW ENGINES                             |  |
-|  |  +---------------+  +---------------+  +---------------+  +---------------+ |  |
-|  |  | SUBSCRIPTIONS |  | DAILY SPENDS  |  | CREDIT CARDS  |  | LOANS & EMIS  | |  |
-|  |  | (v0.0.1 Live) |  | (Transactions)|  | (Grace Period)|  | (Amortization) | |  |
-|  |  +---------------+  +---------------+  +---------------+  +---------------+ |  |
-|  +-----------------------------------------------------------------------------+  |
-|                                        |                                          |
-|  +-----------------------------------------------------------------------------+  |
-|  |                     UNIFIED FINANCIAL TELEMETRY ENGINE                      |  |
-|  |   True Burn Rate · Liquidity Runway · Net Cash Velocity · Exposure Risk   |  |
-|  +-----------------------------------------------------------------------------+  |
-|                                        |                                          |
-|  +-----------------------------------------------------------------------------+  |
-|  |                     LOCAL-FIRST ENCRYPTED STORAGE ENGINE                    |  |
-|  |         Zero Telemetry · Private IndexedDB · Encrypted P2P Vault Sync       |  |
-|  +-----------------------------------------------------------------------------+  |
-+-----------------------------------------------------------------------------------+
+   income        →  +        subscription charges →  −
+   spend         →  −        loan EMIs            →  −
+   cardsettlement→  −        transfers            →  − / +
+
+   balance = openingBalance + Σ movements
+   net worth = Σ assets − (Σ credit accounts + outstanding card balances)
 ```
 
-### Roadmap & Planned Modules
-
-1. **Credit Cards & Statement Cycle Matrix** *(standby deck live at `/cards`)*
-   - Statement generation dates, due date matrices, and grace period countdown timers.
-   - Multi-card utilization tracking and optimal settlement order algorithms to eliminate interest charges.
-
-2. **Loans, EMIs & Debt Amortization Engine** *(standby deck live at `/loans`)*
-   - Principal vs. interest decay curves, fixed/floating rate tracking, and amortization schedules.
-   - Prepayment impact simulators: see exact months shaved off debt per extra rupee paid.
-
-3. **Daily Spends & Micro-Transaction Ledger** *(standby deck live at `/spends`)*
-   - Real-time manual/file transaction ingestion with instant category auto-assignment.
-   - Variable expenditure velocity metrics and weekly discretionary burn limits.
-
-4. **Recurring Income & Net Capital Velocity**
-   - Salary and recurring cash inflow scheduling balanced against system burn rate.
-   - Real-time Net Runway calculation: exact days of financial independence at current burn.
-
-5. **Encrypted Peer-to-Peer Backup & Multi-Device Sync**
-   - End-to-end encrypted backup sync without central cloud accounts or third-party data collection.
+That's the whole trick: one write path, one derived truth. Change any input — a charge, a payment, a transfer — and the balance sheet, net worth and every downstream analytic recompute themselves.
 
 ---
 
-## Repository Structure
+## ▍ How it's built
+
+Strict, one-directional layering. Data flows down; nothing reaches back up.
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  FINANCIAL OS SHELL  (the dumb shell)                                     │
+│  NavigationRail · MobileNav · SystemHeader · DomainFrame · CommandPalette │
+├──────────────────────────────────────────────────────────────────────────┤
+│  DOMAIN ENGINES  (data-driven from src/app/nav.ts)                        │
+│  CMD  │  SPND  │  SUBS  │  CRD  │  DEBT  │  SYS                           │
+├──────────────────────────────────────────────────────────────────────────┤
+│  REACTIVE LAYER      Zustand UI store · Dexie live queries · hooks        │
+├──────────────────────────────────────────────────────────────────────────┤
+│  PURE ENGINES        analytics · cards · debt · spends · income · accounts│
+│                      cycle · date · money · catalog · fuzzy               │
+├──────────────────────────────────────────────────────────────────────────┤
+│  STORAGE             Dexie.js → IndexedDB  ("spendstate", schema v6)      │
+│                      the single write seam — views never touch a table    │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+Rules the codebase never breaks:
+
+1. **Views never touch Dexie.** Every write goes through a named mutator in `src/lib/db.ts`.
+2. **Derive, don't store.** Balances, burn rates, statements and net worth are all computed.
+3. **Pure engines stay pure.** `analytics`, `cards`, `debt`, `spends`, `income`, `accounts` are functions of data in, numbers out — no I/O, no randomness.
+
+---
+
+## ▍ The three guarantees
+
+**1 · Offline forever.** The shell, fonts, icons and textures are precached. Nothing is fetched at runtime — not a font, not an FX rate, not an icon.
+
+**2 · Deterministic money.** FX is a documented static table keyed to INR (9 currencies). Amounts are converted at read time with `Intl.NumberFormat`. No live feed, no floating drift in display.
+
+**3 · Deterministic dates.** All dates are plain ISO calendar days on a UTC day engine — no timezone, no DST. Occurrences are computed, never stepped, so day-of-month never drifts.
+
+> [!NOTE]
+> The trade-off is the point: because there's no server, there's also no sync, no password reset, and no "we'll email you a link". Your data is only as durable as the device it's on — so **export a snapshot** from System Host periodically.
+
+---
+
+## ▍ Privacy, in one paragraph
+
+There is no backend to leak. No analytics SDK, no tracking pixel, no remote fonts, no external API call. SpendState cannot phone home because it has no home to phone. Delete the site data and it's as if you never used it.
+
+---
+
+## ▍ Tech stack
+
+| Layer | Choice |
+| :-- | :-- |
+| **UI** | React 19 · React Router 7 · Motion 13 · Tailwind CSS 4 (token-driven via `@theme inline`) |
+| **State** | Zustand 5 (persisted UI prefs) · Dexie React hooks (`useLiveQuery`) |
+| **Storage** | IndexedDB via Dexie 4 — 11 tables, schema v6 |
+| **Build** | Vite 8 (rolldown) · TypeScript 7 (strict) · `@tailwindcss/vite` |
+| **PWA** | `vite-plugin-pwa` — precache + prompt-to-update (`registerType: 'prompt'`) |
+| **Icons** | `react-icons` (Simple Icons / Font Awesome / Remix / Tabler) + hand-built brand marks |
+| **Type** | Space Grotesk + JetBrains Mono — self-hosted variable WOFF2 |
+| **Icons & assets** | `scripts/generate-icons.mjs` — a zero-dependency PNG encoder that draws the icon set and grain tile |
+
+---
+
+## ▍ Getting started
+
+Requires **Node 20+** and **pnpm** (npm works too).
+
+```bash
+# clone, then:
+pnpm install      # install dependencies
+pnpm dev          # start the dev server → http://localhost:5173
+```
+
+The demo dataset seeds itself on first boot. Explore, then wipe it from **System Host → Danger Zone → Reset to demo / Purge all data**.
+
+### Scripts
+
+| Script | Does |
+| :-- | :-- |
+| `pnpm dev` | Start the Vite dev server with HMR |
+| `pnpm build` | Strict typecheck (`tsc --noEmit`) **then** production bundle + PWA |
+| `pnpm preview` | Serve the built PWA locally (`:4173`) to test offline/install |
+| `pnpm typecheck` | TypeScript, strict, no emit |
+| `pnpm icons` | Regenerate PWA icons and the background noise tile |
+
+---
+
+## ▍ Project structure
 
 ```
 src/
-├── app/nav.ts                 # DOMAINS model: domain rack, sub-navs, status
+├── app/nav.ts              # DOMAINS model — the rack, sub-navs and statuses
 ├── components/
-│   ├── brand/                 # Badges, Glyphs, Wordmarks
-│   ├── charts/                # BurnRail, CategoryBlock, SpendingSignal
-│   ├── shell/                 # CyberShell, DomainFrame, NavRail, Palette, Toaster
-│   ├── subs/                  # ProcessCard, Composer, TerminateDialog, Stream
-│   └── ui/                    # CutPanel, CyberButton, Signal, Controls, Micro
-├── hooks/                     # useSystem (reactive pipeline), usePlatform, useElementWidth
+│   ├── accounts/           # AccountsSection (the spine, inside Master Command)
+│   ├── brand/              # ServiceBadge · ServiceGlyph · Wordmark
+│   ├── cards/  debt/  income/  spends/  subs/   # per-engine consoles & registries
+│   ├── charts/             # BurnRail · CategoryBlock · SpendingSignal · DebtCurve
+│   ├── settings/           # CategoryManager (custom taxonomy)
+│   ├── shell/              # CyberShell · DomainFrame · Nav · Palette · Toaster · ErrorBoundary
+│   └── ui/                 # CutPanel · CyberButton · Signal · Controls · Micro · Icons
+├── hooks/                  # useSystem · useSpends · useCards · useDebt · useIncome · useAccounts
 ├── lib/
-│   ├── analytics.ts           # Financial analytics pipeline (summarize, viewOf)
-│   ├── catalog.ts             # Service preset catalog
-│   ├── cycle.ts               # Occurrence derivation & interval math
-│   ├── date.ts                # ISO calendar date arithmetic
-│   ├── db.ts                  # Dexie.js database schema & CRUD write engine
-│   ├── money.ts               # Static FX table & Intl number formatting
-│   └── types.ts               # Domain types, categories, signals
-├── pages/
-│   ├── MasterCommand.tsx      # "/" — the Financial OS cockpit
-│   ├── Overview.tsx           # "/subs" — the Subscriptions engine overview
-│   ├── Flow.tsx, ProcessDetail.tsx, PaymentMatrix.tsx, Insights.tsx
-│   ├── standby/               # CardsDeck, LoansDeck, SpendsDeck + shared StandbyDeck
-│   └── Settings.tsx, NotFound.tsx
-├── store/ui.ts                # Zustand UI preference store
-└── styles/                    # Tokens, CSS chamfers, fonts, base reset
+│   ├── db.ts               # Dexie schema + the ONLY write path
+│   ├── analytics.ts        # summarize · series · streams · matrix · notes
+│   ├── accounts.ts         # THE SPINE — derived balances & net worth
+│   ├── cards.ts  debt.ts  spends.ts  income.ts   # per-engine analytics
+│   ├── cycle.ts  date.ts  money.ts  fuzzy.ts  catalog.ts  id.ts  portability.ts
+│   ├── *-seed.ts           # demo datasets (guarded, resettable)
+│   └── types.ts            # domain types, categories, signal maps
+├── pages/                  # one module per route (~24 routes)
+├── store/ui.ts             # Zustand UI store
+└── styles/                 # tokens · chamfer components · fonts · Minimal/Zen skin
 ```
 
 ---
 
-## Technical Specifications & Integrity
+## ▍ Data model
 
-- **Strict TypeScript**: 100% strict type safety (`npm run typecheck`).
-- **Zero Remote Dependencies**: Self-hosted variable fonts, SVG glyphs, offline FX tables.
-- **Living Architectural Manual**: See [AGENTS.md](file:///e:/Projects/SpendState/AGENTS.md) for full architectural documentation and invariant guidelines.
+Eleven tables in the `spendstate` IndexedDB volume. Reference data is normalised; display fields are denormalised so history survives a purge.
+
+```
+subscriptions ──1:N──▶ payments          creditCards ──1:N──▶ cardTransactions
+loans         ──1:N──▶ loanPayments      accounts    ──1:N──▶ transfers
+spends · incomes · meta
+```
+
+- **`Subscription`** — `price · currency · billingCycle · nextBillingDate (the anchor) · status · cyclesExecuted`
+- **`Payment`** — a concrete charge; `origin: 'derived' | 'confirmed'`
+- **`Spend` / `Income`** — the variable-cash ledger and its inflow mirror (`accountId` links each to a container)
+- **`CreditCard` / `CardTransaction`** — `purchase | payment | fee | interest | reward | refund`; balance always derived
+- **`Loan` / `LoanPayment`** — EMI, principal/interest split, balance-after
+- **`Account` / `Transfer`** — the spine and its money movements
+- **`meta`** — seed markers and settings that aren't UI prefs
 
 ---
 
-**SPENDSTATE** — *Take control of what drains your capital.*
+## ▍ Keyboard
+
+The console is meant to be driven.
+
+| Key | Action |
+| :-- | :-- |
+| `⌘K` / `Ctrl K` · `/` | Command palette / search |
+| `N` `X` `L` `C` `I` `A` | New subscription · log spend · loan · card txn · income · account |
+| `1` – `6` | Jump to Master Command · Spends · Subs · Cards · Loans · System |
+| `T` · `M` | Toggle Night/Daylight · toggle Cyber/Zen mode |
+| `ESC` | Close the active console, sheet or palette |
+
+---
+
+## ▍ Design language & modes
+
+**Financial cybercore.** Chamfered cut-corner panels, monospace telemetry, signal LEDs, hard rules, micro labels — all subordinate to readability. Two skins share one token API:
+
+- **`NIGHT`** — the reference: OLED black, acid-lime signal, high-contrast telemetry.
+- **`DAYLIGHT`** — a white-brutalist reprint on warm paper, with text-safe ink variants of every signal colour.
+- **`MINIMAL / ZEN`** — a calm, soft-modern profile (rounded pills, circular switches, 5 zen accents) for when you want the data without the console.
+
+Switch any of them instantly with `T` and `M`.
+
+---
+
+## ▍ Roadmap
+
+v0.0.1 is **feature-complete** — all six engines ship and the ledger is coherent. What's next is hardening, not headline features:
+
+- [ ] **Automated backups** — scheduled snapshot export + import & restore flow.
+- [ ] **Renewal reminders** — "Netflix hits in 3 days", delivered as PWA notifications.
+- [ ] **Test suite** — unit coverage for the deterministic engines (`date`, `cycle`, `money`, `analytics`).
+- [ ] **Distinct per-domain cockpits** — deeper visual differentiation between engine overviews.
+- [ ] **Optional encrypted multi-device sync** — end-to-end encrypted vault, still no central account.
+
+No item on this list will ever add telemetry, a cloud account or a remote dependency.
+
+---
+
+## ▍ Documentation
+
+The full architectural manual — invariants, schema, engine contracts, extension protocol — lives in **[AGENTS.md](AGENTS.md)**. It is the single source of truth for the system and is kept in lock-step with the code.
+
+---
+
+<div align="center">
+
+**SPENDSTATE** — *your money, as an operating system.*
+
+Built by **Hariharen** · [hariharen.site](https://hariharen.site)
+
+<sub>Local-first · Zero telemetry · 100% offline</sub>
+
+</div>

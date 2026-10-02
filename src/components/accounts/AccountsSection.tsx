@@ -45,9 +45,9 @@ export function AccountsSection() {
       .filter((v) => v.liability)
       .sort((a, b) => Math.abs(b.balanceBase) - Math.abs(a.balanceBase))
     const assetTotal = assets.reduce((s, v) => s + Math.max(0, v.balanceBase), 0)
-    const liabTotal = liabilities.reduce((s, v) => s + Math.abs(v.balanceBase), 0)
+    const liabTotal = liabilities.reduce((s, v) => s + Math.abs(v.balanceBase), 0) + summary.cardDebt
     return { assets, liabilities, assetTotal, liabTotal }
-  }, [summary.active])
+  }, [summary.active, summary.cardDebt])
 
   const splitTotal = ledger.assetTotal + ledger.liabTotal
   const assetPct = splitTotal > 0 ? ledger.assetTotal / splitTotal : 0
@@ -185,7 +185,7 @@ export function AccountsSection() {
             ) : (
               <p className="meta px-3 py-3 text-faint">NO ASSET ACCOUNTS — ADD A BANK, WALLET OR CASH CONTAINER.</p>
             )}
-            {ledger.liabilities.length > 0 && (
+            {(ledger.liabilities.length > 0 || summary.cardDebt > 0) && (
               <>
                 <div className="flex items-center justify-between border-y border-line bg-bg2 px-3 py-1.5 md:px-4">
                   <span className="micro flex items-center gap-1.5 text-orangeink">
@@ -193,7 +193,39 @@ export function AccountsSection() {
                   </span>
                   <span className="numeral text-[12px] font-semibold text-orangeink">{formatMoney(ledger.liabTotal, base)}</span>
                 </div>
-                <ul className="divide-y divide-line">{ledger.liabilities.map((v) => ledgerRow(v, ledger.liabTotal))}</ul>
+                <ul className="divide-y divide-line">
+                  {ledger.liabilities.map((v) => ledgerRow(v, ledger.liabTotal))}
+                  {summary.cardDebt > 0 && (
+                    <li>
+                      <div className="flex items-center gap-3 px-3 py-3 md:px-4">
+                        <span className="grid h-9 w-9 shrink-0 place-items-center border border-red bg-redsoft font-mono text-[10px] font-semibold text-redink">
+                          CRD
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate text-[13px] font-semibold text-fg">Credit cards</span>
+                            <span className="micro truncate text-faint">outstanding balances</span>
+                          </span>
+                          <span className="mt-1.5 flex items-center gap-2">
+                            <span className="flex h-1.5 min-w-0 flex-1 overflow-hidden border border-line bg-surface2">
+                              <span
+                                className="block h-full bg-orange"
+                                style={{ width: `${Math.max(2, (ledger.liabTotal > 0 ? summary.cardDebt / ledger.liabTotal : 0) * 100)}%` }}
+                              />
+                            </span>
+                            <span className="micro w-10 shrink-0 text-right text-faint">
+                              {(ledger.liabTotal > 0 ? (summary.cardDebt / ledger.liabTotal) * 100 : 0).toFixed(0)}%
+                            </span>
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="numeral block text-[15px] font-bold text-redink">−{formatMoney(summary.cardDebt, base)}</span>
+                          <span className="micro block text-orangeink">OUTSTANDING</span>
+                        </span>
+                      </div>
+                    </li>
+                  )}
+                </ul>
               </>
             )}
           </CutPanel>

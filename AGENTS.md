@@ -115,7 +115,8 @@ E:/Projects/SpendState/
     │   │   ├── SystemFooter.tsx  # Minimal footer: counts, currency, creator credit
     │   │   ├── SystemHeader.tsx  # Instrument bar: module, status, clock, query trigger, CTA
     │   │   ├── SystemToaster.tsx # Console-log style toast stack (auto-dismiss / sticky)
-    │   │   └── UpdatePrompt.tsx  # SW registration + "SYSTEM UPDATE AVAILABLE" reload prompt
+    │   │   ├── UpdatePrompt.tsx  # SW registration + "SYSTEM UPDATE AVAILABLE" reload prompt
+    │   │   └── ErrorBoundary.tsx # Last line of defence: catches uncaught render faults → recovery station
     │   ├── cards/
     │   │   ├── CardComposer.tsx  # Card console (add/edit/delete card) + transaction console (record/edit/delete,
     │   │   │                     #   Ctrl+Enter save, balance forecast, PAY FULL / PAY MIN quick fills)
@@ -196,7 +197,7 @@ E:/Projects/SpendState/
     │   ├── CardsInsights.tsx     # "/cards/data" — card analytics: register, rewards, fees, compliance
     │   ├── DebtOverview.tsx      # "/loans" — Loans & EMIs cockpit
     │   ├── DebtFlow.tsx          # "/loans/flow" — loan registry
-    │   ├── LoanDetail.tsx        # "/loans/flow/:id" — per-loan board (amortization, schedule)
+    │   ├── LoanDetail.tsx        # "/loans/flow/:id" — per-loan board (amortization, schedule, per-EMI edit/delete)
     │   ├── DebtInsights.tsx      # "/loans/data" — debt analytics
     │   ├── Spends.tsx            # "/spends" — Daily Spends cockpit (hero, velocity, ledger, limiter)
     │   ├── SpendFlow.tsx         # "/spends/flow" — full spend registry with range presets & filters
@@ -431,6 +432,8 @@ History is **reconstructed from each subscription's own anchor** and capped at `
 | `setProcessStatus(id, status)` | Transitions `active`/`suspended`/`terminated`; sets `statusChangedAt` (cleared when returning to active). |
 | `markUsed(id)` | Sets `lastUsedAt = today` — resets the dormancy timer used by analytics. |
 | `purgeSubscription(id)` | **Deletes the subscription AND all of its payment history.** The terminate dialog states this explicitly. |
+| `updatePayment(id, patch)` / `deletePayment(id)` | Correct or delete a **single** recorded charge (date/amount) without touching the schedule. An edited row is marked `origin: 'confirmed'`. |
+| `updateLoanPayment(id, patch)` / `deleteLoanPayment(id)` | Correct or delete a **single** recorded EMI; deletion renumbers the remaining EMIs for that loan so the sequence stays contiguous. |
 | `wipeAll()` / `resetToSeed()` | Destructive maintenance. Both clear `meta`; `resetToSeed()` (in `seed-reset.ts`) re-arms every seed guard and re-seeds subscriptions, spends, loans and cards immediately. Both are dual-confirm (ArmedButton / TerminateDialog). |
 | `exportSnapshot(settings)` / `importSnapshot(snapshot, mode)` | Portable `Snapshot { app:'spendstate', version:1, exportedAt, settings, subscriptions, payments }`. `mode` is `'replace'` (clears first) or `'merge'` (`bulkPut`). Returns an `ImportReport`. |
 
@@ -721,7 +724,7 @@ Hardware-inspired diagnostic station for one subscription (`ProcessDetail.tsx`):
 - **Control rail**: Edit (opens the composer), Confirm Cycle (execute + advance), Suspend/Resume, Terminate Subscription / Purge Record (via the global `TerminationConsole`).
 - **Metadata register**: cycles executed, initialized, age, last marked used, anchor day, interval, status-changed, last write.
 - **Lifetime readout strip**: share of burn, lifetime charged, recorded charges, next occurrence +1, projected 12-month, days since anchor.
-- **Payment history ledger**: reverse-chronological table with `TXN-…` references and `CONFIRMED`/`SCHEDULED` origin chips.
+- **Payment history ledger**: reverse-chronological table with `TXN-…` references and `CONFIRMED`/`SCHEDULED` origin chips, plus per-row **edit** (date/amount, marks CONFIRMED) and two-step **delete** for a single charge.
 - **Spending signal**: per-subscription monthly cash via `paymentSeriesFor()`.
 - Unknown id → `SUBSCRIPTION NOT FOUND` empty state.
 - Legacy alias: `/flow/:id` renders this page directly (the id is preserved).
@@ -791,7 +794,7 @@ Accounts are **not a domain** — they are the **spine**, surfaced as a standalo
 - a subscription's charges (`subscription.accountId`) → − · loan EMIs (`loan.accountId`) → −
 - card settlements (`creditCard.accountId`, `type: 'payment'`) → −
 - **`Transfer`** rows between accounts → −/+.
-- **Net worth = Σ asset balances − Σ credit liabilities.**
+- **Net worth = Σ asset balances − (Σ credit-account liabilities + outstanding credit-card balances).** Card purchases never post into a credit account (only settlements move the bank), so `summarizeAccounts()` adds the cards engine's outstanding (`cardBalance()`) as the liability of record.
 
 The section renders a **balance-sheet statement** (net-worth anchor + assets/liabilities meter), an **account ledger** (ranked rows grouped Assets / Liabilities, each with a proportional balance bar), the **transfer rail**, the movement stream and signals; account rows open `AccountComposer` to edit (no route of its own). Model: `Account { name, type, institution, currency, openingBalance, creditLimit?, color, notes, status }` + `Transfer { fromAccountId, toAccountId, amount, currency, date, notes }`; `AccountField` is the shared picker wired into the Spend, Income, Subscription, Loan and Card composers; `summarizeAccounts()` (`src/lib/accounts.ts`) builds the views, net worth, liquid cover, type slices, movement stream and notes. Demo seeding (`account-seed.ts`) writes the five demo accounts **and** a short transfer ledger; the seeded demo loans (unlike subs/spends) deliberately carry **no** `accountId` so their reconstructed EMI history does not swamp a single cash account.
 

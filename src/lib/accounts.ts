@@ -21,6 +21,7 @@ import type {
 } from './types'
 import { ACCOUNT_TYPE_META } from './types'
 import { convert } from './money'
+import { cardBalance } from './cards'
 import { monthKey, todayISO } from './date'
 
 export interface AccountMovement {
@@ -141,6 +142,8 @@ export interface AccountsSummary {
   netWorth: number
   totalAssets: number
   totalLiabilities: number
+  /** Outstanding credit-card balances (a liability the cards engine owns). */
+  cardDebt: number
   /** Cash-like balances (bank/savings/cash/wallet). */
   liquid: number
   byType: AccountTypeSlice[]
@@ -177,7 +180,16 @@ export function summarizeAccounts(
 
   const active = views.filter((v) => v.account.status === 'active')
   const totalAssets = active.filter((v) => !v.liability).reduce((s, v) => s + Math.max(0, v.balanceBase), 0)
-  const totalLiabilities = active.filter((v) => v.liability).reduce((s, v) => s + Math.abs(v.balanceBase), 0)
+  const creditLiabilities = active.filter((v) => v.liability).reduce((s, v) => s + Math.abs(v.balanceBase), 0)
+
+  // Card purchases never post into a credit account (only settlements move the
+  // bank), so the cards engine's outstanding balance is the liability of record.
+  const cardDebt = input.cards.reduce(
+    (sum, c) => sum + cardBalance(input.cardTransactions.filter((t) => t.cardId === c.id), base),
+    0,
+  )
+
+  const totalLiabilities = creditLiabilities + cardDebt
   const netWorth = totalAssets - totalLiabilities
 
   for (const v of views) {
@@ -217,6 +229,7 @@ export function summarizeAccounts(
     netWorth,
     totalAssets,
     totalLiabilities,
+    cardDebt,
     liquid,
     byType,
     recent,
