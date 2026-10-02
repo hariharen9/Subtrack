@@ -168,7 +168,7 @@ E:/Projects/SpendState/
     │   ├── cx.ts                 # Class name joiner
     │   ├── cycle.ts              # Cycle economics + anchor-based occurrence generation
     │   ├── date.ts               # ISO calendar-day engine (no timezone, no drift)
-    │   ├── db.ts                 # Dexie schema, CRUD, snapshots — the only write path
+    │   ├── db.ts                 # Dexie schema, CRUD, snapshots — the Dexie implementation behind the repository seam
     │   ├── debt.ts               # loan analytics: EMI, amortisation, debt-free projection, notes
     │   ├── debt-seed.ts          # 5-loan demo dataset + reconstructed amortisation history
     │   ├── fuzzy.ts              # parseQuery(), fuzzyScore(), searchSubscriptions()
@@ -179,7 +179,9 @@ E:/Projects/SpendState/
     │   ├── portability.ts        # JSON snapshot export/import, CSV ledger, clipboard readout
     │   ├── seed.ts               # 17-subscription demo dataset + reconstructed ledger + spends demo
     │   ├── seed-reset.ts         # resetToSeed() orchestrator (re-arms & re-runs every seed)
-    │   ├── spends.ts              # spend analytics pipeline (daily/weekly/monthly/yearly velocity, limiter, ratio)
+    │   ├── repository/           # DATA-LAYER SEAM: Repository contract + Dexie impl (default)
+    │   │                         #   + registry/write-facade + lazily-imported Firestore impl
+    │   ├── spends.ts             # spend analytics pipeline (daily/weekly/monthly/yearly velocity, limiter, ratio)
     │   └── types.ts              # Domain interfaces, categories, signal maps
     ├── pages/
     │   ├── MasterCommand.tsx     # "/" — Central OS cockpit: apex burn odometer, domain allocation register,
@@ -206,7 +208,8 @@ E:/Projects/SpendState/
     │   ├── SpendPatterns.tsx     # "/spends/patterns" — forensic engine (discipline, anomalies, phase)
     │   └── NotFound.tsx          # 404 terminal diagnostic view
     ├── store/
-    │   └── ui.ts                 # Zustand store (persisted prefs, overlays, toasts, booted)
+    │   ├── ui.ts                 # Zustand store (persisted prefs, overlays, toasts, booted)
+    │   └── cloud.ts              # Optional-cloud state: local opt-in flag, auth, sync status
     ├── styles/
     │   ├── index.css             # Root imports + @custom-variant day
     │   ├── tokens.css            # Skin tokens (dark/day) + @theme inline Tailwind bridge
@@ -442,6 +445,32 @@ Read helpers: `listSubscriptions()`, `getSubscription(id)`, `listPayments()`, `p
 `SubscriptionDraft` is the accepted shape for create/update (name, serviceId, price, currency, billingCycle, customIntervalDays, nextBillingDate, category, icon, color, notes).
 
 ---
+
+### 4.4 Repository Seam & Optional Cloud Backend (`src/lib/repository/`)
+
+The UI never imports `db.ts` for **writes**. Every mutation is imported from `@/lib/repository`, which dispatches to the active `Repository` implementation.
+
+- **`repository/types.ts`** — the `Repository` contract. Method signatures are derived from `db.ts` (`Db['createSpend']`), so they can never drift, plus `SYNC_TABLES`.
+- **`repository/dexie.ts`** — the **default** implementation: a direct delegate to `db.ts`. Behaviour is identical to before the cloud backend existed.
+- **`repository/index.ts`** — the registry (`getRepository` / `setRepository` / `resetRepository`), the `onMutation` channel, and the named write facade. Each facade call dispatches, then notifies mutation listeners — which is how a sync engine mirrors writes without any call site knowing.
+- **`repository/env.ts`** — reads `VITE_FIREBASE_*` and reports `isCloudConfigured`. Touches no Firebase code. The config is **committed** in `.env` (it is a public web config, not a secret) so end users configure nothing; `.env.local` is a gitignored override for pointing a local clone at a different project.
+- **`repository/cloud.ts`** — orchestration. Reaches `./firestore` **only** through `await import()`.
+- **`repository/firestore.ts`** — the **only** module that imports the Firebase SDK. Loaded lazily; never in the default bundle.
+
+**Reads stay on Dexie.** Hooks read the local volume via `useLiveQuery`; Dexie is always the local read cache, which is what keeps online and offline behaviour identical. Cloud sync is a **two-way mirror**: local writes push up (`setDoc(..., { merge: true })`, batched at 450 docs per `writeBatch`), and `onSnapshot` pulls remote documents back into Dexie.
+
+**Guarantees**
+- No Firebase code in the default bundle: the SDK is a separate lazily-imported chunk (`firestore-*.js`), excluded from the service-worker precache.
+- No network call to Google unless the user opts in. The project config ships in `.env` (a public web config); if it is stripped, `isCloudConfigured` is false and the cloud panel is not rendered at all.
+- The opt-in flag is **local** (`localStorage['spendstate.cloudSync']`), never synced. Turning cloud sync off returns to Dexie and **never deletes local data**.
+- **No Firebase Analytics** is imported anywhere, ever.
+- Firestore is initialised with `persistentLocalCache({ tabManager: persistentMultipleTabManager() })`.
+
+**Data layout**: `users/{uid}/{table}/{id}` — existing Dexie ids become document ids. `meta` is deliberately not synced (device-local seed markers + weekly limit).
+
+**Migration**: `push()` *is* the one-time Dexie → Firestore migration, and it is idempotent — a per-document hash cache means a re-run writes only what changed, and every write is a merge. Documents containing a Blob/File, or serialising over 1 MiB, are skipped and **reported** in the sync panel rather than silently dropped. `undefined` is stripped and dates are normalised to ISO (Firestore Timestamps are converted back to ISO on pull).
+
+**Rules**: `firestore.rules` is owner-only — `users/{uid}/**` is readable/writable only by that uid, and every other path is denied. `pnpm test:rules` runs the assertions in `scripts/test-rules.mjs` against the Firestore emulator.
 
 ## 5. Calculation Engine & Financial Analytics (`src/lib/analytics.ts`)
 
@@ -901,7 +930,7 @@ The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-leve
 - **Build tool**: Vite 8 (`rolldown` bundler) with `@vitejs/plugin-react`, `@tailwindcss/vite`, `vite-plugin-pwa` (all dev dependencies), TypeScript 7 for strict typechecking.
 - **Manifest**: hand-authored in `public/manifest.webmanifest` and referenced by `<link>` — the plugin runs with `manifest: false` so the file stays readable and diffable. Includes `standalone` display, theme colours `#050505`/`#F2F1EC`, maskable icon, and three app shortcuts (new subscription, payment matrix, insights).
 - **Service worker**: `vite-plugin-pwa` with `registerType: 'prompt'` and `injectRegister: null` — registration is manual via `virtual:pwa-register/react` in `UpdatePrompt.tsx`, which polls `registration.update()` every 30 minutes and offers a deliberate **RELOAD CONSOLE** when a new build is cached (`skipWaiting` is not auto-called).
-- **Precache**: `globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}']`, `navigateFallback: 'index.html'`, `cleanupOutdatedCaches`, `clientsClaim`, and **no runtime caching** — the app is fully self-contained, so the precache of every shell asset covers offline use entirely.
+- **Precache**: `globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}']`, `globIgnores: ['**/firestore-*.js']`, `navigateFallback: 'index.html'`, `cleanupOutdatedCaches`, `clientsClaim`, and **no runtime caching** — the app is fully self-contained, so the precache of every shell asset covers offline use entirely. The optional Firebase SDK chunk is deliberately excluded so a default install never downloads it.
 - **Bundling**: every domain and module page is a static import, so the whole console ships in one entry chunk for zero-latency navigation; `manualChunks` still separates vendor code into `react` (react, react-dom, react-router-dom), `motion`, and `data` (dexie, zustand).
 - **Generated assets**: `pnpm run icons` (or `node scripts/generate-icons.mjs`) draws the icon set and the grain tile with a zero-dependency PNG encoder — no hand-checked-in binaries.
 - **Fonts** are self-hosted (`public/fonts/`), so nothing is fetched from a CDN at runtime.

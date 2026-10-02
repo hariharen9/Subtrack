@@ -14,7 +14,8 @@ import { useAccounts } from '@/hooks/useAccounts'
 import { useUI, TOAST_VERBS } from '@/store/ui'
 import { CURRENCIES, formatMoney, convert } from '@/lib/money'
 import { downloadFile } from '@/lib/portability'
-import { wipeAll, reconcileSchedules, DB_SCHEMA_VERSION } from '@/lib/db'
+import { wipeAll, reconcileSchedules } from '@/lib/repository'
+import { DB_SCHEMA_VERSION } from '@/lib/db'
 import { resetToSeed } from '@/lib/seed-reset'
 import { exportJson, openImportDialog, toCsv } from '@/lib/portability'
 import { pidOf, traceOf } from '@/lib/id'
@@ -27,6 +28,7 @@ import { Led } from '@/components/ui/Signal'
 import { ArmedButton, CyberSelect, SegmentedControl, ToggleSwitch } from '@/components/ui/Controls'
 import { IconDownload, IconUpload, IconBolt, IconMoon, IconSun } from '@/components/ui/Icons'
 import { CategoryManager } from '@/components/settings/CategoryManager'
+import { CloudSyncPanel } from '@/components/settings/CloudSyncPanel'
 import { cx } from '@/lib/cx'
 
 const SHORTCUTS: { keys: string[]; label: string }[] = [
@@ -229,6 +231,9 @@ export default function Settings() {
 
           {/* Custom Taxonomy & Categories Manager */}
           <CategoryManager />
+
+          {/* Optional cloud backend — renders nothing unless VITE_FIREBASE_* is set */}
+          <CloudSyncPanel />
 
           {/* horizon */}
           <CutPanel cut="tl" cutSize={14} innerClassName="p-0">

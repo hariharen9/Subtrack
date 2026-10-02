@@ -8,7 +8,7 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { purgeSubscription, setProcessStatus } from '@/lib/db'
+import { purgeSubscription, setProcessStatus } from '@/lib/repository'
 import { useSubscriptions } from '@/hooks/useSystem'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { TerminateDialog } from './TerminateDialog'

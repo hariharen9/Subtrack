@@ -30,12 +30,13 @@ import DebtFlow from '@/pages/DebtFlow'
 import LoanDetail from '@/pages/LoanDetail'
 import DebtInsights from '@/pages/DebtInsights'
 import NotFound from '@/pages/NotFound'
-import { ensureSeeded, ensureSpendsSeeded } from '@/lib/db'
+import { ensureSeeded, ensureSpendsSeeded } from '@/lib/repository'
 import { ensureDebtSeeded } from '@/lib/debt-seed'
 import { ensureCardsSeeded } from '@/lib/card-seed'
 import { ensureIncomeSeeded } from '@/lib/income-seed'
 import { ensureAccountsSeeded } from '@/lib/account-seed'
 import { useUI } from '@/store/ui'
+import { useCloud } from '@/store/cloud'
 import { SmoothScroll } from '@/components/shell/SmoothScroll'
 import { ErrorBoundary } from '@/components/shell/ErrorBoundary'
 
@@ -89,6 +90,8 @@ function BootSequence() {
 
   useEffect(() => {
     let cancelled = false
+    // Re-attach the optional cloud mirror if the user previously opted in.
+    useCloud.getState().init()
     Promise.all([ensureSeeded(), ensureSpendsSeeded(), ensureDebtSeeded(), ensureCardsSeeded(), ensureIncomeSeeded(), ensureAccountsSeeded()])
       .catch((error: unknown) => {
         pushToast({

@@ -16,7 +16,7 @@ import {
 } from '@/lib/types'
 import { CURRENCIES, formatMoney, symbolOf } from '@/lib/money'
 import { todayISO } from '@/lib/date'
-import { createSpend, updateSpend } from '@/lib/db'
+import { createSpend, updateSpend } from '@/lib/repository'
 import { AccountField } from '@/components/accounts/AccountField'
 import { useSpends } from '@/hooks/useSpends'
 import { TOAST_VERBS, useUI } from '@/store/ui'

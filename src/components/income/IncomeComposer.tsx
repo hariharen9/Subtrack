@@ -16,7 +16,7 @@ import {
 import { CURRENCIES, symbolOf, formatMoney, convert } from '@/lib/money'
 import { todayISO, monthKey } from '@/lib/date'
 import { sumIncome } from '@/lib/income'
-import { createIncome, updateIncome, deleteIncome, type IncomeDraft } from '@/lib/db'
+import { createIncome, updateIncome, deleteIncome, type IncomeDraft } from '@/lib/repository'
 import { AccountField } from '@/components/accounts/AccountField'
 import { useIncomes } from '@/hooks/useIncome'
 import { TOAST_VERBS, useUI } from '@/store/ui'

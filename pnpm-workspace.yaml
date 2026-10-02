@@ -1,0 +1,6 @@
+# pnpm 11 reads build-script approvals from here (the "pnpm" field in
+# package.json is no longer honoured). Both packages are transitive
+# dependencies of the Firebase SDK and are safe to build.
+allowBuilds:
+  '@firebase/util': true
+  protobufjs: true

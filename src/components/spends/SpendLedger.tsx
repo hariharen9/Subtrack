@@ -15,7 +15,7 @@ import {
 } from '@/lib/types'
 import { formatMoney, convert } from '@/lib/money'
 import { formatSignalDate, todayISO } from '@/lib/date'
-import { createSpend, deleteSpend } from '@/lib/db'
+import { createSpend, deleteSpend } from '@/lib/repository'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { cx } from '@/lib/cx'
 import { SIGNAL_TEXT } from '@/components/ui/Signal'

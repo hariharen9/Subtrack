@@ -8,7 +8,7 @@
  */
 import { useMemo } from 'react'
 import { useAccountsSystem, useTransfers } from '@/hooks/useAccounts'
-import { deleteTransfer } from '@/lib/db'
+import { deleteTransfer } from '@/lib/repository'
 import { useUI, TOAST_VERBS } from '@/store/ui'
 import { formatMoney, formatCompact, splitMoney } from '@/lib/money'
 import { formatSignalDate } from '@/lib/date'

@@ -22,7 +22,7 @@ import {
   type CardStatement,
 } from '@/lib/cards'
 import { SPEND_CATEGORY_META, CARD_TXN_TYPE_LABEL, CARD_NETWORK_LABEL, type CardTransaction } from '@/lib/types'
-import { updateCreditCard, deleteCreditCard, deleteCardTransaction } from '@/lib/db'
+import { updateCreditCard, deleteCreditCard, deleteCardTransaction } from '@/lib/repository'
 import { CutPanel } from '@/components/ui/CutPanel'
 import { DataStrip } from '@/components/ui/DataStrip'
 import { SectionHeader } from '@/components/ui/Micro'

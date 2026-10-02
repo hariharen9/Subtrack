@@ -15,7 +15,7 @@ import {
   useSystem,
 } from '@/hooks/useSystem'
 import { useUI, TOAST_VERBS } from '@/store/ui'
-import { executeCycle, setProcessStatus, markUsed, updatePayment, deletePayment } from '@/lib/db'
+import { executeCycle, setProcessStatus, markUsed, updatePayment, deletePayment } from '@/lib/repository'
 import { viewOf, paymentSeriesFor } from '@/lib/analytics'
 import { cycleNoun, cycleSuffix, occurrenceAt } from '@/lib/cycle'
 import { formatMoney, splitMoney } from '@/lib/money'

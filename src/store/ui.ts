@@ -17,7 +17,7 @@ import {
   setActiveSubCategories,
   setActiveSpendCategories,
 } from '@/lib/types'
-import { migrateSubCategory, migrateSpendCategory } from '@/lib/db'
+import { migrateSubCategory, migrateSpendCategory } from '@/lib/repository'
 
 export type ToastKind = 'ok' | 'info' | 'warn' | 'alert' | 'busy'
 

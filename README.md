@@ -152,7 +152,23 @@ Rules the codebase never breaks:
 
 ## ▍ Privacy, in one paragraph
 
-There is no backend to leak. No analytics SDK, no tracking pixel, no remote fonts, no external API call. SpendState cannot phone home because it has no home to phone. Delete the site data and it's as if you never used it.
+By default there is no backend to leak: no analytics SDK, no tracking pixel, no remote fonts, no external API call. SpendState cannot phone home because it has no home to phone — delete the site data and it's as if you never used it. The optional cloud mirror is the one exception: it stays off until you sign in, and even then your records are isolated to your account by owner-only database rules — no other user, and no signed-out client, can read them. Note that it is **not** end-to-end encrypted (see "What the operator can see" below).
+
+---
+
+## ▍ Optional: cloud sync
+
+SpendState runs entirely on your device by default. Sync is built in and needs **no setup** — there are no keys to paste and nothing to configure:
+
+- **Just sign in.** Google or email/password; the mirror starts on your first sign-in.
+- **Nothing to configure.** The app ships already connected to its own Firebase project.
+- **Your data is mirrored, not moved.** Dexie stays the engine; the cloud is a two-way copy at `users/{uid}/{table}/{id}`, written in batches of ≤500 with merge, so re-running the migration only writes what changed.
+- **Isolated per account.** Owner-only rules mean your subtree is readable only by your account; every other user and every signed-out client is denied. `pnpm test:rules` proves it with 9 assertions against the local emulator.
+- **Turn it off and nothing is lost.** The opt-in flag is local; the mirror detaches and Dexie keeps every record.
+
+No Firebase Analytics, ever — the SDK is a separate lazily-imported chunk that a default install never downloads and the service worker never precaches.
+
+**What the operator can see.** The sync database lives in the app's own Firebase project. Owner-only rules stop *other users* from reading your data, but the project owner is the database administrator and can technically access it — as with any hosted service. It is TLS in transit and encrypted at rest by Google, but **not end-to-end encrypted**. If that matters to you, simply don't enable sync: the app is complete without it, and you can export a JSON snapshot from System Host instead.
 
 ---
 
@@ -167,6 +183,7 @@ There is no backend to leak. No analytics SDK, no tracking pixel, no remote font
 | **PWA** | `vite-plugin-pwa` — precache + prompt-to-update (`registerType: 'prompt'`) |
 | **Icons** | `react-icons` (Simple Icons / Font Awesome / Remix / Tabler) + hand-built brand marks |
 | **Type** | Space Grotesk + JetBrains Mono — self-hosted variable WOFF2 |
+| **Cloud (optional)** | Firebase Auth (Google + email/password) + Firestore — lazily imported, off by default, owner-only rules |
 | **Icons & assets** | `scripts/generate-icons.mjs` — a zero-dependency PNG encoder that draws the icon set and grain tile |
 
 ---
@@ -192,6 +209,7 @@ The demo dataset seeds itself on first boot. Explore, then wipe it from **System
 | `pnpm preview` | Serve the built PWA locally (`:4173`) to test offline/install |
 | `pnpm typecheck` | TypeScript, strict, no emit |
 | `pnpm icons` | Regenerate PWA icons and the background noise tile |
+| `pnpm test:rules` | Run the Firestore security-rule assertions against the local emulator |
 
 ---
 
@@ -278,7 +296,7 @@ v0.0.1 is **feature-complete** — all six engines ship and the ledger is cohere
 - [ ] **Renewal reminders** — "Netflix hits in 3 days", delivered as PWA notifications.
 - [ ] **Test suite** — unit coverage for the deterministic engines (`date`, `cycle`, `money`, `analytics`).
 - [ ] **Distinct per-domain cockpits** — deeper visual differentiation between engine overviews.
-- [ ] **Optional encrypted multi-device sync** — end-to-end encrypted vault, still no central account.
+- [ ] **End-to-end encryption for the cloud mirror** — the optional Firebase sync is owner-only and TLS in transit, but not end-to-end encrypted; a self-hosted encrypted vault remains the goal.
 
 No item on this list will ever add telemetry, a cloud account or a remote dependency.
 

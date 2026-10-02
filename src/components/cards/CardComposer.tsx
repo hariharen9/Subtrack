@@ -33,7 +33,7 @@ import {
   deleteCardTransaction,
   type CardDraft,
   type CardTxnDraft,
-} from '@/lib/db'
+} from '@/lib/repository'
 import { useCreditCards, useCardTransactions } from '@/hooks/useCards'
 import { TOAST_VERBS, useUI } from '@/store/ui'
 import { useFocusTrap, useIsCompact, useScrollLock } from '@/hooks/usePlatform'
