@@ -29,9 +29,6 @@ import DebtOverview from '@/pages/DebtOverview'
 import DebtFlow from '@/pages/DebtFlow'
 import LoanDetail from '@/pages/LoanDetail'
 import DebtInsights from '@/pages/DebtInsights'
-import AccountsOverview from '@/pages/AccountsOverview'
-import AccountsFlow from '@/pages/AccountsFlow'
-import AccountsInsights from '@/pages/AccountsInsights'
 import NotFound from '@/pages/NotFound'
 import { ensureSeeded, ensureSpendsSeeded } from '@/lib/db'
 import { ensureDebtSeeded } from '@/lib/debt-seed'
@@ -159,12 +156,7 @@ export default function App() {
             <Route path="spends/data" element={<SpendInsights />} />
             <Route path="spends/patterns" element={<SpendPatterns />} />
 
-            {/* [06] Accounts engine — the spine */}
-            <Route path="accounts" element={<AccountsOverview />} />
-            <Route path="accounts/flow" element={<AccountsFlow />} />
-            <Route path="accounts/data" element={<AccountsInsights />} />
-
-            {/* [07] System Host */}
+            {/* [06] System Host */}
             <Route path="sys" element={<Settings />} />
 
             {/* 404 catch-all */}

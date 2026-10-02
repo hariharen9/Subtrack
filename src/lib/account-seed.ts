@@ -5,8 +5,8 @@
  * Their ids are referenced by the other demo seeds (`seed-account-bank` etc.) so
  * the derived balances are alive on first boot.
  */
-import type { Account, AccountType } from './types'
-import { nowStamp } from './date'
+import type { Account, AccountType, Transfer } from './types'
+import { addDaysISO, nowStamp, todayISO } from './date'
 import { db } from './db'
 
 interface AccountSeedSpec {
@@ -46,6 +46,34 @@ export function buildAccountSeed(): Account[] {
   }))
 }
 
+/** A couple of believable moves between the demo accounts. */
+interface TransferSeedSpec {
+  daysAgo: number
+  fromAccountId: string
+  toAccountId: string
+  amount: number
+  notes: string
+}
+
+const TRANSFER_SPECS: TransferSeedSpec[] = [
+  { daysAgo: 13, fromAccountId: 'seed-account-savings', toAccountId: 'seed-account-bank', amount: 25000, notes: 'Monthly move to spending' },
+  { daysAgo: 6, fromAccountId: 'seed-account-bank', toAccountId: 'seed-account-wallet', amount: 5000, notes: 'Wallet top-up' },
+]
+
+export function buildTransferSeed(today: string): Transfer[] {
+  const now = nowStamp()
+  return TRANSFER_SPECS.map((spec, i) => ({
+    id: `seed-transfer-${i}`,
+    fromAccountId: spec.fromAccountId,
+    toAccountId: spec.toAccountId,
+    amount: spec.amount,
+    currency: 'INR',
+    date: addDaysISO(today, -spec.daysAgo),
+    notes: spec.notes,
+    createdAt: now,
+  }))
+}
+
 let accountSeedOnce: Promise<void> | null = null
 
 export async function ensureAccountsSeeded(): Promise<void> {
@@ -53,9 +81,12 @@ export async function ensureAccountsSeeded(): Promise<void> {
   accountSeedOnce = (async () => {
     const marker = await db.meta.get('accounts.seeded')
     if (marker) return
+    const today = todayISO()
     const accounts = buildAccountSeed()
-    await db.transaction('rw', db.accounts, db.meta, async () => {
+    const transfers = buildTransferSeed(today)
+    await db.transaction('rw', [db.accounts, db.transfers, db.meta], async () => {
       await db.accounts.bulkPut(accounts)
+      await db.transfers.bulkPut(transfers)
       await db.meta.put({ key: 'accounts.seeded', value: nowStamp() })
     })
   })()

@@ -198,9 +198,6 @@ E:/Projects/SpendState/
     │   ├── DebtFlow.tsx          # "/loans/flow" — loan registry
     │   ├── LoanDetail.tsx        # "/loans/flow/:id" — per-loan board (amortization, schedule)
     │   ├── DebtInsights.tsx      # "/loans/data" — debt analytics
-    │   ├── AccountsOverview.tsx  # "/accounts" — net-worth cockpit: account stack + movement stream
-    │   ├── AccountsFlow.tsx      # "/accounts/flow" — account registry + transfer rail
-    │   ├── AccountsInsights.tsx  # "/accounts/data" — asset distribution, liquidity, statistics
     │   ├── Spends.tsx            # "/spends" — Daily Spends cockpit (hero, velocity, ledger, limiter)
     │   ├── SpendFlow.tsx         # "/spends/flow" — full spend registry with range presets & filters
     │   ├── SpendDetail.tsx       # "/spends/flow/:id" — per-spend diagnostic board
@@ -787,8 +784,8 @@ Income is a **log of received payments**, not an engine — you enter salary/fre
 - **Master Command** — `INCOME (this month) − system burn = NET CASHFLOW` with the savings rate in both modes, a **LOG INCOME** action, and an Income metric card that links to the Spend-domain ledger.
 - Demo ledger guarded by the `income.seeded` marker (`income-seed.ts`).
 
-### 11.10 Accounts Engine (`/accounts`, `/accounts/flow`, `/accounts/data`)
-The **spine** (`ACCT` domain). An account is a money-holding container (bank/savings/cash/wallet/investment/credit). Its **balance is derived — never stored — from every movement posted into it**:
+### 11.10 Accounts (embedded in Master Command)
+Accounts are **not a domain** — they are the **spine**, surfaced as a standalone section inside **Master Command** (`components/accounts/AccountsSection`). An account is a money-holding container (bank/savings/cash/wallet/investment/credit) whose **balance is derived — never stored — from every movement posted into it**:
 
 - `income.accountId` → + (money in) · `spend.accountId` → −
 - a subscription's charges (`subscription.accountId`) → − · loan EMIs (`loan.accountId`) → −
@@ -796,12 +793,7 @@ The **spine** (`ACCT` domain). An account is a money-holding container (bank/sav
 - **`Transfer`** rows between accounts → −/+.
 - **Net worth = Σ asset balances − Σ credit liabilities.**
 
-Model: `Account { name, type, institution, currency, openingBalance, creditLimit?, color, notes, status }` + `Transfer { fromAccountId, toAccountId, amount, currency, date, notes }`. `AccountComposer` (`components/accounts/`) adds/edits accounts and records transfers; `AccountField` is the shared picker wired into the Spend, Income, Subscription, Loan and Card composers. `summarizeAccounts()` (`src/lib/accounts.ts`) builds the views, net worth, liquid cover, type slices, movement stream and notes.
-
-- **AccountsOverview** (`/accounts`): net-worth hero, asset composition, account stack, recent movements, signals.
-- **AccountsFlow** (`/accounts/flow`): registry (search/type/status/sort) + the transfer rail.
-- **AccountsInsights** (`/accounts/data`): asset distribution, liquidity gauge, per-account balances, statistics.
-- **Master Command**: NET WORTH in the hero readout, a Net Worth metric card and an Accounts cockpit card.
+The section renders a **balance-sheet statement** (net-worth anchor + assets/liabilities meter), an **account ledger** (ranked rows grouped Assets / Liabilities, each with a proportional balance bar), the **transfer rail**, the movement stream and signals; account rows open `AccountComposer` to edit (no route of its own). Model: `Account { name, type, institution, currency, openingBalance, creditLimit?, color, notes, status }` + `Transfer { fromAccountId, toAccountId, amount, currency, date, notes }`; `AccountField` is the shared picker wired into the Spend, Income, Subscription, Loan and Card composers; `summarizeAccounts()` (`src/lib/accounts.ts`) builds the views, net worth, liquid cover, type slices, movement stream and notes. Demo seeding (`account-seed.ts`) writes the five demo accounts **and** a short transfer ledger; the seeded demo loans (unlike subs/spends) deliberately carry **no** `accountId` so their reconstructed EMI history does not swamp a single cash account.
 
 ### 11.11 System Host (`/sys`)
 System control and backup room (`Settings.tsx`):
@@ -872,7 +864,7 @@ interface UIState {
 
 ## 13. Global Keyboard Shortcut Register
 
-The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-level rack entry maps `key → path`. The seven-domain rack occupies `1`–`7` (`1` CMD · `2` SPND · `3` SUBS · `4` CRD · `5` DEBT · `6` ACCT · `7` SYS); the sub-tab single letters printed in the DomainFrame sub-nav are visual reference only and are **not** bound as global hotkeys. Adding a future engine to `DOMAINS` automatically allocates its next free number.
+The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-level rack entry maps `key → path`. The six-domain rack occupies `1`–`6` (`1` CMD · `2` SPND · `3` SUBS · `4` CRD · `5` DEBT · `6` SYS); the sub-tab single letters printed in the DomainFrame sub-nav are visual reference only and are **not** bound as global hotkeys. Adding a future engine to `DOMAINS` automatically allocates its next free number.
 
 | Shortcut | Scope | Action |
 | :--- | :--- | :--- |
@@ -889,8 +881,7 @@ The shell hotkeys are driven by `DOMAINS` in `src/app/nav.ts` — every top-leve
 | `3` | Global | Navigate to **Subscriptions** (`/subs`) |
 | `4` | Global | Navigate to **Credit Cards** cockpit (`/cards`) |
 | `5` | Global | Navigate to **Loans & EMIs** cockpit (`/loans`) |
-| `6` | Global | Navigate to **Accounts** cockpit (`/accounts`) |
-| `7` | Global | Navigate to **System Host** (`/sys`) |
+| `6` | Global | Navigate to **System Host** (`/sys`) |
 | `T` | Global | Toggle Night / Daylight theme |
 | `M` | Global | Toggle Minimal Zen / Cyber OS mode |
 | `ESC` | Global | Close the active modal, sheet, palette or popover |

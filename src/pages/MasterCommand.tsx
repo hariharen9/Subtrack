@@ -23,6 +23,7 @@ import { useDebtSystem } from '@/hooks/useDebt'
 import { useCardsSystem } from '@/hooks/useCards'
 import { useIncomeSystem } from '@/hooks/useIncome'
 import { useAccountsSystem } from '@/hooks/useAccounts'
+import { AccountsSection } from '@/components/accounts/AccountsSection'
 import { useUI } from '@/store/ui'
 import { formatMoney, formatPercent, splitMoney, formatCompact } from '@/lib/money'
 import { formatSignalDate, todayISO, diffDays, addMonthsClamped } from '@/lib/date'
@@ -87,6 +88,7 @@ export default function MasterCommand() {
   const openSpendComposer = useUI((s) => s.openSpendComposer)
   const openLoanComposer = useUI((s) => s.openLoanComposer)
   const openCardComposer = useUI((s) => s.openCardComposer)
+  const openAccountComposer = useUI((s) => s.openAccountComposer)
   const openIncomeComposer = useUI((s) => s.openIncomeComposer)
   const today = todayISO()
 
@@ -432,9 +434,10 @@ export default function MasterCommand() {
           </Link>
 
           {/* Net Worth */}
-          <Link
-            to="/accounts"
-            className="group rounded-2xl border border-line bg-surface p-4 shadow-sm hover:border-linehard transition-all flex flex-col justify-between"
+          <button
+            type="button"
+            onClick={() => openAccountComposer()}
+            className="group rounded-2xl border border-line bg-surface p-4 shadow-sm hover:border-linehard transition-all flex flex-col justify-between text-left cursor-pointer"
           >
             <div>
               <div className="flex items-center justify-between">
@@ -449,11 +452,16 @@ export default function MasterCommand() {
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs text-acid-ink font-medium">
-              <span>Open accounts</span>
+              <span>Manage accounts</span>
               <IconArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
             </div>
-          </Link>
+          </button>
         </div>
+
+        {/* Accounts — the spine (embedded section) */}
+        <motion.div variants={RISE} className="mt-5">
+          <AccountsSection />
+        </motion.div>
 
         {/* 2-Column Section: Upcoming Bills + Recent Spends */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -551,7 +559,7 @@ export default function MasterCommand() {
               <Led signal="acid" size="sm" pulse />
               MASTER COMMAND
             </span>
-            <span className="micro text-faint hidden sm:inline">OS CORE // 5 ENGINES + INCOME LOG</span>
+            <span className="micro text-faint hidden sm:inline">OS CORE // 4 ENGINES + INCOME + ACCOUNTS</span>
             <span className="text-linehard hidden sm:inline">·</span>
             <span className="micro text-faint hidden md:inline">100% OFFLINE LOCAL VAULT</span>
           </div>
@@ -703,10 +711,10 @@ export default function MasterCommand() {
             code="MATRIX"
             title="Subsystem Cockpits"
             signal="acid"
-            right={<span className="micro text-faint">5 LIVE DOMAINS · 1 INCOME LEDGER</span>}
+            right={<span className="micro text-faint">4 LIVE DOMAINS · INCOME + ACCOUNTS</span>}
           />
 
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
 
             {/* SUBSCRIPTIONS */}
             <Link to="/subs" className="group block focus-visible:outline-none">
@@ -876,44 +884,13 @@ export default function MasterCommand() {
               </CutPanel>
             </Link>
 
-            {/* ACCOUNTS */}
-            <Link to="/accounts" className="group block focus-visible:outline-none">
-              <CutPanel cut="br" cutSize={12} innerClassName="p-3.5 transition-colors group-hover:bg-surface2 group-hover:border-acid">
-                <div className="flex items-center justify-between">
-                  <span className="micro flex items-center gap-1.5">
-                    <IconAccount size={14} className="text-acid" />
-                    <span className="font-semibold text-fg">ACCOUNTS</span>
-                  </span>
-                  <span className="micro flex items-center gap-1 text-acidink">
-                    <Led signal="acid" size="sm" pulse />
-                    SPINE
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <span className="numeral text-[22px] font-bold text-fg">{formatMoney(netWorth, base)}</span>
-                  <span className="micro block text-faint">NET WORTH</span>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-2">
-                  <div>
-                    <span className="micro block text-faint">ASSETS</span>
-                    <span className="numeral text-[13px] text-acidink">{formatCompact(accountsData.summary.totalAssets, base)}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="micro block text-faint">LIQUID</span>
-                    <span className="numeral text-[13px] text-fg">{formatCompact(accountsData.summary.liquid, base)}</span>
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-1.5">
-                  <span className="micro text-faint truncate">{accountsData.summary.active.length} ACCOUNTS TRACKED</span>
-                  <span className="micro flex items-center gap-0.5 text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-acidink">
-                    DECK <IconArrowRight size={11} />
-                  </span>
-                </div>
-              </CutPanel>
-            </Link>
-
           </div>
         </CutPanel>
+      </motion.div>
+
+      {/* ── Accounts — the spine (embedded section) ── */}
+      <motion.div variants={RISE} className="mt-5">
+        <AccountsSection />
       </motion.div>
 
       {/* ── 04. 14-DAY OUTFLOW RADAR + RESOURCE COMPOSITION ── */}
